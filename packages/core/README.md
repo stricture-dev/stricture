@@ -22,6 +22,32 @@ npm install @stricture/core
 
 ## Usage
 
+### Validating Imports (Main Use Case)
+
+This is the core functionality used by `@stricture/eslint-plugin`:
+
+```typescript
+import { validateImport, resolveImportPath } from '@stricture/core'
+import { hexagonalRules, hexagonalBoundaries } from '@stricture/hexagonal'
+
+// In an ESLint rule or custom validator
+const fromFile = '/project/src/core/domain/user.ts'
+const importSpec = '../../../adapters/database/user-repo'
+
+// 1. Resolve the import to absolute path
+const toFile = resolveImportPath(fromFile, importSpec, '/project')
+// toFile = '/project/src/adapters/database/user-repo.ts'
+
+// 2. Validate the import
+const result = validateImport(fromFile, toFile, hexagonalRules, hexagonalBoundaries)
+
+if (!result.valid) {
+  console.error(`❌ Architecture violation:`)
+  console.error(`   ${result.message}`)
+  console.error(`   Suggestion: ${result.suggestion}`)
+}
+```
+
 ### Using Types
 
 ```typescript

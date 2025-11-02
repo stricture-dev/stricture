@@ -6,12 +6,14 @@
 
 ## Responsibilities
 
+- **Implement the core import validation engine** (validateImport - the main function)
+- Resolve import specifiers to absolute paths
 - Define core TypeScript types for architectural rules and boundaries
 - Provide configuration schema for `.stricture/config.json`
 - Export validation utilities for rules and configurations
 - Define preset interfaces that architecture packages implement
 - Provide pattern matching utilities for file paths and boundaries
-- Maintain zero runtime dependencies (TypeScript only)
+- Maintain minimal runtime dependencies
 
 ## API Surface
 
@@ -138,7 +140,7 @@ interface ScaffoldingTemplate {
 ```
 
 #### `ValidationResult`
-Result of validation operations.
+Result of configuration/rule validation operations.
 
 ```typescript
 interface ValidationResult {
@@ -153,7 +155,51 @@ interface ValidationError {
 }
 ```
 
+#### `ImportValidationResult`
+Result of import validation (different from config validation).
+
+```typescript
+interface ImportValidationResult {
+  valid: boolean
+  violatedRule?: ArchRule         // The rule that was violated
+  fromBoundary?: string           // Source boundary name
+  toBoundary?: string             // Target boundary name
+  message?: string                // Human-readable error message
+  suggestion?: string             // Suggested fix
+}
+```
+
 ### Functions
+
+#### `validateImport(fromPath: string, toPath: string, rules: ArchRule[], boundaries: BoundaryDefinition[]): ImportValidationResult`
+
+**This is the core validation engine** - validates whether an import statement violates architectural rules.
+
+```typescript
+export function validateImport(
+  fromPath: string,        // Absolute path of file doing the import
+  toPath: string,          // Absolute path being imported (resolved)
+  rules: ArchRule[],       // Rules to check against
+  boundaries: BoundaryDefinition[]  // Boundary definitions for tag resolution
+): ImportValidationResult
+```
+
+**Returns**:
+```typescript
+interface ImportValidationResult {
+  valid: boolean
+  violatedRule?: ArchRule
+  message?: string
+  suggestion?: string       // Suggested fix
+}
+```
+
+**Algorithm**:
+1. Find which boundary `fromPath` belongs to
+2. Find which boundary `toPath` belongs to
+3. Check all rules where `from` matches source boundary
+4. If rule's `to` matches target boundary, check if `allowed`
+5. Return violation with helpful message if not allowed
 
 #### `validateConfig(config: unknown): ValidationResult`
 Validates a complete Stricture configuration.
@@ -184,6 +230,26 @@ Validates a boundary definition.
 export function validateBoundary(boundary: unknown): ValidationResult
 ```
 
+#### `resolveImportPath(fromPath: string, importSpecifier: string, baseDir: string): string`
+
+Resolves an import specifier to an absolute file path.
+
+```typescript
+export function resolveImportPath(
+  fromPath: string,          // File doing the import
+  importSpecifier: string,   // Import string (e.g., '../domain/user', '@/core/domain')
+  baseDir: string           // Project root directory
+): string
+```
+
+**Handles**:
+- Relative imports: `'../domain/user'` → resolve relative to fromPath
+- Path aliases: `'@/core/domain'` → resolve via tsconfig paths
+- Node modules: `'lodash'` → external dependency (return as-is)
+- Extensions: Add `.ts`, `.tsx`, `.js` if missing
+
+This is critical for the ESLint plugin to convert import specifiers to paths.
+
 #### `matchesPattern(filePath: string, pattern: BoundaryPattern): boolean`
 Checks if a file path matches a boundary pattern.
 
@@ -196,7 +262,7 @@ export function matchesPattern(
 ```
 
 **Implementation notes**:
-- Uses minimatch for glob pattern matching
+- Uses micromatch for glob pattern matching
 - Supports negation patterns
 - Handles tag resolution via boundaries parameter
 - Respects exclude patterns
@@ -256,11 +322,14 @@ export {
   type ScaffoldingTemplate,
   type ValidationResult,
   type ValidationError,
+  type ImportValidationResult,
 
   // Utilities
   validateConfig,
   validateRule,
   validateBoundary,
+  validateImport,
+  resolveImportPath,
   matchesPattern,
   mergeBoundaries,
   mergeRules,
@@ -282,15 +351,19 @@ packages/core/
 │   │   ├── preset.ts            // ArchPreset type
 │   │   ├── config.ts            // StrictureConfig type
 │   │   ├── diagram.ts           // DiagramDefinition type
-│   │   └── validation.ts        // ValidationResult type
+│   │   └── validation.ts        // Both ValidationResult types
 │   ├── validation/
 │   │   ├── validate-config.ts
 │   │   ├── validate-rule.ts
 │   │   ├── validate-boundary.ts
+│   │   ├── validate-import.ts   // Core import validation function
 │   │   └── validators.ts        // Shared validation helpers
 │   ├── matching/
 │   │   ├── match-pattern.ts
 │   │   └── glob-utils.ts
+│   ├── resolution/
+│   │   ├── resolve-import.ts    // resolveImportPath()
+│   │   └── path-utils.ts
 │   └── merging/
 │       ├── merge-boundaries.ts
 │       ├── merge-rules.ts
@@ -310,18 +383,72 @@ packages/core/
 
 **Modular structure**:
 - `types/` - Pure TypeScript type definitions
-- `validation/` - Runtime validation logic
+- `validation/` - Runtime validation logic (includes core import validation)
 - `matching/` - Pattern matching algorithms
+- `resolution/` - Import path resolution utilities
 - `merging/` - Configuration merging logic
 
 **Design principles**:
-- Zero runtime dependencies (except minimatch for glob matching)
+- Minimal runtime dependencies (only micromatch for glob matching)
 - Pure functions (no side effects)
 - Immutable data structures
 - Fail-fast validation
 - Detailed error messages
 
 ### Algorithm/Logic
+
+#### Import Validation Algorithm
+
+```typescript
+function validateImport(fromPath, toPath, rules, boundaries) {
+  // 1. Find source boundary
+  const fromBoundary = boundaries.find(b =>
+    matchesPattern(fromPath, { pattern: b.pattern, mode: b.mode })
+  )
+
+  // 2. Find target boundary
+  const toBoundary = boundaries.find(b =>
+    matchesPattern(toPath, { pattern: b.pattern, mode: b.mode })
+  )
+
+  // 3. Check all applicable rules
+  for (const rule of rules) {
+    const fromMatches = matchesRuleBoundary(fromBoundary, rule.from, boundaries)
+    const toMatches = matchesRuleBoundary(toBoundary, rule.to, boundaries)
+
+    if (fromMatches && toMatches) {
+      if (!rule.allowed) {
+        return {
+          valid: false,
+          violatedRule: rule,
+          fromBoundary: fromBoundary?.name,
+          toBoundary: toBoundary?.name,
+          message: rule.message || `${fromBoundary?.name} cannot import from ${toBoundary?.name}`,
+          suggestion: generateSuggestion(rule)
+        }
+      }
+    }
+  }
+
+  // 4. No violations found
+  return { valid: true }
+}
+
+function matchesRuleBoundary(boundary, pattern, boundaries) {
+  // Handle wildcard
+  if (pattern.pattern === '**' || pattern.tag === '*') {
+    return true
+  }
+
+  // Handle tag matching
+  if (pattern.tag) {
+    return boundary?.name === pattern.tag || boundary?.tags?.includes(pattern.tag)
+  }
+
+  // Handle pattern matching
+  return boundary && matchesPattern(boundary.pattern, pattern)
+}
+```
 
 #### Pattern Matching Algorithm
 
@@ -337,7 +464,7 @@ function matchesPattern(filePath, pattern, boundaries) {
   // 2. Check exclusions first
   if (pattern.exclude) {
     for (const exclude of pattern.exclude) {
-      if (minimatch(filePath, exclude)) return false
+      if (micromatch.isMatch(filePath, exclude)) return false
     }
   }
 
@@ -345,10 +472,10 @@ function matchesPattern(filePath, pattern, boundaries) {
   if (pattern.mode === 'folder') {
     // Match entire directory
     const dirPath = path.dirname(filePath)
-    return minimatch(dirPath, pattern.pattern)
+    return micromatch.isMatch(dirPath, pattern.pattern)
   } else {
     // Match file
-    return minimatch(filePath, pattern.pattern)
+    return micromatch.isMatch(filePath, pattern.pattern)
   }
 }
 ```
@@ -391,7 +518,8 @@ function resolveConfig(config, presets) {
 
 ### Runtime Dependencies
 
-- **minimatch** (^9.0.0) - Glob pattern matching
+- **micromatch** (^4.0.5) - Glob pattern matching (better than minimatch)
+- **@types/micromatch** (^4.0.6) - TypeScript types for micromatch
 
 ### Dev Dependencies
 
@@ -410,24 +538,32 @@ None
 ### Unit Tests
 
 **Test coverage areas**:
-1. **Type validation**
+1. **Import validation** (MOST CRITICAL)
+   - Valid imports pass
+   - Invalid imports fail with correct rule
+   - Wildcard patterns work
+   - Tag matching works
+   - Multiple rules interact correctly
+   - Clear error messages generated
+
+2. **Type validation**
    - Valid configurations pass
    - Invalid configurations fail with correct errors
    - Edge cases (empty arrays, missing fields, etc.)
 
-2. **Pattern matching**
+3. **Pattern matching**
    - File patterns match correctly
    - Folder patterns match correctly
    - Exclusions work
    - Tag resolution works
 
-3. **Merging logic**
+4. **Merging logic**
    - Boundaries merge correctly
    - Rules merge correctly
    - Overrides apply correctly
    - Preset extension works
 
-4. **Edge cases**
+5. **Edge cases**
    - Circular extends dependencies
    - Invalid glob patterns
    - Missing tag references
@@ -551,7 +687,7 @@ Functions throw errors for:
 
 ### Pattern Matching
 
-- Cache compiled glob patterns (minimatch instances)
+- Cache compiled glob patterns (micromatch instances)
 - Early exit on exclusions
 - Optimize for common case (file mode, single pattern)
 
