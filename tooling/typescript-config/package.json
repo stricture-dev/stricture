@@ -1,0 +1,11 @@
+{
+  "name": "@stricture/typescript-config",
+  "version": "0.1.0",
+  "description": "Shared TypeScript configurations for Stricture monorepo",
+  "private": true,
+  "files": [
+    "base.json",
+    "nextjs.json",
+    "react.json"
+  ]
+}

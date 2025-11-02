@@ -1,0 +1,47 @@
+{
+  "name": "@stricture/modular",
+  "version": "0.1.0",
+  "description": "Feature-based modular architecture preset for Stricture",
+  "keywords": ["stricture", "modular", "features", "architecture", "preset"],
+  "homepage": "https://stricture.dev/presets/modular",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/stricture-dev/stricture.git",
+    "directory": "packages/modular"
+  },
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "vitest",
+    "type-check": "tsc --noEmit",
+    "lint": "eslint src",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@stricture/core": "workspace:*"
+  },
+  "devDependencies": {
+    "@stricture/typescript-config": "workspace:*",
+    "@stricture/eslint-config": "workspace:*",
+    "tsup": "^8.0.0",
+    "typescript": "^5.3.0",
+    "vitest": "^1.2.0",
+    "eslint": "^8.56.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
