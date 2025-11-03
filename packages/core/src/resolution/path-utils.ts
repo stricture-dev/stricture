@@ -1,5 +1,3 @@
-import path from 'path'
-
 /**
  * Normalize path separators for consistent handling
  */

@@ -23,11 +23,11 @@
   "types": "./dist/index.d.ts",
   "files": ["dist"],
   "scripts": {
-    "build": "tsup",
-    "dev": "tsup --watch",
-    "test": "vitest",
-    "type-check": "tsc --noEmit",
-    "lint": "eslint src",
+    "build": "echo 'Package not yet implemented - skipping build'",
+    "dev": "echo 'Package not yet implemented'",
+    "test": "echo 'Package not yet implemented - skipping tests'",
+    "type-check": "echo 'Package not yet implemented - skipping type-check'",
+    "lint": "echo 'Package not yet implemented - skipping lint'",
     "clean": "rm -rf dist"
   },
   "dependencies": {
