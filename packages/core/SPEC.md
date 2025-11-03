@@ -70,6 +70,30 @@ interface BoundaryDefinition {
 }
 ```
 
+#### Special Boundary Tags
+
+**`'external'` tag**: Reserved tag for external dependencies (node_modules)
+
+```typescript
+// Example rule: Domain cannot import external libraries
+{
+  id: 'domain-no-externals',
+  from: { tag: 'domain' },
+  to: { tag: 'external' },    // Matches any node_modules import
+  allowed: false
+}
+
+// Example rule: Domain CAN import specific type-only libraries
+{
+  id: 'domain-allow-types',
+  from: { tag: 'domain' },
+  to: { pattern: 'node_modules/@types/**' },
+  allowed: true
+}
+```
+
+**Note**: If no rule targets `external`, external dependencies are allowed by default.
+
 #### `ArchPreset`
 Complete architecture preset definition.
 
@@ -195,11 +219,18 @@ interface ImportValidationResult {
 ```
 
 **Algorithm**:
-1. Find which boundary `fromPath` belongs to
-2. Find which boundary `toPath` belongs to
-3. Check all rules where `from` matches source boundary
-4. If rule's `to` matches target boundary, check if `allowed`
-5. Return violation with helpful message if not allowed
+1. Detect if `toPath` is an external dependency (node_modules)
+2. Find which boundary `fromPath` belongs to
+3. Find which boundary `toPath` belongs to (null if external dependency)
+4. Check all applicable rules where `from` matches source boundary
+5. For external dependencies, check if there's a rule targeting external imports
+6. If rule's `to` matches target boundary (or external), check if `allowed`
+7. Return violation with helpful message if not allowed
+
+**Note on external dependencies**:
+- External dependencies (node_modules) can be controlled via rules
+- Use a special boundary pattern to target externals: `{ tag: 'external' }`
+- Example: Prevent domain from importing any external libraries
 
 #### `validateConfig(config: unknown): ValidationResult`
 Validates a complete Stricture configuration.
@@ -230,7 +261,7 @@ Validates a boundary definition.
 export function validateBoundary(boundary: unknown): ValidationResult
 ```
 
-#### `resolveImportPath(fromPath: string, importSpecifier: string, baseDir: string): string`
+#### `resolveImportPath(fromPath: string, importSpecifier: string, baseDir: string, tsconfigPaths?: Record<string, string[]>): string`
 
 Resolves an import specifier to an absolute file path.
 
@@ -238,15 +269,36 @@ Resolves an import specifier to an absolute file path.
 export function resolveImportPath(
   fromPath: string,          // File doing the import
   importSpecifier: string,   // Import string (e.g., '../domain/user', '@/core/domain')
-  baseDir: string           // Project root directory
+  baseDir: string,          // Project root directory
+  tsconfigPaths?: Record<string, string[]>  // Optional: tsconfig paths mapping
 ): string
 ```
 
 **Handles**:
-- Relative imports: `'../domain/user'` → resolve relative to fromPath
-- Path aliases: `'@/core/domain'` → resolve via tsconfig paths
-- Node modules: `'lodash'` → external dependency (return as-is)
-- Extensions: Add `.ts`, `.tsx`, `.js` if missing
+- **Relative imports**: `'../domain/user'` → resolve relative to fromPath
+- **Path aliases**: `'@/core/domain'` → resolve via tsconfigPaths parameter
+- **Node modules**: `'lodash'` → return as `'node_modules/lodash'` (marked as external)
+- **Extensions**: Add `.ts`, `.tsx`, `.js` if missing and file exists
+
+**Path alias resolution**:
+```typescript
+// Consumers can use tsconfig-paths library to load paths
+import { loadConfig, createMatchPath } from 'tsconfig-paths'
+
+const { paths, baseUrl } = loadConfig('./tsconfig.json')
+const matchPath = createMatchPath(baseUrl, paths)
+
+const resolved = resolveImportPath(
+  fromPath,
+  importSpec,
+  baseDir,
+  paths  // Pass tsconfig paths
+)
+```
+
+**External detection**:
+- If import doesn't start with `.` or `/` and isn't in tsconfigPaths → external
+- Return `node_modules/{importSpecifier}` to mark as external
 
 This is critical for the ESLint plugin to convert import specifiers to paths.
 
@@ -401,17 +453,23 @@ packages/core/
 
 ```typescript
 function validateImport(fromPath, toPath, rules, boundaries) {
-  // 1. Find source boundary
+  // 1. Detect if target is external dependency
+  const isExternal = toPath.includes('node_modules') ||
+                     !toPath.startsWith(projectRoot)
+
+  // 2. Find source boundary
   const fromBoundary = boundaries.find(b =>
     matchesPattern(fromPath, { pattern: b.pattern, mode: b.mode })
   )
 
-  // 2. Find target boundary
-  const toBoundary = boundaries.find(b =>
-    matchesPattern(toPath, { pattern: b.pattern, mode: b.mode })
-  )
+  // 3. Find target boundary (null if external)
+  const toBoundary = isExternal
+    ? { name: 'external', pattern: 'node_modules/**', mode: 'file' as const }
+    : boundaries.find(b =>
+        matchesPattern(toPath, { pattern: b.pattern, mode: b.mode })
+      )
 
-  // 3. Check all applicable rules
+  // 4. Check all applicable rules
   for (const rule of rules) {
     const fromMatches = matchesRuleBoundary(fromBoundary, rule.from, boundaries)
     const toMatches = matchesRuleBoundary(toBoundary, rule.to, boundaries)
@@ -423,21 +481,33 @@ function validateImport(fromPath, toPath, rules, boundaries) {
           violatedRule: rule,
           fromBoundary: fromBoundary?.name,
           toBoundary: toBoundary?.name,
-          message: rule.message || `${fromBoundary?.name} cannot import from ${toBoundary?.name}`,
-          suggestion: generateSuggestion(rule)
+          message: rule.message || buildMessage(fromBoundary, toBoundary, isExternal),
+          suggestion: generateSuggestion(rule, isExternal)
         }
       }
     }
   }
 
-  // 4. No violations found
+  // 5. No violations found (or no rule targets this combination)
   return { valid: true }
 }
 
+function buildMessage(from, to, isExternal) {
+  if (isExternal) {
+    return `${from?.name} cannot import external dependencies`
+  }
+  return `${from?.name} cannot import from ${to?.name}`
+}
+
 function matchesRuleBoundary(boundary, pattern, boundaries) {
-  // Handle wildcard
+  // Handle wildcard - matches ANY boundary including external
   if (pattern.pattern === '**' || pattern.tag === '*') {
     return true
+  }
+
+  // Handle special 'external' tag
+  if (pattern.tag === 'external') {
+    return boundary?.name === 'external'
   }
 
   // Handle tag matching
@@ -514,12 +584,70 @@ function resolveConfig(config, presets) {
 }
 ```
 
+#### External Dependencies Examples
+
+**Allow externals by default** (no rule):
+```typescript
+// No rule targeting external → allowed
+import { z } from 'zod'  // ✅ Valid (no rule blocks it)
+```
+
+**Block all externals in domain**:
+```typescript
+const rules = [{
+  id: 'domain-pure',
+  from: { tag: 'domain' },
+  to: { tag: 'external' },
+  allowed: false,
+  message: 'Domain must not import external libraries'
+}]
+
+// In domain file:
+import { z } from 'zod'  // ❌ Blocked by rule
+```
+
+**Allow specific externals**:
+```typescript
+const rules = [
+  {
+    id: 'domain-no-externals',
+    from: { tag: 'domain' },
+    to: { tag: 'external' },
+    allowed: false
+  },
+  {
+    id: 'domain-allow-types',
+    from: { tag: 'domain' },
+    to: { pattern: 'node_modules/@types/**' },  // More specific wins
+    allowed: true
+  }
+]
+```
+
+**Wildcard usage**:
+```typescript
+const rules = [{
+  id: 'domain-isolated',
+  from: { tag: 'domain' },
+  to: { tag: '*' },  // ANY boundary (including external)
+  allowed: false
+}]
+
+// Domain cannot import ANYTHING except other domain files
+```
+
 ## Dependencies
 
 ### Runtime Dependencies
 
-- **micromatch** (^4.0.5) - Glob pattern matching (better than minimatch)
-- **@types/micromatch** (^4.0.6) - TypeScript types for micromatch
+- **micromatch** (^4.0.5) - Glob pattern matching
+- **@types/micromatch** (^4.0.6) - TypeScript types
+
+### Optional Peer Dependencies
+
+- **tsconfig-paths** (^4.2.0) - For resolving TypeScript path aliases (optional, but recommended)
+
+**Note**: `tsconfig-paths` is not a hard dependency. Users can pass resolved paths manually if they prefer.
 
 ### Dev Dependencies
 
@@ -529,10 +657,6 @@ function resolveConfig(config, presets) {
 - **@stricture/typescript-config** (workspace:*) - Shared TypeScript config
 - **@stricture/eslint-config** (workspace:*) - Shared ESLint config
 
-### Peer Dependencies
-
-None
-
 ## Testing Strategy
 
 ### Unit Tests
@@ -541,10 +665,14 @@ None
 1. **Import validation** (MOST CRITICAL)
    - Valid imports pass
    - Invalid imports fail with correct rule
-   - Wildcard patterns work
+   - Wildcard patterns work (`*` matches any boundary)
    - Tag matching works
    - Multiple rules interact correctly
    - Clear error messages generated
+   - **External dependencies detection works**
+   - **Rules can allow/block external dependencies**
+   - **Special `external` tag targets node_modules**
+   - **External dependencies allowed by default if no rule**
 
 2. **Type validation**
    - Valid configurations pass
