@@ -44,7 +44,7 @@ describe('enforce-boundaries rule', () => {
       invalid: [
         // Domain cannot import from adapters (violates domain-isolation)
         {
-          code: "import { api } from '../../../adapters/api'",
+          code: "import { api } from '../../adapters/api'",
           filename: '/test/src/core/domain/user.ts',
           options: [{ configPath }],
           errors: [
@@ -79,7 +79,7 @@ describe('enforce-boundaries rule', () => {
       ],
       invalid: [
         {
-          code: "const api = require('../../../adapters/api')",
+          code: "const api = require('../../adapters/api')",
           filename: '/test/src/core/domain/user.ts',
           options: [{ configPath }],
           errors: [
@@ -103,7 +103,7 @@ describe('enforce-boundaries rule', () => {
       ],
       invalid: [
         {
-          code: "const api = await import('../../../adapters/api')",
+          code: "const api = await import('../../adapters/api')",
           filename: '/test/src/core/domain/user.ts',
           options: [{ configPath, checkDynamicImports: true }],
           errors: [
@@ -127,7 +127,7 @@ describe('enforce-boundaries rule', () => {
       ],
       invalid: [
         {
-          code: "export { api } from '../../../adapters/api'",
+          code: "export { api } from '../../adapters/api'",
           filename: '/test/src/core/domain/index.ts',
           options: [{ configPath }],
           errors: [
@@ -137,7 +137,7 @@ describe('enforce-boundaries rule', () => {
           ]
         },
         {
-          code: "export * from '../../../adapters/api'",
+          code: "export * from '../../adapters/api'",
           filename: '/test/src/core/domain/index.ts',
           options: [{ configPath }],
           errors: [
