@@ -128,6 +128,23 @@ export const boundaries: BoundaryDefinition[] = [
 ```typescript
 // src/rules.ts
 export const rules: ArchRule[] = [
+  // NOTE: More specific rules should come first
+  // domain-self-imports is more specific than domain-isolation
+  {
+    id: 'domain-self-imports',
+    name: 'Domain Can Import Itself',
+    description: 'Domain files can import other domain files',
+    severity: 'error',
+    from: { tag: 'domain' },
+    to: { tag: 'domain' },
+    allowed: true,
+    examples: {
+      good: [
+        "import { Order } from './order'",
+        "import { Money } from './value-objects/money'"
+      ]
+    }
+  },
   {
     id: 'domain-isolation',
     name: 'Domain Isolation',
@@ -142,21 +159,8 @@ export const rules: ArchRule[] = [
         "import { Database } from '../../adapters/database'",
         "import axios from 'axios'",
         "import { UserRepository } from '../ports/user-repository'"
-      ],
-      good: [
-        "import { Order } from './order'",
-        "import { Money } from './value-objects/money'"
       ]
     }
-  },
-  {
-    id: 'domain-self-imports',
-    name: 'Domain Can Import Itself',
-    description: 'Domain files can import other domain files',
-    severity: 'error',
-    from: { tag: 'domain' },
-    to: { tag: 'domain' },
-    allowed: true
   },
   {
     id: 'ports-to-domain',

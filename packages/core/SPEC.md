@@ -470,9 +470,27 @@ function validateImport(fromPath, toPath, rules, boundaries) {
       )
 
   // 4. Check all applicable rules
-  for (const rule of rules) {
+  // Sort rules by specificity: pattern-based rules (more specific) before tag-based rules
+  // This ensures specific patterns override general tags
+  // First matching rule wins (early return)
+  const sortedRules = [...rules].sort((a, b) => {
+    const aHasPattern = !!a.to.pattern
+    const bHasPattern = !!b.to.pattern
+    if (aHasPattern && !bHasPattern) return -1
+    if (!aHasPattern && bHasPattern) return 1
+    return 0
+  })
+
+  for (const rule of sortedRules) {
     const fromMatches = matchesRuleBoundary(fromBoundary, rule.from, boundaries)
-    const toMatches = matchesRuleBoundary(toBoundary, rule.to, boundaries)
+
+    // IMPORTANT: Pattern vs Tag Matching
+    // - If rule.to has a pattern: match against the actual toPath using matchesPattern()
+    // - If rule.to has only a tag: match against the toBoundary using matchesRuleBoundary()
+    // Pattern-based rules are more specific than tag-based rules
+    const toMatches = rule.to.pattern
+      ? matchesPattern(toPath, rule.to, boundaries)
+      : matchesRuleBoundary(toBoundary, rule.to, boundaries)
 
     if (fromMatches && toMatches) {
       if (!rule.allowed) {
@@ -485,6 +503,8 @@ function validateImport(fromPath, toPath, rules, boundaries) {
           suggestion: generateSuggestion(rule, isExternal)
         }
       }
+      // Rule explicitly allows this import
+      return { valid: true }
     }
   }
 
@@ -549,6 +569,31 @@ function matchesPattern(filePath, pattern, boundaries) {
   }
 }
 ```
+
+#### Pattern Matching with Absolute Paths
+
+**Important**: Patterns like `src/domain/**` must match both relative and absolute file paths.
+
+**Implementation requirement**: Patterns that don't start with `/`, `**/`, or `./` should have `**/` prepended automatically to ensure they match absolute paths.
+
+```typescript
+// Example: Pattern 'src/domain/**/*.ts' should match both:
+matchesPattern('src/domain/user.ts', { pattern: 'src/domain/**/*.ts', mode: 'file' })
+// → true (relative path)
+
+matchesPattern('/project/src/domain/user.ts', { pattern: 'src/domain/**/*.ts', mode: 'file' })
+// → true (absolute path - pattern automatically becomes '**/src/domain/**/*.ts')
+
+// Implementation:
+function normalizePattern(pattern: string): string {
+  if (!pattern.startsWith('/') && !pattern.startsWith('**/') && !pattern.startsWith('./')) {
+    return `**/${pattern}`
+  }
+  return pattern
+}
+```
+
+This ensures boundary patterns work consistently regardless of whether files are referenced with absolute or relative paths.
 
 #### Config Resolution Algorithm
 
@@ -656,6 +701,23 @@ const rules = [{
 - **vitest** (^1.2.0) - Testing framework
 - **@stricture/typescript-config** (workspace:*) - Shared TypeScript config
 - **@stricture/eslint-config** (workspace:*) - Shared ESLint config
+- **@types/node** - TypeScript types for Node.js built-in modules
+
+### Import Style for Node.js Built-ins
+
+**Important**: Import Node.js built-in modules without the `node:` prefix for better TypeScript declaration generation compatibility.
+
+```typescript
+// ✓ Correct - Works with TypeScript declaration generation
+import path from 'path'
+import fs from 'fs'
+
+// ✗ Incorrect - Can cause issues with tsup DTS generation
+import path from 'node:path'
+import fs from 'node:fs'
+```
+
+The `node:` prefix is valid ESM syntax but may cause TypeScript declaration (.d.ts) build errors with some bundlers. Use standard imports for maximum compatibility.
 
 ## Testing Strategy
 
