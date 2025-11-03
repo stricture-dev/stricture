@@ -92,6 +92,26 @@ This is a monorepo containing:
 3. **Write code** - Stricture's ESLint plugin validates imports in real-time
 4. **Get feedback** - Clear error messages show what's wrong and how to fix it
 
+## Controlling External Dependencies
+
+Stricture can enforce rules about external npm packages:
+
+```typescript
+// Block domain from using any external libraries
+{
+  "rules": [
+    {
+      "id": "domain-pure",
+      "from": { "tag": "domain" },
+      "to": { "tag": "external" },  // Special tag for node_modules
+      "allowed": false
+    }
+  ]
+}
+```
+
+See the [External Dependencies guide](https://stricture.dev/docs/external-dependencies) for details.
+
 ## Configuration Example
 
 ```json
@@ -116,14 +136,20 @@ This is a monorepo containing:
   ],
   "rules": [
     {
-      "from": "domain",
-      "to": "*",
+      "id": "domain-isolation",
+      "name": "Domain Isolation",
+      "severity": "error",
+      "from": { "tag": "domain" },
+      "to": { "tag": "*" },
       "allowed": false,
       "message": "Domain layer must remain pure - no external dependencies"
     },
     {
-      "from": "adapters",
-      "to": "domain",
+      "id": "adapters-via-ports",
+      "name": "Adapters Through Ports",
+      "severity": "error",
+      "from": { "tag": "adapters" },
+      "to": { "tag": "domain" },
       "allowed": false,
       "message": "Adapters should depend on ports, not domain directly"
     }
@@ -167,6 +193,9 @@ pnpm type-check
 
 # Lint
 pnpm lint
+
+# Format code
+pnpm format
 ```
 
 ## Contributing

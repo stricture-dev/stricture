@@ -10,7 +10,12 @@
     "typescript",
     "hexagonal",
     "clean-architecture",
-    "layered-architecture"
+    "layered-architecture",
+    "modular-architecture",
+    "ports-and-adapters",
+    "dependency-inversion",
+    "import-rules",
+    "code-quality"
   ],
   "homepage": "https://github.com/stricture-dev/stricture#readme",
   "repository": {
@@ -24,6 +29,8 @@
     "test": "turbo test",
     "lint": "turbo lint",
     "type-check": "turbo type-check",
+    "format": "turbo format",
+    "format:check": "turbo format:check",
     "clean": "turbo clean && rm -rf node_modules"
   },
   "devDependencies": {
