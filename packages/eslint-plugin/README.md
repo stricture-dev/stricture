@@ -130,15 +130,18 @@ Example error:
 
 ```
 src/core/domain/user.ts
-  5:1  error  Import from 'adapters' boundary not allowed in 'domain' boundary
+  5:1  error  Domain cannot import from adapters
 
-       Rule: Domain Isolation (no-domain-imports)
-       From: domain (src/core/domain/**)
-       To:   adapters (src/adapters/**)
+       Rule: Domain Isolation (domain-isolation)
+       From: domain
+       To:   adapters
 
        Domain layer must remain pure - no external dependencies.
 
-       Suggestion: Import from ports instead (src/core/ports/**).
+       Suggestion: Create a port interface in src/core/ports/ instead.
+
+       Allowed:
+         ✓ import { IUserRepo } from '../ports/user-repo'
 
        @stricture/enforce-boundaries
 ```
@@ -230,6 +233,76 @@ src/core/domain/user.ts
 }
 ```
 
+## Controlling External Dependencies
+
+By default, external dependencies (node_modules) are allowed. You can control them using the special `external` tag:
+
+### Block All Externals in Domain
+
+```json
+{
+  "boundaries": [
+    { "name": "domain", "pattern": "src/domain/**" }
+  ],
+  "rules": [
+    {
+      "id": "domain-pure",
+      "from": { "tag": "domain" },
+      "to": { "tag": "external" },
+      "allowed": false,
+      "message": "Domain must not import external libraries"
+    }
+  ]
+}
+```
+
+```typescript
+// src/domain/user.ts
+import { z } from 'zod'  // ❌ Error: Domain must not import external libraries
+```
+
+### Allow Specific Externals
+
+```json
+{
+  "rules": [
+    {
+      "id": "domain-no-externals",
+      "from": { "tag": "domain" },
+      "to": { "tag": "external" },
+      "allowed": false
+    },
+    {
+      "id": "domain-allow-types",
+      "from": { "tag": "domain" },
+      "to": { "pattern": "node_modules/@types/**" },
+      "allowed": true,
+      "message": "Type definitions are allowed"
+    }
+  ]
+}
+```
+
+## Wildcard Matching
+
+Use the wildcard tag `*` to match any boundary:
+
+```json
+{
+  "rules": [
+    {
+      "id": "domain-isolated",
+      "from": { "tag": "domain" },
+      "to": { "tag": "*" },
+      "allowed": false,
+      "message": "Domain cannot import from ANY other boundary"
+    }
+  ]
+}
+```
+
+This blocks domain from importing anything (including external dependencies).
+
 ## Advanced Features
 
 ### Pattern Matching
@@ -298,6 +371,30 @@ Control whether violations are errors or warnings:
   ]
 }
 ```
+
+### Path Alias Resolution
+
+The plugin automatically resolves TypeScript path aliases from `tsconfig.json`:
+
+```json
+// tsconfig.json
+{
+  "compilerOptions": {
+    "paths": {
+      "@core/*": ["src/core/*"],
+      "@adapters/*": ["src/adapters/*"]
+    }
+  }
+}
+```
+
+```typescript
+// This import is resolved correctly:
+import { User } from '@core/domain/user'  // Resolves to src/core/domain/user
+// Then validated against boundaries
+```
+
+**No additional configuration needed** - works automatically if tsconfig.json exists.
 
 ## Troubleshooting
 

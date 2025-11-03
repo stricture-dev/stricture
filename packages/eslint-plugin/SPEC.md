@@ -7,13 +7,17 @@
 ## Responsibilities
 
 - Implement ESLint plugin with `enforce-boundaries` rule
+- **Delegate all validation logic to `@stricture/core`**
 - Load and parse `.stricture/config.json` at lint time
-- Classify each file into appropriate boundary based on patterns
-- Validate import/require statements against boundary rules
-- Report violations with clear, actionable error messages
+- Extract import information from AST nodes
+- Resolve import specifiers to absolute paths (via `core`)
+- Call `validateImport()` from core for each import
+- Report violations returned by core with ESLint formatting
 - Support both legacy and flat ESLint configurations
-- Cache configuration and pattern matching for performance
+- Cache configuration for performance
 - Support dynamic imports and re-exports
+
+**Key principle**: This is a **thin wrapper** around `@stricture/core`. All architectural logic lives in core.
 
 ## API Surface
 
@@ -120,14 +124,12 @@ packages/eslint-plugin/
 ├── src/
 │   ├── index.ts                    // Plugin entry point
 │   ├── rules/
-│   │   ├── enforce-boundaries.ts   // Main rule implementation
+│   │   ├── enforce-boundaries.ts   // Main rule (delegates to core)
 │   │   └── utils/
-│   │       ├── classify-file.ts    // Classify files into boundaries
-│   │       ├── resolve-import.ts   // Resolve import paths
-│   │       ├── check-violation.ts  // Check if import violates rules
-│   │       └── format-error.ts     // Format error messages
+│   │       ├── load-config.ts      // Load .stricture/config.json
+│   │       ├── load-tsconfig.ts    // Load tsconfig paths
+│   │       └── format-error.ts     // Format errors for ESLint
 │   ├── config/
-│   │   ├── load-config.ts          // Load .stricture/config.json
 │   │   └── config-cache.ts         // Cache loaded configs
 │   └── types/
 │       └── eslint.ts               // ESLint type augmentations
@@ -143,6 +145,8 @@ packages/eslint-plugin/
 ├── README.md
 └── SPEC.md
 ```
+
+**Note**: Much simpler than before because validation logic is in core.
 
 ### Architecture
 
@@ -168,205 +172,163 @@ packages/eslint-plugin/
 ```typescript
 function create(context: ESLint.RuleContext) {
   // 1. Load configuration (cached)
-  const config = loadConfig(context.options[0]?.configPath)
+  const options = context.options[0] || {}
+  const config = loadConfig(options.configPath || '.stricture/config.json')
 
-  // 2. Classify source file
+  // 2. Load tsconfig paths if available (for alias resolution)
+  const tsconfigPaths = loadTsconfigPaths(context.getCwd())
+
+  // 3. Get source file
   const sourceFile = context.getFilename()
-  const sourceBoundary = classifyFile(sourceFile, config.boundaries)
 
-  // 3. Return AST visitors
+  // 4. Return AST visitors
   return {
     // Check static imports: import X from 'Y'
     ImportDeclaration(node) {
-      checkImport(node.source.value, context, config, sourceBoundary)
+      checkImportNode(node, node.source.value, context, config, tsconfigPaths)
     },
 
     // Check require: require('X')
     CallExpression(node) {
-      if (node.callee.name === 'require') {
-        checkImport(node.arguments[0].value, context, config, sourceBoundary)
+      if (node.callee.name === 'require' && node.arguments[0]) {
+        checkImportNode(node, node.arguments[0].value, context, config, tsconfigPaths)
       }
 
       // Check dynamic imports: import('X')
-      if (node.callee.type === 'Import') {
-        checkImport(node.arguments[0].value, context, config, sourceBoundary)
+      if (node.callee.type === 'Import' && node.arguments[0]) {
+        checkImportNode(node, node.arguments[0].value, context, config, tsconfigPaths)
       }
     },
 
     // Check re-exports: export { X } from 'Y'
     ExportNamedDeclaration(node) {
       if (node.source) {
-        checkImport(node.source.value, context, config, sourceBoundary)
+        checkImportNode(node, node.source.value, context, config, tsconfigPaths)
       }
     },
 
     // Check export all: export * from 'Y'
     ExportAllDeclaration(node) {
-      checkImport(node.source.value, context, config, sourceBoundary)
+      checkImportNode(node, node.source.value, context, config, tsconfigPaths)
     }
   }
 }
-```
 
-#### File Classification Algorithm
-
-```typescript
-function classifyFile(
-  filePath: string,
-  boundaries: BoundaryDefinition[]
-): BoundaryDefinition | null {
-  // Normalize path
-  const normalizedPath = normalizePath(filePath)
-
-  // Try each boundary in order
-  for (const boundary of boundaries) {
-    // Check exclusions first
-    if (boundary.exclude) {
-      for (const exclude of boundary.exclude) {
-        if (matchesPattern(normalizedPath, { pattern: exclude, mode: boundary.mode })) {
-          continue // Skip this boundary
-        }
-      }
-    }
-
-    // Check pattern match
-    if (matchesPattern(normalizedPath, {
-      pattern: boundary.pattern,
-      mode: boundary.mode
-    })) {
-      return boundary
-    }
-  }
-
-  return null // No boundary matched
-}
-```
-
-#### Import Validation Algorithm
-
-```typescript
-function checkImport(
+function checkImportNode(
+  node: ESLint.Node,
   importSpecifier: string,
   context: ESLint.RuleContext,
   config: StrictureConfig,
-  sourceBoundary: BoundaryDefinition | null
+  tsconfigPaths: Record<string, string[]> | null
 ) {
-  // 1. Skip if source file not in any boundary
-  if (!sourceBoundary) return
+  const sourceFile = context.getFilename()
+  const projectRoot = context.getCwd()
 
-  // 2. Resolve import to absolute path
-  const resolvedPath = resolveImport(importSpecifier, context.getFilename())
+  // 1. Resolve import to absolute path using CORE
+  const resolvedPath = resolveImportPath(
+    sourceFile,
+    importSpecifier,
+    projectRoot,
+    tsconfigPaths
+  )
 
-  // 3. Skip external packages (node_modules)
-  if (isExternalModule(resolvedPath)) return
+  // 2. Validate import using CORE
+  const result = validateImport(
+    sourceFile,
+    resolvedPath,
+    config.rules,
+    config.boundaries
+  )
 
-  // 4. Classify import target
-  const targetBoundary = classifyFile(resolvedPath, config.boundaries)
-
-  // 5. Skip if target not in any boundary
-  if (!targetBoundary) return
-
-  // 6. Check rules
-  for (const rule of config.rules) {
-    const violation = checkRule(rule, sourceBoundary, targetBoundary)
-
-    if (violation) {
-      // 7. Report violation
-      context.report({
-        node,
-        messageId: 'boundaryViolation',
-        data: {
-          from: sourceBoundary.name,
-          to: targetBoundary.name
-        },
-        message: formatViolation(violation, rule)
-      })
-
-      return // Only report first violation
-    }
+  // 3. Report if invalid
+  if (!result.valid) {
+    context.report({
+      node,
+      messageId: 'boundaryViolation',
+      data: {
+        from: result.fromBoundary || 'unknown',
+        to: result.toBoundary || 'unknown',
+        rule: result.violatedRule?.name
+      },
+      message: formatErrorMessage(result)
+    })
   }
 }
 ```
 
-#### Rule Checking Algorithm
+#### Integration with Core
+
+All validation logic is delegated to `@stricture/core`:
 
 ```typescript
-function checkRule(
-  rule: ArchRule,
-  from: BoundaryDefinition,
-  to: BoundaryDefinition
-): boolean {
-  // 1. Check if 'from' matches source
-  const fromMatches = matchesBoundary(from, rule.from)
-  if (!fromMatches) return false
+import {
+  validateImport,      // Main validation function
+  resolveImportPath,   // Path resolution
+  type StrictureConfig,
+  type ImportValidationResult
+} from '@stricture/core'
 
-  // 2. Check if 'to' matches target
-  const toMatches = matchesBoundary(to, rule.to)
-  if (!toMatches) return false
-
-  // 3. Return violation status (true if not allowed)
-  return !rule.allowed
-}
-
-function matchesBoundary(
-  boundary: BoundaryDefinition,
-  pattern: BoundaryPattern
-): boolean {
-  // Pattern can specify:
-  // - tag: match by boundary name/tag
-  // - pattern: match by glob
-  // - wildcard: match all (pattern: '**')
-
-  if (pattern.tag) {
-    return boundary.name === pattern.tag ||
-           boundary.tags?.includes(pattern.tag)
-  }
-
-  if (pattern.pattern === '**') {
-    return true // Wildcard matches all
-  }
-
-  if (pattern.pattern) {
-    return matchesPattern(boundary.pattern, pattern)
-  }
-
-  return false
-}
+// ESLint plugin just:
+// 1. Extracts import info from AST
+// 2. Calls core functions
+// 3. Formats errors for ESLint
 ```
+
+**Why this approach**:
+- Single source of truth for validation logic
+- Core can be used standalone (CLI, pre-commit hooks, etc.)
+- Easier to test validation logic
+- Consistent behavior across all tools
+
+#### Handling External Dependencies
+
+External dependencies (node_modules) are handled by core's `validateImport()`:
+
+```typescript
+// Example: Block externals in domain
+const config = {
+  rules: [
+    {
+      id: 'domain-pure',
+      from: { tag: 'domain' },
+      to: { tag: 'external' },  // Special tag from core
+      allowed: false
+    }
+  ]
+}
+
+// This import will be validated:
+import { z } from 'zod'  // Resolved to 'node_modules/zod/...'
+// Core will detect it's external and check rules
+```
+
+**The plugin doesn't need to know about externals** - core handles it.
 
 #### Error Message Formatting
 
 ```typescript
-function formatViolation(
-  violation: ViolationReport,
-  rule: ArchRule
-): string {
-  const lines = []
+function formatErrorMessage(result: ImportValidationResult): string {
+  // Core already provides a good message
+  let message = result.message
 
-  lines.push(`Import from "${violation.to.name}" boundary not allowed in "${violation.from.name}" boundary`)
-  lines.push('')
-  lines.push(`Rule: ${rule.name} (${rule.id})`)
-  lines.push(`From: ${violation.from.name} (${violation.from.pattern})`)
-  lines.push(`To:   ${violation.to.name} (${violation.to.pattern})`)
-
-  if (rule.message) {
-    lines.push('')
-    lines.push(rule.message)
+  // Add suggestion if available
+  if (result.suggestion) {
+    message += `\n\nSuggestion: ${result.suggestion}`
   }
 
-  if (rule.examples?.good) {
-    lines.push('')
-    lines.push('Allowed imports:')
-    rule.examples.good.forEach(ex => lines.push(`  ✓ ${ex}`))
+  // Add violated rule info
+  if (result.violatedRule) {
+    message += `\n\nRule: ${result.violatedRule.name} (${result.violatedRule.id})`
+
+    if (result.violatedRule.examples?.good) {
+      message += '\n\nAllowed:'
+      result.violatedRule.examples.good.forEach(ex => {
+        message += `\n  ✓ ${ex}`
+      })
+    }
   }
 
-  if (rule.examples?.bad) {
-    lines.push('')
-    lines.push('Disallowed imports:')
-    rule.examples.bad.forEach(ex => lines.push(`  ✗ ${ex}`))
-  }
-
-  return lines.join('\n')
+  return message
 }
 ```
 
@@ -412,8 +374,11 @@ const configCache = new ConfigCache()
 
 ### Runtime Dependencies
 
-- **@stricture/core** (workspace:*) - Core types and utilities
-- **@typescript-eslint/utils** (^6.19.0) - ESLint utilities for TypeScript
+- **@stricture/core** (workspace:*) - Core validation engine and types
+- **@typescript-eslint/utils** (^6.19.0) - ESLint utilities
+- **tsconfig-paths** (^4.2.0) - For loading tsconfig path aliases
+
+**Note**: The heavy lifting is done by `@stricture/core`. This plugin is just ESLint integration.
 
 ### Dev Dependencies
 
@@ -433,27 +398,27 @@ const configCache = new ConfigCache()
 
 ### Unit Tests
 
-Test individual functions:
-1. **File classification**
-   - Files match correct boundaries
-   - Exclusions work
-   - Multiple boundaries prioritized correctly
+Test ESLint integration (not validation logic - that's in core):
 
-2. **Import resolution**
-   - Relative imports resolved
-   - Absolute imports resolved
-   - External modules detected
+1. **Config loading**
+   - Config loaded correctly
+   - Config cached
+   - Invalid config reported
 
-3. **Rule checking**
-   - Rules match correctly
-   - Tag-based rules work
-   - Pattern-based rules work
-   - Wildcard rules work
+2. **AST node handling**
+   - ImportDeclaration nodes processed
+   - CallExpression (require, dynamic import) processed
+   - Export declarations processed
 
-4. **Error formatting**
-   - Messages formatted correctly
-   - Examples included when present
-   - Multi-line messages work
+3. **Error reporting**
+   - Violations reported to ESLint correctly
+   - Messages formatted properly
+   - Node location correct
+
+4. **tsconfig paths**
+   - Paths loaded correctly
+   - Aliases resolved via paths
+   - Falls back gracefully if no tsconfig
 
 ### Integration Tests (ESLint RuleTester)
 
