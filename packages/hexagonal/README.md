@@ -222,9 +222,17 @@ The preset provides this configuration:
       "name": "Domain Isolation",
       "severity": "error",
       "from": { "tag": "domain" },
-      "to": { "pattern": "**" },
+      "to": { "tag": "*" },
       "allowed": false,
-      "message": "Domain layer must remain pure - no external dependencies"
+      "message": "Domain layer must remain pure - no dependencies on other layers or external libraries"
+    },
+    {
+      "id": "domain-self-imports",
+      "name": "Domain Can Import Itself",
+      "severity": "error",
+      "from": { "tag": "domain" },
+      "to": { "tag": "domain" },
+      "allowed": true
     },
     {
       "id": "application-to-domain-and-ports",
@@ -266,6 +274,61 @@ Adapters → Application → Domain
 - Domain → Anything
 - Application → Adapters
 - Adapters → Domain
+
+## External Dependencies
+
+The domain isolation rule (`domain-isolation` with `domain-self-imports`) ensures that:
+
+- ✅ **Domain files CAN import other domain files** (same boundary)
+- ❌ **Domain files CANNOT import from other layers** (ports, application, adapters)
+- ❌ **Domain files CANNOT import external libraries** (node_modules)
+
+This keeps your business logic pure and framework-independent.
+
+### Why This Matters
+
+```typescript
+// ❌ BAD - Domain importing external library
+// src/core/domain/user.ts
+import { z } from 'zod'
+import axios from 'axios'
+
+export class User {
+  validate() {
+    return z.object({ email: z.string() }).parse(this)
+  }
+}
+
+// ✅ GOOD - Domain is pure
+// src/core/domain/user.ts
+export class User {
+  constructor(public readonly email: string) {}
+
+  isValid(): boolean {
+    return this.email.includes('@') && this.email.length > 3
+  }
+}
+```
+
+### Domain Can Import Itself
+
+The `domain-self-imports` rule explicitly allows imports within the domain boundary:
+
+```typescript
+// ✅ GOOD - Domain importing other domain files
+// src/core/domain/order.ts
+import { Money } from './value-objects/money'
+import { User } from './user'
+import { OrderItem } from './order-item'
+
+export class Order {
+  constructor(
+    public readonly user: User,
+    public readonly items: OrderItem[],
+    public readonly total: Money
+  ) {}
+}
+```
 
 ## Examples
 

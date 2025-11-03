@@ -134,20 +134,29 @@ export const rules: ArchRule[] = [
     description: 'Domain layer must remain pure with no external dependencies',
     severity: 'error',
     from: { tag: 'domain' },
-    to: { pattern: '**' },
+    to: { tag: '*' },
     allowed: false,
-    message: 'Domain layer must remain pure - no external dependencies allowed. Keep business logic free of infrastructure concerns.',
+    message: 'Domain layer must remain pure - no dependencies on other layers or external libraries',
     examples: {
       bad: [
         "import { Database } from '../../adapters/database'",
         "import axios from 'axios'",
-        "import { config } from '../../config'"
+        "import { UserRepository } from '../ports/user-repository'"
       ],
       good: [
         "import { Order } from './order'",
         "import { Money } from './value-objects/money'"
       ]
     }
+  },
+  {
+    id: 'domain-self-imports',
+    name: 'Domain Can Import Itself',
+    description: 'Domain files can import other domain files',
+    severity: 'error',
+    from: { tag: 'domain' },
+    to: { tag: 'domain' },
+    allowed: true
   },
   {
     id: 'ports-to-domain',
