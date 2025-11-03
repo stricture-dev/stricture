@@ -9,7 +9,8 @@
     "build": "tsc",
     "dev": "ts-node --esm index.ts",
     "lint": "eslint \"src/**/*.ts\"",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "test": "vitest"
   },
   "keywords": [
     "hexagonal-architecture",
@@ -28,6 +29,7 @@
     "@typescript-eslint/parser": "^6.0.0",
     "eslint": "^8.0.0",
     "ts-node": "^10.9.0",
-    "typescript": "^5.0.0"
+    "typescript": "^5.0.0",
+    "vitest": "^1.2.0"
   }
 }
