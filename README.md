@@ -1,5 +1,8 @@
 # Stricture
 
+[![CI](https://github.com/stricture-dev/stricture/actions/workflows/ci.yml/badge.svg)](https://github.com/stricture-dev/stricture/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 > Software architecture boundary enforcement for TypeScript projects
 
 Stricture helps you maintain clean architecture by automatically enforcing import rules through ESLint. Choose from predefined architecture presets (Hexagonal, Layered, Modular, Clean) and get instant feedback when code violates architectural boundaries.
