@@ -113,9 +113,12 @@ import { api } from '../../adapters/api'  // ❌ Error!
 ## How It Works
 
 1. **Configuration Loading**: Loads `.stricture/config.json` once when ESLint starts
-2. **File Classification**: For each file, determines which boundary it belongs to
-3. **Import Validation**: For each import, checks if the import violates any rules
-4. **Error Reporting**: Reports clear, actionable errors with suggestions
+2. **Import Analysis**: For each import statement, extracts the import path from the AST
+3. **Path Resolution**: Resolves import specifiers to absolute paths (using `@stricture/core`)
+4. **Boundary Validation**: Validates the import against architectural rules (using `@stricture/core`)
+5. **Error Reporting**: Reports clear, actionable errors with suggestions
+
+**Under the hood**: This plugin is a thin ESLint wrapper around `@stricture/core`, which contains all the validation logic. This means the same rules work consistently across ESLint, CLI tools, and any other integrations.
 
 ## Error Messages
 
