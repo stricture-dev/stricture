@@ -8,7 +8,7 @@
   "scripts": {
     "build": "tsc",
     "dev": "ts-node --esm index.ts",
-    "lint": "eslint src/**/*.ts",
+    "lint": "eslint \"src/**/*.ts\"",
     "type-check": "tsc --noEmit"
   },
   "keywords": [
