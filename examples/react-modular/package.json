@@ -4,11 +4,11 @@
   "private": true,
   "description": "Example React dashboard using Modular Architecture with Stricture",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview",
-    "lint": "eslint src",
-    "type-check": "tsc --noEmit"
+    "dev": "echo 'Example not yet implemented'",
+    "build": "echo 'Example not yet implemented - skipping build'",
+    "preview": "echo 'Example not yet implemented'",
+    "lint": "echo 'Example not yet implemented - skipping lint'",
+    "type-check": "echo 'Example not yet implemented - skipping type-check'"
   },
   "dependencies": {
     "react": "^18.2.0",

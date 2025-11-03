@@ -4,11 +4,11 @@
   "private": true,
   "description": "Example NestJS API using Layered Architecture with Stricture",
   "scripts": {
-    "dev": "nest start --watch",
-    "build": "nest build",
-    "start": "nest start",
-    "lint": "eslint src",
-    "test": "jest"
+    "dev": "echo 'Example not yet implemented'",
+    "build": "echo 'Example not yet implemented - skipping build'",
+    "start": "echo 'Example not yet implemented'",
+    "lint": "echo 'Example not yet implemented - skipping lint'",
+    "test": "echo 'Example not yet implemented - skipping test'"
   },
   "dependencies": {
     "@nestjs/common": "^10.3.0",

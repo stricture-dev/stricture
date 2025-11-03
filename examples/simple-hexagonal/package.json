@@ -8,7 +8,7 @@
   "scripts": {
     "build": "tsc",
     "dev": "ts-node --esm index.ts",
-    "lint": "eslint src/**/*.ts",
+    "lint": "eslint \"src/**/*.ts\"",
     "type-check": "tsc --noEmit"
   },
   "keywords": [
@@ -23,6 +23,7 @@
     "@stricture/core": "workspace:*",
     "@stricture/eslint-plugin": "workspace:*",
     "@stricture/hexagonal": "workspace:*",
+    "@types/node": "^20.0.0",
     "@typescript-eslint/eslint-plugin": "^6.0.0",
     "@typescript-eslint/parser": "^6.0.0",
     "eslint": "^8.0.0",

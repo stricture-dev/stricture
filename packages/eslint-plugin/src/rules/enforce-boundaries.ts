@@ -142,7 +142,7 @@ const enforceBoundariesRule: Rule.RuleModule = {
         }
       },
 
-      // require() and dynamic import()
+      // require()
       CallExpression(node: any) {
         // Check require('X')
         if (
@@ -157,16 +157,12 @@ const enforceBoundariesRule: Rule.RuleModule = {
             checkImport(node, importSpecifier)
           }
         }
+      },
 
-        // Check dynamic imports: import('X')
-        if (
-          checkDynamicImports &&
-          node.callee?.type === 'Import' &&
-          node.arguments &&
-          node.arguments.length > 0
-        ) {
-          const arg = node.arguments[0]
-          const importSpecifier = arg.value
+      // Dynamic imports: import('X')
+      ImportExpression(node: any) {
+        if (checkDynamicImports && node.source) {
+          const importSpecifier = node.source.value
           if (typeof importSpecifier === 'string') {
             checkImport(node, importSpecifier)
           }

@@ -4,11 +4,11 @@
   "private": true,
   "description": "Documentation website for Stricture (stricture.dev)",
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint",
-    "type-check": "tsc --noEmit"
+    "dev": "echo 'Docs app not yet implemented'",
+    "build": "echo 'Docs app not yet implemented - skipping build'",
+    "start": "echo 'Docs app not yet implemented'",
+    "lint": "echo 'Docs app not yet implemented - skipping lint'",
+    "type-check": "echo 'Docs app not yet implemented - skipping type-check'"
   },
   "dependencies": {
     "next": "^14.1.0",

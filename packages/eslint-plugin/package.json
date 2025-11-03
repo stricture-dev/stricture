@@ -37,7 +37,7 @@
     "dev": "tsup --watch",
     "test": "vitest",
     "type-check": "tsc --noEmit",
-    "lint": "eslint src",
+    "lint": "eslint \"src/**/*.ts\"",
     "clean": "rm -rf dist"
   },
   "dependencies": {
