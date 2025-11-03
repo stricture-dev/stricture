@@ -14,7 +14,7 @@ export type HexagonalBoundary = 'domain' | 'ports' | 'application' | 'adapters'
  * Port definition type
  * Ports are interfaces that define contracts for external interactions
  */
-export interface PortDefinition<T = any> {
+export interface PortDefinition<T = unknown> {
   /**
    * The interface name (e.g., 'UserRepository', 'EmailService')
    */
@@ -30,7 +30,7 @@ export interface PortDefinition<T = any> {
  * Adapter definition type
  * Adapters are concrete implementations of ports
  */
-export interface AdapterDefinition<TPort = any> {
+export interface AdapterDefinition<TPort = unknown> {
   /**
    * The adapter name (e.g., 'PostgresUserRepository', 'SendGridEmailService')
    */
@@ -57,7 +57,7 @@ export interface DomainEntity<TId = string> {
  * Use case marker type
  * Use cases orchestrate domain and ports to accomplish business goals
  */
-export interface UseCase<TInput = any, TOutput = any> {
+export interface UseCase<TInput = unknown, TOutput = unknown> {
   /**
    * Execute the use case
    */
