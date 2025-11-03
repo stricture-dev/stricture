@@ -47,9 +47,9 @@ export function validateConfig(config: unknown): ValidationResult {
     const boundariesTypeError = validateArray(config, 'boundaries')
     if (boundariesTypeError) {
       errors.push(boundariesTypeError)
-    } else if (isArray(config.boundaries)) {
+    } else if (isArray(config['boundaries'])) {
       // Validate each boundary
-      config.boundaries.forEach((boundary, index) => {
+      config['boundaries'].forEach((boundary, index) => {
         const result = validateBoundary(boundary)
         if (!result.valid) {
           result.errors.forEach(error => {
@@ -71,9 +71,9 @@ export function validateConfig(config: unknown): ValidationResult {
     const rulesTypeError = validateArray(config, 'rules')
     if (rulesTypeError) {
       errors.push(rulesTypeError)
-    } else if (isArray(config.rules)) {
+    } else if (isArray(config['rules'])) {
       // Validate each rule
-      config.rules.forEach((rule, index) => {
+      config['rules'].forEach((rule, index) => {
         const result = validateRule(rule)
         if (!result.valid) {
           result.errors.forEach(error => {

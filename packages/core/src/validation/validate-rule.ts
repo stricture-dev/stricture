@@ -23,8 +23,8 @@ function validateBoundaryPattern(
   }
 
   // Must have either pattern or tag
-  const hasPattern = 'pattern' in pattern && pattern.pattern
-  const hasTag = 'tag' in pattern && pattern.tag
+  const hasPattern = 'pattern' in pattern && pattern['pattern']
+  const hasTag = 'tag' in pattern && pattern['tag']
 
   if (!hasPattern && !hasTag) {
     errors.push(
@@ -63,7 +63,7 @@ function validateBoundaryPattern(
     if (tagTypeError) errors.push(tagTypeError)
   }
 
-  if ('exclude' in pattern && !Array.isArray(pattern.exclude)) {
+  if ('exclude' in pattern && !Array.isArray(pattern['exclude'])) {
     errors.push(
       createError(`${basePath}.exclude`, 'Exclude must be an array', 'INVALID_TYPE')
     )
@@ -115,12 +115,12 @@ export function validateRule(rule: unknown): ValidationResult {
 
   // Validate from and to boundary patterns
   if ('from' in rule) {
-    const fromErrors = validateBoundaryPattern(rule.from, 'from')
+    const fromErrors = validateBoundaryPattern(rule['from'], 'from')
     errors.push(...fromErrors)
   }
 
   if ('to' in rule) {
-    const toErrors = validateBoundaryPattern(rule.to, 'to')
+    const toErrors = validateBoundaryPattern(rule['to'], 'to')
     errors.push(...toErrors)
   }
 

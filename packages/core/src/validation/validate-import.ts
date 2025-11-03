@@ -90,7 +90,7 @@ export function validateImport(
             rule.message ||
             buildMessage(fromBoundary, toBoundary, isExternal),
           suggestion: generateSuggestion(rule, isExternal)
-        }
+        } satisfies ImportValidationResult
       }
       // Rule explicitly allows this import
       return { valid: true }

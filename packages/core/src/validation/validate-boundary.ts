@@ -47,11 +47,11 @@ export function validateBoundary(boundary: unknown): ValidationResult {
   }
 
   // Optional fields type validation
-  if ('tags' in boundary && !Array.isArray(boundary.tags)) {
+  if ('tags' in boundary && !Array.isArray(boundary['tags'])) {
     errors.push(createError('tags', 'Tags must be an array', 'INVALID_TYPE'))
   }
 
-  if ('exclude' in boundary && !Array.isArray(boundary.exclude)) {
+  if ('exclude' in boundary && !Array.isArray(boundary['exclude'])) {
     errors.push(createError('exclude', 'Exclude must be an array', 'INVALID_TYPE'))
   }
 

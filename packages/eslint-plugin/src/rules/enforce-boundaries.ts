@@ -164,9 +164,11 @@ const enforceBoundariesRule: Rule.RuleModule = {
           node.arguments.length > 0
         ) {
           const arg = node.arguments[0]
-          const importSpecifier = arg.type === 'Literal' ? arg.value : undefined
-          if (typeof importSpecifier === 'string') {
-            checkImport(node, importSpecifier)
+          if (arg && arg.type === 'Literal') {
+            const importSpecifier = arg.value
+            if (typeof importSpecifier === 'string') {
+              checkImport(node, importSpecifier)
+            }
           }
         }
       },
