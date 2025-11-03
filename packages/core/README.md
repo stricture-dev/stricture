@@ -30,22 +30,53 @@ This is the core functionality used by `@stricture/eslint-plugin`:
 import { validateImport, resolveImportPath } from '@stricture/core'
 import { hexagonalRules, hexagonalBoundaries } from '@stricture/hexagonal'
 
+// Optional: Load tsconfig paths for alias resolution
+import { loadConfig } from 'tsconfig-paths'
+const tsconfig = loadConfig('./tsconfig.json')
+
 // In an ESLint rule or custom validator
 const fromFile = '/project/src/core/domain/user.ts'
 const importSpec = '../../../adapters/database/user-repo'
 
 // 1. Resolve the import to absolute path
-const toFile = resolveImportPath(fromFile, importSpec, '/project')
+const toFile = resolveImportPath(
+  fromFile,
+  importSpec,
+  '/project',
+  tsconfig.paths  // Optional: for alias resolution
+)
 // toFile = '/project/src/adapters/database/user-repo.ts'
 
 // 2. Validate the import
-const result = validateImport(fromFile, toFile, hexagonalRules, hexagonalBoundaries)
+const result = validateImport(
+  fromFile,
+  toFile,
+  hexagonalRules,
+  hexagonalBoundaries
+)
 
 if (!result.valid) {
   console.error(`❌ Architecture violation:`)
   console.error(`   ${result.message}`)
   console.error(`   Suggestion: ${result.suggestion}`)
 }
+
+// Example: Blocking external dependencies in domain
+const pureResult = validateImport(
+  '/project/src/core/domain/user.ts',
+  'node_modules/zod/index.js',  // External dependency
+  [
+    {
+      id: 'domain-pure',
+      from: { tag: 'domain' },
+      to: { tag: 'external' },  // Special tag for externals
+      allowed: false,
+      message: 'Domain cannot import external libraries'
+    }
+  ],
+  hexagonalBoundaries
+)
+// pureResult.valid = false
 ```
 
 ### Using Types
@@ -148,6 +179,42 @@ interface StrictureConfig {
   ignorePatterns?: string[]     // Files to ignore
 }
 ```
+
+## Special Tags
+
+### `external` Tag
+
+Use the special `external` tag to control imports from node_modules:
+
+```typescript
+// Block external dependencies in domain layer
+const rule: ArchRule = {
+  id: 'domain-no-deps',
+  name: 'Domain Purity',
+  description: 'Domain cannot use external libraries',
+  severity: 'error',
+  from: { tag: 'domain' },
+  to: { tag: 'external' },      // Matches any node_modules import
+  allowed: false,
+  message: 'Domain must remain pure - no external dependencies'
+}
+```
+
+### `*` Wildcard Tag
+
+Use `*` to match any boundary (including external):
+
+```typescript
+// Domain cannot import from ANYWHERE
+const rule: ArchRule = {
+  id: 'domain-isolated',
+  from: { tag: 'domain' },
+  to: { tag: '*' },             // ANY boundary
+  allowed: false
+}
+```
+
+**Note**: By default, external dependencies are allowed unless explicitly blocked by a rule.
 
 ## Utilities
 
@@ -262,6 +329,7 @@ import type {
   BoundaryDefinition,
   StrictureConfig,
   ValidationResult,
+  ImportValidationResult,
   DiagramDefinition,
   ScaffoldingTemplate
 } from '@stricture/core'
