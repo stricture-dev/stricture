@@ -1,5 +1,12 @@
 import type { Rule } from 'eslint'
-import type { Node } from 'estree'
+import type {
+  Node,
+  ImportDeclaration,
+  CallExpression,
+  ImportExpression,
+  ExportNamedDeclaration,
+  ExportAllDeclaration
+} from 'estree'
 import { validateImport, resolveImportPath, type StrictureConfig } from '@stricture/core'
 import { loadConfig } from './utils/load-config.js'
 import { loadTsconfigPaths } from './utils/load-tsconfig.js'
@@ -135,7 +142,7 @@ const enforceBoundariesRule: Rule.RuleModule = {
     // Return AST visitors
     return {
       // Static imports: import X from 'Y'
-      ImportDeclaration(node: any) {
+      ImportDeclaration(node: ImportDeclaration) {
         const importSpecifier = node.source?.value
         if (typeof importSpecifier === 'string') {
           checkImport(node, importSpecifier)
@@ -143,7 +150,12 @@ const enforceBoundariesRule: Rule.RuleModule = {
       },
 
       // require()
-      CallExpression(node: any) {
+      CallExpression(node: CallExpression) {
+        // Only process SimpleCallExpression (not NewExpression)
+        if (node.type !== 'CallExpression') {
+          return
+        }
+
         // Check require('X')
         if (
           node.callee?.type === 'Identifier' &&
@@ -152,7 +164,7 @@ const enforceBoundariesRule: Rule.RuleModule = {
           node.arguments.length > 0
         ) {
           const arg = node.arguments[0]
-          const importSpecifier = arg.value
+          const importSpecifier = arg.type === 'Literal' ? arg.value : undefined
           if (typeof importSpecifier === 'string') {
             checkImport(node, importSpecifier)
           }
@@ -160,9 +172,9 @@ const enforceBoundariesRule: Rule.RuleModule = {
       },
 
       // Dynamic imports: import('X')
-      ImportExpression(node: any) {
+      ImportExpression(node: ImportExpression) {
         if (checkDynamicImports && node.source) {
-          const importSpecifier = node.source.value
+          const importSpecifier = node.source.type === 'Literal' ? node.source.value : undefined
           if (typeof importSpecifier === 'string') {
             checkImport(node, importSpecifier)
           }
@@ -170,7 +182,7 @@ const enforceBoundariesRule: Rule.RuleModule = {
       },
 
       // Re-exports: export { X } from 'Y'
-      ExportNamedDeclaration(node: any) {
+      ExportNamedDeclaration(node: ExportNamedDeclaration) {
         if (node.source) {
           const importSpecifier = node.source.value
           if (typeof importSpecifier === 'string') {
@@ -180,7 +192,7 @@ const enforceBoundariesRule: Rule.RuleModule = {
       },
 
       // Export all: export * from 'Y'
-      ExportAllDeclaration(node: any) {
+      ExportAllDeclaration(node: ExportAllDeclaration) {
         const importSpecifier = node.source?.value
         if (typeof importSpecifier === 'string') {
           checkImport(node, importSpecifier)
