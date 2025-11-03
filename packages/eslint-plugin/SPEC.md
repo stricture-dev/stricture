@@ -313,6 +313,112 @@ import { z } from 'zod'  // Resolved to 'node_modules/zod/...'
 
 **The plugin doesn't need to know about externals** - core handles it.
 
+#### Rule Precedence and Ordering
+
+Rules are evaluated in order, and the **first matching rule** determines the outcome. This means **specific rules must come before general rules**.
+
+**Example: Correct Rule Order**
+
+```json
+{
+  "boundaries": [
+    {
+      "name": "domain",
+      "pattern": "src/domain/**",
+      "mode": "file"
+    }
+  ],
+  "rules": [
+    // ✅ FIRST: Specific allow rule (domain can import from itself)
+    {
+      "id": "domain-self-import",
+      "from": { "tag": "domain" },
+      "to": { "tag": "domain" },
+      "allowed": true
+    },
+    // ✅ SECOND: General deny rule (domain cannot import anything else)
+    {
+      "id": "domain-isolation",
+      "from": { "tag": "domain" },
+      "to": { "tag": "*" },      // Wildcard matches everything
+      "allowed": false,
+      "message": "Domain must remain pure"
+    }
+  ]
+}
+```
+
+**Why order matters:**
+
+```typescript
+// src/domain/user.ts
+import { Email } from './email'  // Same boundary
+
+// Rule evaluation:
+// 1. Check "domain-self-import" (domain → domain): ✅ ALLOWED (matches, returns true)
+// 2. Never reaches "domain-isolation" rule
+
+// Result: Import allowed ✅
+```
+
+**Wrong Order Example:**
+
+```json
+{
+  "rules": [
+    // ❌ WRONG: General rule first
+    {
+      "id": "domain-isolation",
+      "from": { "tag": "domain" },
+      "to": { "tag": "*" },
+      "allowed": false
+    },
+    // ❌ Never reached! Previous rule already matched
+    {
+      "id": "domain-self-import",
+      "from": { "tag": "domain" },
+      "to": { "tag": "domain" },
+      "allowed": true
+    }
+  ]
+}
+```
+
+With wrong order, `import { Email } from './email'` would be blocked because the wildcard rule matches first.
+
+**Best Practice: Rule Ordering**
+
+1. **Most specific rules first** (pattern-based, exact boundary matches)
+2. **Medium specificity** (tag-based with specific tags)
+3. **Least specific last** (wildcard rules like `tag: "*"`)
+
+```json
+{
+  "rules": [
+    // 1. Pattern-based (most specific)
+    {
+      "from": { "pattern": "src/domain/entities/**" },
+      "to": { "pattern": "src/domain/value-objects/**" },
+      "allowed": true
+    },
+    // 2. Tag-to-tag (medium specificity)
+    {
+      "from": { "tag": "domain" },
+      "to": { "tag": "domain" },
+      "allowed": true
+    },
+    // 3. Wildcard (least specific)
+    {
+      "from": { "tag": "domain" },
+      "to": { "tag": "*" },
+      "allowed": false
+    }
+  ]
+}
+```
+
+**Note**: `@stricture/core` automatically sorts rules by specificity (pattern-based before tag-based), but explicit ordering is still recommended for clarity.
+
 #### Error Message Formatting
 
 ```typescript
@@ -396,12 +502,56 @@ const configCache = new ConfigCache()
 - **vitest** (^1.2.0)
 - **@typescript-eslint/parser** (^6.19.0) - For testing
 - **eslint** (^8.56.0) - For testing
+- **@types/node** (^20.0.0) - For Node.js types (path, process, etc.)
+- **@types/estree** (^1.0.0) - For ESLint AST node types
 - **@stricture/typescript-config** (workspace:*)
 - **@stricture/eslint-config** (workspace:*)
 
 ### Peer Dependencies
 
 - **eslint** (^8.0.0 || ^9.0.0)
+
+## Development Setup
+
+**Important**: This package depends on `@stricture/core` as a workspace dependency. Before developing or testing, you must build core first.
+
+### Build Order
+
+```bash
+# 1. Build @stricture/core (required dependency)
+cd ../core
+pnpm build
+
+# 2. Install dependencies for eslint-plugin
+cd ../eslint-plugin
+pnpm install
+
+# 3. Now you can develop/test
+pnpm test
+pnpm build
+```
+
+### Why This Matters
+
+The ESLint plugin imports types and functions from `@stricture/core`:
+- `validateImport()` - Core validation function
+- `resolveImportPath()` - Path resolution function
+- `StrictureConfig` - Configuration types
+- `ImportValidationResult` - Result types
+
+If core isn't built, you'll see errors like:
+```
+Error: Cannot find module '@stricture/core'
+```
+
+### Quick Development Workflow
+
+```bash
+# From monorepo root
+pnpm build           # Builds all packages including core
+cd packages/eslint-plugin
+pnpm test --watch    # Run tests in watch mode
+```
 
 ## Testing Strategy
 
@@ -464,6 +614,33 @@ ruleTester.run('enforce-boundaries', rule, {
   ]
 })
 ```
+
+**Important: Pattern Matching for Test Fixtures**
+
+ESLint RuleTester often uses absolute file paths (e.g., `/test/src/domain/user.ts`). Your test configuration patterns must match these absolute paths:
+
+```json
+{
+  "boundaries": [
+    {
+      "name": "domain",
+      "pattern": "**/src/domain/**",    // ✅ Use **/ prefix for absolute paths
+      "mode": "file"
+    },
+    {
+      "name": "adapters",
+      "pattern": "**/src/adapters/**",  // ✅ Matches /test/src/adapters/api.ts
+      "mode": "file"
+    }
+  ]
+}
+```
+
+**Why the `**/` prefix?**
+- Without `**/`: Pattern `src/domain/**` only matches relative paths starting with `src/`
+- With `**/`: Pattern `**/src/domain/**` matches `/test/src/domain/user.ts`, `/home/user/project/src/domain/user.ts`, etc.
+
+For production configs (not tests), you typically don't need `**/` since files are relative to project root.
 
 ### Fixture-Based Tests
 
