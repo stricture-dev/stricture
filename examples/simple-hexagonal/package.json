@@ -1,0 +1,32 @@
+{
+  "name": "@stricture-examples/simple-hexagonal",
+  "version": "1.0.0",
+  "description": "Minimal hexagonal architecture example with Stricture boundary enforcement",
+  "private": true,
+  "type": "module",
+  "main": "index.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "ts-node --esm index.ts",
+    "lint": "eslint src/**/*.ts",
+    "type-check": "tsc --noEmit"
+  },
+  "keywords": [
+    "hexagonal-architecture",
+    "ports-and-adapters",
+    "stricture",
+    "example"
+  ],
+  "author": "Stricture",
+  "license": "MIT",
+  "devDependencies": {
+    "@stricture/core": "workspace:*",
+    "@stricture/eslint-plugin": "workspace:*",
+    "@stricture/hexagonal": "workspace:*",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "eslint": "^8.0.0",
+    "ts-node": "^10.9.0",
+    "typescript": "^5.0.0"
+  }
+}
