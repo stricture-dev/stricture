@@ -1,4 +1,5 @@
 import type { ValidationResult } from '../types/validation.js'
+import type { RawBoundaryPattern, RawArchRule } from '../types/raw-validation.js'
 import {
   isObject,
   validateRequired,
@@ -22,9 +23,12 @@ function validateBoundaryPattern(
     return errors
   }
 
+  // Type as RawBoundaryPattern for dot notation access
+  const rawPattern = pattern as RawBoundaryPattern
+
   // Must have either pattern or tag
-  const hasPattern = 'pattern' in pattern && pattern['pattern']
-  const hasTag = 'tag' in pattern && pattern['tag']
+  const hasPattern = 'pattern' in rawPattern && rawPattern.pattern
+  const hasTag = 'tag' in rawPattern && rawPattern.tag
 
   if (!hasPattern && !hasTag) {
     errors.push(
@@ -63,7 +67,7 @@ function validateBoundaryPattern(
     if (tagTypeError) errors.push(tagTypeError)
   }
 
-  if ('exclude' in pattern && !Array.isArray(pattern['exclude'])) {
+  if ('exclude' in rawPattern && !Array.isArray(rawPattern.exclude)) {
     errors.push(
       createError(`${basePath}.exclude`, 'Exclude must be an array', 'INVALID_TYPE')
     )
@@ -85,6 +89,9 @@ export function validateRule(rule: unknown): ValidationResult {
       errors: [createError('', 'Rule must be an object', 'INVALID_TYPE')]
     }
   }
+
+  // Type as RawArchRule for dot notation access
+  const rawRule = rule as RawArchRule
 
   // Required fields
   const requiredFields = ['id', 'name', 'description', 'severity', 'from', 'to', 'allowed']
@@ -113,14 +120,14 @@ export function validateRule(rule: unknown): ValidationResult {
   const allowedError = validateBoolean(rule, 'allowed')
   if (allowedError) errors.push(allowedError)
 
-  // Validate from and to boundary patterns
-  if ('from' in rule) {
-    const fromErrors = validateBoundaryPattern(rule['from'], 'from')
+  // Validate from and to boundary patterns - now with dot notation!
+  if ('from' in rawRule) {
+    const fromErrors = validateBoundaryPattern(rawRule.from, 'from')
     errors.push(...fromErrors)
   }
 
-  if ('to' in rule) {
-    const toErrors = validateBoundaryPattern(rule['to'], 'to')
+  if ('to' in rawRule) {
+    const toErrors = validateBoundaryPattern(rawRule.to, 'to')
     errors.push(...toErrors)
   }
 
