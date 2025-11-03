@@ -41,13 +41,16 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@stricture/core": "workspace:*"
+    "@stricture/core": "workspace:*",
+    "tsconfig-paths": "^4.2.0"
   },
   "devDependencies": {
-    "@stricture/typescript-config": "workspace:*",
     "@stricture/eslint-config": "workspace:*",
-    "@typescript-eslint/utils": "^6.19.0",
+    "@stricture/typescript-config": "workspace:*",
+    "@types/estree": "^1.0.8",
+    "@types/node": "^20",
     "@typescript-eslint/parser": "^6.19.0",
+    "@typescript-eslint/utils": "^6.19.0",
     "eslint": "^8.56.0",
     "tsup": "^8.0.0",
     "typescript": "^5.3.0",

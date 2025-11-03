@@ -1,0 +1,56 @@
+{
+  "preset": "@stricture/hexagonal",
+  "boundaries": [
+    {
+      "name": "domain",
+      "pattern": "**/src/core/domain/**",
+      "mode": "file"
+    },
+    {
+      "name": "ports",
+      "pattern": "**/src/core/ports/**",
+      "mode": "file"
+    },
+    {
+      "name": "application",
+      "pattern": "**/src/core/application/**",
+      "mode": "file"
+    },
+    {
+      "name": "adapters",
+      "pattern": "**/src/adapters/**",
+      "mode": "file"
+    }
+  ],
+  "rules": [
+    {
+      "id": "domain-self-import",
+      "name": "Domain Self Import",
+      "description": "Domain can import from itself",
+      "severity": "error",
+      "from": { "tag": "domain" },
+      "to": { "tag": "domain" },
+      "allowed": true
+    },
+    {
+      "id": "domain-isolation",
+      "name": "Domain Isolation",
+      "description": "Domain cannot import from any other boundary",
+      "severity": "error",
+      "from": { "tag": "domain" },
+      "to": { "tag": "*" },
+      "allowed": false,
+      "message": "Domain layer must remain pure - no external dependencies"
+    },
+    {
+      "id": "adapters-via-ports",
+      "name": "Adapters via Ports",
+      "description": "Adapters cannot directly import from domain",
+      "severity": "error",
+      "from": { "tag": "adapters" },
+      "to": { "tag": "domain" },
+      "allowed": false,
+      "message": "Adapters must access domain through ports"
+    }
+  ]
+}
