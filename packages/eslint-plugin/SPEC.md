@@ -146,19 +146,28 @@ packages/eslint-plugin/
 
 ### Architecture
 
-**Plugin structure**:
+**Plugin structure** (simplified - most logic is in core):
 1. **Plugin registration** (`index.ts`) - Exports plugin with rules
 2. **Rule implementation** (`rules/enforce-boundaries.ts`) - ESLint rule logic
-3. **Configuration loading** (`config/`) - Load and cache config
-4. **File classification** (`rules/utils/classify-file.ts`) - Determine file boundary
-5. **Import resolution** (`rules/utils/resolve-import.ts`) - Resolve import paths
-6. **Validation** (`rules/utils/check-violation.ts`) - Check against rules
-7. **Error formatting** (`rules/utils/format-error.ts`) - Generate messages
+   - Extracts import info from AST nodes
+   - Calls `resolveImportPath()` from core
+   - Calls `validateImport()` from core
+   - Formats errors for ESLint
+3. **Configuration loading** (`config/load-config.ts`) - Load .stricture/config.json
+4. **Configuration caching** (`config/config-cache.ts`) - Cache configs
+5. **tsconfig loading** (`config/load-tsconfig.ts`) - Load TypeScript path aliases
+6. **Error formatting** (`utils/format-error.ts`) - Format core errors for ESLint
+
+**What's NOT in this plugin** (it's in `@stricture/core`):
+- ❌ File classification logic → Use core's `validateImport()` which handles this internally
+- ❌ Import resolution logic → Use core's `resolveImportPath()`
+- ❌ Rule checking logic → Use core's `validateImport()`
+- ❌ Pattern matching → Core handles this
 
 **Design patterns**:
 - **Singleton cache** for configuration (reload only when file changes)
-- **Strategy pattern** for different import types (static, dynamic, require)
-- **Factory pattern** for creating violation reports
+- **Delegation pattern** for all validation (delegate to core)
+- **Adapter pattern** for ESLint integration (adapt core's API to ESLint's)
 - **Lazy loading** of configuration (only when needed)
 
 ### Algorithm/Logic
@@ -523,13 +532,12 @@ tests/
 ├── rules/
 │   ├── enforce-boundaries.test.ts    // Main rule tests
 │   └── enforce-boundaries.edge.test.ts
-├── utils/
-│   ├── classify-file.test.ts
-│   ├── resolve-import.test.ts
-│   └── check-violation.test.ts
 ├── config/
 │   ├── load-config.test.ts
-│   └── config-cache.test.ts
+│   ├── config-cache.test.ts
+│   └── load-tsconfig.test.ts         // Test tsconfig loading
+├── utils/
+│   └── format-error.test.ts          // Test error formatting
 └── fixtures/
     ├── hexagonal-config.json
     ├── layered-config.json
@@ -537,6 +545,8 @@ tests/
         ├── hexagonal/
         └── layered/
 ```
+
+**Note**: Tests for classification, resolution, and validation logic are in `@stricture/core` tests.
 
 ## Configuration
 
