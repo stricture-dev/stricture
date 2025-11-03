@@ -1,4 +1,5 @@
 import type { ValidationResult } from '../types/validation.js'
+import type { RawStrictureConfig } from '../types/raw-validation.js'
 import { validateBoundary } from './validate-boundary.js'
 import { validateRule } from './validate-rule.js'
 import {
@@ -32,6 +33,9 @@ export function validateConfig(config: unknown): ValidationResult {
     }
   }
 
+  // Type as RawStrictureConfig for dot notation access
+  const rawConfig = config as RawStrictureConfig
+
   // Required field: preset
   const presetError = validateRequired(config, 'preset')
   if (presetError) errors.push(presetError)
@@ -47,9 +51,9 @@ export function validateConfig(config: unknown): ValidationResult {
     const boundariesTypeError = validateArray(config, 'boundaries')
     if (boundariesTypeError) {
       errors.push(boundariesTypeError)
-    } else if (isArray(config.boundaries)) {
-      // Validate each boundary
-      config.boundaries.forEach((boundary, index) => {
+    } else if (isArray(rawConfig.boundaries)) {
+      // Validate each boundary - now with dot notation!
+      rawConfig.boundaries.forEach((boundary, index) => {
         const result = validateBoundary(boundary)
         if (!result.valid) {
           result.errors.forEach(error => {
@@ -71,9 +75,9 @@ export function validateConfig(config: unknown): ValidationResult {
     const rulesTypeError = validateArray(config, 'rules')
     if (rulesTypeError) {
       errors.push(rulesTypeError)
-    } else if (isArray(config.rules)) {
-      // Validate each rule
-      config.rules.forEach((rule, index) => {
+    } else if (isArray(rawConfig.rules)) {
+      // Validate each rule - now with dot notation!
+      rawConfig.rules.forEach((rule, index) => {
         const result = validateRule(rule)
         if (!result.valid) {
           result.errors.forEach(error => {

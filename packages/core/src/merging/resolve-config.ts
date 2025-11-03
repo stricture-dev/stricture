@@ -54,9 +54,12 @@ export function resolveConfig(
 
       if (index >= 0) {
         // Merge override with existing rule
-        resolvedRules[index] = {
-          ...resolvedRules[index],
-          ...override
+        const existingRule = resolvedRules[index]
+        if (existingRule) {
+          resolvedRules[index] = {
+            ...existingRule,
+            ...override
+          }
         }
       }
     }

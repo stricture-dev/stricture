@@ -23,7 +23,8 @@ export function isAbsoluteImport(importSpec: string): boolean {
  * Remove query parameters and fragments from import specifier
  */
 export function cleanImportSpec(importSpec: string): string {
-  return importSpec.split('?')[0].split('#')[0]
+  const withoutQuery = importSpec.split('?')[0] ?? importSpec
+  return withoutQuery.split('#')[0] ?? withoutQuery
 }
 
 /**
@@ -58,7 +59,11 @@ export function matchPathAlias(
 
     if (importSpec === aliasPattern || importSpec.startsWith(`${aliasPattern}/`)) {
       // Take first path (ignore multiple paths for simplicity)
-      const targetPath = paths[0].replace(/\/\*$/, '')
+      const firstPath = paths[0]
+      if (!firstPath) {
+        continue
+      }
+      const targetPath = firstPath.replace(/\/\*$/, '')
 
       // Replace alias with target path
       const resolvedPath = importSpec.replace(aliasPattern, targetPath)

@@ -1,4 +1,5 @@
 import type { ValidationResult } from '../types/validation.js'
+import type { RawBoundaryDefinition } from '../types/raw-validation.js'
 import {
   isObject,
   validateRequired,
@@ -20,6 +21,9 @@ export function validateBoundary(boundary: unknown): ValidationResult {
       errors: [createError('', 'Boundary must be an object', 'INVALID_TYPE')]
     }
   }
+
+  // Type as RawBoundaryDefinition for dot notation access
+  const rawBoundary = boundary as RawBoundaryDefinition
 
   // Required fields
   const nameError = validateRequired(boundary, 'name')
@@ -46,12 +50,12 @@ export function validateBoundary(boundary: unknown): ValidationResult {
     )
   }
 
-  // Optional fields type validation
-  if ('tags' in boundary && !Array.isArray(boundary.tags)) {
+  // Optional fields type validation - now with dot notation!
+  if ('tags' in rawBoundary && !Array.isArray(rawBoundary.tags)) {
     errors.push(createError('tags', 'Tags must be an array', 'INVALID_TYPE'))
   }
 
-  if ('exclude' in boundary && !Array.isArray(boundary.exclude)) {
+  if ('exclude' in rawBoundary && !Array.isArray(rawBoundary.exclude)) {
     errors.push(createError('exclude', 'Exclude must be an array', 'INVALID_TYPE'))
   }
 

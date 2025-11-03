@@ -52,9 +52,9 @@ export function matchesPattern(
   if (pattern.mode === 'folder') {
     // Match entire directory
     const dirPath = path.dirname(normalizedPath)
-    return matchGlob(dirPath, effectivePattern as string)
+    return matchGlob(dirPath, effectivePattern)
   } else {
     // Match file
-    return matchGlob(normalizedPath, effectivePattern as string)
+    return matchGlob(normalizedPath, effectivePattern)
   }
 }

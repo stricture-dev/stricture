@@ -20,9 +20,9 @@ export interface ValidationError {
  */
 export interface ImportValidationResult {
   valid: boolean
-  violatedRule?: import('./rule.js').ArchRule // The rule that was violated
-  fromBoundary?: string // Source boundary name
-  toBoundary?: string // Target boundary name
-  message?: string // Human-readable error message
-  suggestion?: string // Suggested fix
+  violatedRule?: import('./rule.js').ArchRule | undefined // The rule that was violated
+  fromBoundary?: string | undefined // Source boundary name
+  toBoundary?: string | undefined // Target boundary name
+  message?: string | undefined // Human-readable error message
+  suggestion?: string | undefined // Suggested fix
 }

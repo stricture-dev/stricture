@@ -43,7 +43,7 @@ export function formatErrorMessage(result: ImportValidationResult): string {
     // Add good examples if available
     if (rule.examples?.good && rule.examples.good.length > 0) {
       message += '\n\nAllowed:'
-      rule.examples.good.forEach(example => {
+      rule.examples.good.forEach((example: string) => {
         message += `\n  ✓ ${example}`
       })
     }
