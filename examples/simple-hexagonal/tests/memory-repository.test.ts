@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { MemoryUserRepository } from '../src/adapters/memory-repository'
+import { MemoryUserRepository } from '../src/adapters/driven/memory-repository'
 import { User } from '../src/core/domain/user'
 
 describe('MemoryUserRepository', () => {

@@ -1,6 +1,6 @@
-import { CreateUserUseCase } from '../core/application/create-user'
-import { ListUsersUseCase } from '../core/application/list-users'
-import { MemoryUserRepository } from './memory-repository'
+import { CreateUserUseCase } from '../../core/application/create-user.js'
+import { ListUsersUseCase } from '../../core/application/list-users.js'
+import { MemoryUserRepository } from '../driven/memory-repository.js'
 
 /**
  * CLI adapter - Entry point for terminal commands

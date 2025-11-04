@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { CliAdapter } from './src/adapters/cli'
+import { CliAdapter } from './src/adapters/driving/cli.js'
 
 /**
  * Main entry point

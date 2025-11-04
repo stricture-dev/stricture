@@ -255,54 +255,32 @@ This pattern enables:
 
 ### Adapters Layer
 
-**Files:**
-- `src/adapters/memory-repository.ts`
-- `src/adapters/cli.ts`
+The adapters layer is divided into two categories based on the direction of dependency:
 
-#### Responsibilities
+#### Driving Adapters (`src/adapters/driving/`)
 
-- **Implement port interfaces** with concrete infrastructure code
-- **Handle infrastructure concerns** (storage, I/O, external systems)
-- **Provide entry points** (CLI, HTTP servers, message queue listeners)
-- **Adapt external systems** to domain concepts
+File: `src/adapters/driving/cli.ts`
 
-#### Key Characteristics
+**Responsibilities**:
+- Receive input from external sources (users, HTTP requests, messages)
+- Parse and validate external input
+- Invoke appropriate use cases
+- Format responses for external consumers
+- Handle dependency injection (wiring)
 
-- **Implements interfaces from ports** - provides concrete behavior
-- **Can use external libraries** - databases, HTTP frameworks, file systems, etc.
-- **Adapts external systems to domain** - translates between infrastructure and business concepts
-- **Outermost layer** - knows about all inner layers
+**Key characteristics**:
+- Active/Primary adapters
+- They call the application
+- Entry points to the system
+- Can import from application and ports
 
-#### Implementation Details
+**Implementation details**:
 
-**MemoryUserRepository** (`src/adapters/memory-repository.ts:13`):
+**CliAdapter** (`src/adapters/driving/cli.ts:13`):
 ```typescript
-import { User } from '../core/domain/user'
-import { UserRepository } from '../core/ports/user-repository'
-
-export class MemoryUserRepository implements UserRepository {
-  // In-memory storage using JavaScript Map
-  private users: Map<string, User> = new Map()
-
-  async save(user: User): Promise<void> {
-    this.users.set(user.id, user)
-  }
-
-  async findById(id: string): Promise<User | null> {
-    return this.users.get(id) || null
-  }
-
-  async findAll(): Promise<User[]> {
-    return Array.from(this.users.values())
-  }
-}
-```
-
-**CliAdapter** (`src/adapters/cli.ts:11`):
-```typescript
-import { CreateUserUseCase } from '../core/application/create-user'
-import { ListUsersUseCase } from '../core/application/list-users'
-import { MemoryUserRepository } from './memory-repository'
+import { CreateUserUseCase } from '../../core/application/create-user'
+import { ListUsersUseCase } from '../../core/application/list-users'
+import { MemoryUserRepository } from '../driven/memory-repository'
 
 export class CliAdapter {
   // Wire up dependencies (dependency injection)
@@ -339,6 +317,7 @@ export class CliAdapter {
       process.exit(1)
     }
 
+    // Driving adapter calls the application
     const user = await this.createUserUseCase.execute(name, email)
 
     console.log('✅ User created successfully!')
@@ -369,12 +348,61 @@ export class CliAdapter {
 }
 ```
 
-#### Stricture Rules Applied
+**Stricture rules applied**:
+- Can import from application (to call use cases)
+- Can import from ports (for dependency injection)
+- Cannot import from domain directly
+- Enforced by rules: `driving-to-application`, `driving-to-ports`
 
-- **Rule ID:** `adapters-to-ports` - Adapters CAN import from ports
-- **Rule ID:** `adapters-to-application` - Adapters CAN import from application
-- **Rule ID:** `adapters-to-domain` - Adapters CAN import from domain (when implementing ports)
-- **Purpose:** Adapters are the outermost layer and can depend on all inner layers
+---
+
+#### Driven Adapters (`src/adapters/driven/`)
+
+File: `src/adapters/driven/memory-repository.ts`
+
+**Responsibilities**:
+- Implement port interfaces
+- Handle infrastructure concerns (database, filesystem, external APIs)
+- Translate between domain models and external systems
+- Handle persistence, networking, etc.
+
+**Key characteristics**:
+- Passive/Secondary adapters
+- They are called by the application
+- Implement port contracts
+- Can only import from ports (not application)
+
+**Implementation details**:
+
+**MemoryUserRepository** (`src/adapters/driven/memory-repository.ts:13`):
+```typescript
+import { User } from '../../core/domain/user'
+import { UserRepository } from '../../core/ports/user-repository'
+
+export class MemoryUserRepository implements UserRepository {
+  // In-memory storage using JavaScript Map
+  private users: Map<string, User> = new Map()
+
+  // Driven adapter is called by application through port
+  async save(user: User): Promise<void> {
+    this.users.set(user.id, user)
+  }
+
+  async findById(id: string): Promise<User | null> {
+    return this.users.get(id) || null
+  }
+
+  async findAll(): Promise<User[]> {
+    return Array.from(this.users.values())
+  }
+}
+```
+
+**Stricture rules applied**:
+- Can import from ports (implements interfaces)
+- Cannot import from application (passive, doesn't call use cases)
+- Cannot import from domain directly
+- Enforced by rules: `driven-implements-ports`, `driven-not-application`
 
 #### Swappable Implementations
 
@@ -694,7 +722,7 @@ module.exports = {
 ```
 User edits: src/core/domain/user.ts
     ↓
-Adds import: import { MemoryUserRepository } from '../../adapters/memory-repository'
+Adds import: import { MemoryUserRepository } from '../../adapters/driven/memory-repository'
     ↓
 ESLint runs on file save (via editor integration)
     ↓
@@ -702,7 +730,7 @@ ESLint runs on file save (via editor integration)
     ↓
 Plugin checks:
   - Source file: src/core/domain/user.ts → tagged as "domain"
-  - Import target: src/adapters/memory-repository.ts → tagged as "adapters"
+  - Import target: src/adapters/driven/memory-repository.ts → tagged as "adapters", "driven"
   - Rule "domain-isolation": from "domain" to "*" is NOT allowed
   - Rule "domain-self-imports": from "domain" to "domain" IS allowed (but doesn't match)
     ↓
@@ -719,7 +747,7 @@ ESLint reports error in editor:
 **File:** `src/core/domain/user.ts`
 
 ```typescript
-import { MemoryUserRepository } from '../../adapters/memory-repository'  // ❌
+import { MemoryUserRepository } from '../../adapters/driven/memory-repository'  // ❌
 ```
 
 **ESLint Output:**
@@ -743,7 +771,7 @@ src/core/domain/user.ts
 **File:** `src/core/application/create-user.ts`
 
 ```typescript
-import { MemoryUserRepository } from '../../adapters/memory-repository'  // ❌
+import { MemoryUserRepository } from '../../adapters/driven/memory-repository'  // ❌
 ```
 
 **ESLint Output:**
@@ -762,7 +790,7 @@ src/core/application/create-user.ts
                 ✅ import { UserRepository } from '../ports/user-repository'
 
               Forbidden:
-                ❌ import { MemoryUserRepository } from '../../adapters/memory-repository'
+                ❌ import { MemoryUserRepository } from '../../adapters/driven/memory-repository'
 
               @stricture/enforce-boundaries
 
@@ -977,12 +1005,12 @@ tsconfig.json                       (~20 lines)   - TypeScript configuration
 README.md                           (~500 lines)  - User documentation
 SPEC.md                             (~800 lines)  - This file (technical spec)
 
-src/core/domain/user.ts             (~40 lines)   - User entity (domain layer)
-src/core/ports/user-repository.ts   (~25 lines)   - Repository interface (ports layer)
-src/core/application/create-user.ts (~30 lines)   - Create user use case
-src/core/application/list-users.ts  (~15 lines)   - List users use case
-src/adapters/memory-repository.ts   (~25 lines)   - In-memory repository implementation
-src/adapters/cli.ts                 (~80 lines)   - CLI adapter (entry point)
+src/core/domain/user.ts                  (~40 lines)   - User entity (domain layer)
+src/core/ports/user-repository.ts        (~25 lines)   - Repository interface (ports layer)
+src/core/application/create-user.ts      (~30 lines)   - Create user use case
+src/core/application/list-users.ts       (~15 lines)   - List users use case
+src/adapters/driving/cli.ts              (~80 lines)   - CLI adapter (driving/entry point)
+src/adapters/driven/memory-repository.ts (~25 lines)   - In-memory repository (driven/implementation)
 
 index.ts                            (~15 lines)   - Main entry point
 examples/violation.example.ts       (~120 lines)  - Educational examples of violations

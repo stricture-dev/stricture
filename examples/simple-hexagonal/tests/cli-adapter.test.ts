@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { CliAdapter } from '../src/adapters/cli'
+import { CliAdapter } from '../src/adapters/driving/cli'
 
 describe('CliAdapter', () => {
   let cliAdapter: CliAdapter
