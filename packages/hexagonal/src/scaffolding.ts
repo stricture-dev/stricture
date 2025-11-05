@@ -29,19 +29,27 @@ export const scaffolding: ScaffoldingTemplate = {
       description: 'Use cases and application services'
     },
     {
-      path: 'src/adapters',
-      description: 'Infrastructure implementations'
+      path: 'src/adapters/driving',
+      description: 'Primary adapters - entry points (CLI, HTTP, GraphQL)'
     },
     {
-      path: 'src/adapters/api',
+      path: 'src/adapters/driving/api',
       description: 'HTTP/REST API controllers'
     },
     {
-      path: 'src/adapters/database',
+      path: 'src/adapters/driving/cli',
+      description: 'Command-line interfaces'
+    },
+    {
+      path: 'src/adapters/driven',
+      description: 'Secondary adapters - implementations (Repositories, APIs)'
+    },
+    {
+      path: 'src/adapters/driven/database',
       description: 'Database adapters and repositories'
     },
     {
-      path: 'src/adapters/messaging',
+      path: 'src/adapters/driven/messaging',
       description: 'Message queue adapters'
     }
   ],
@@ -96,20 +104,51 @@ Use cases that orchestrate domain and ports.
       description: 'Application layer documentation'
     },
     {
-      path: 'src/adapters/README.md',
-      content: `# Adapters (Infrastructure)
+      path: 'src/adapters/driving/README.md',
+      content: `# Driving Adapters (Primary/Active)
 
-Implementations of port interfaces.
+Entry points that receive input from the outside world and call the application.
+
+## Examples
+- CLI commands
+- HTTP/REST controllers
+- GraphQL resolvers
+- Message consumers
+- Scheduled jobs
+
+## Guidelines
+
+- ✅ Call use cases from application layer
+- ✅ Can use ports for dependency injection
+- ✅ Convert external formats to domain types
+- ❌ No business logic
+- ❌ Cannot import driven adapters directly
+- ❌ Cannot import domain directly
+`,
+      description: 'Driving adapters documentation'
+    },
+    {
+      path: 'src/adapters/driven/README.md',
+      content: `# Driven Adapters (Secondary/Passive)
+
+Implementations of port interfaces that the application calls.
+
+## Examples
+- Database repositories
+- File storage
+- External API clients
+- Email services
+- Cache implementations
 
 ## Guidelines
 
 - ✅ Implement port interfaces
+- ✅ Can use domain types (needed for ports)
 - ✅ Framework-specific code here
-- ✅ Database, API, messaging code
-- ✅ External service integrations
 - ❌ No business logic
+- ❌ Cannot call use cases (passive role)
 `,
-      description: 'Adapters documentation'
+      description: 'Driven adapters documentation'
     }
   ]
 }

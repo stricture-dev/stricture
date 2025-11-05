@@ -56,8 +56,13 @@ graph TB
       position: 2
     },
     {
-      name: 'Adapters',
-      boundaries: ['adapters'],
+      name: 'Driving Adapters',
+      boundaries: ['driving-adapters'],
+      position: 3
+    },
+    {
+      name: 'Driven Adapters',
+      boundaries: ['driven-adapters'],
       position: 3
     }
   ]

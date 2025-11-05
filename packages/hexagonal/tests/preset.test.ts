@@ -15,8 +15,8 @@ describe('@stricture/hexagonal preset', () => {
   })
 
   describe('boundaries', () => {
-    it('should define 4 boundaries', () => {
-      expect(boundaries).toHaveLength(4)
+    it('should define 5 boundaries', () => {
+      expect(boundaries).toHaveLength(5)
     })
 
     it('should define domain boundary', () => {
@@ -49,13 +49,24 @@ describe('@stricture/hexagonal preset', () => {
       expect(application?.metadata?.layer).toBe(2)
     })
 
-    it('should define adapters boundary', () => {
-      const adapters = boundaries.find(b => b.name === 'adapters')
-      expect(adapters).toBeDefined()
-      expect(adapters?.pattern).toBe('src/adapters/**')
-      expect(adapters?.mode).toBe('file')
-      expect(adapters?.tags).toContain('adapters')
-      expect(adapters?.metadata?.layer).toBe(3)
+    it('should define driving-adapters boundary', () => {
+      const drivingAdapters = boundaries.find(b => b.name === 'driving-adapters')
+      expect(drivingAdapters).toBeDefined()
+      expect(drivingAdapters?.pattern).toBe('src/adapters/driving/**')
+      expect(drivingAdapters?.mode).toBe('file')
+      expect(drivingAdapters?.tags).toContain('adapters')
+      expect(drivingAdapters?.tags).toContain('driving')
+      expect(drivingAdapters?.metadata?.layer).toBe(3)
+    })
+
+    it('should define driven-adapters boundary', () => {
+      const drivenAdapters = boundaries.find(b => b.name === 'driven-adapters')
+      expect(drivenAdapters).toBeDefined()
+      expect(drivenAdapters?.pattern).toBe('src/adapters/driven/**')
+      expect(drivenAdapters?.mode).toBe('file')
+      expect(drivenAdapters?.tags).toContain('adapters')
+      expect(drivenAdapters?.tags).toContain('driven')
+      expect(drivenAdapters?.metadata?.layer).toBe(3)
     })
 
     it('should have unique boundary names', () => {
@@ -66,8 +77,8 @@ describe('@stricture/hexagonal preset', () => {
   })
 
   describe('rules', () => {
-    it('should define 9 rules', () => {
-      expect(rules).toHaveLength(9)
+    it('should define 13 rules', () => {
+      expect(rules).toHaveLength(13)
     })
 
     it('should have unique rule IDs', () => {
@@ -118,7 +129,7 @@ describe('@stricture/hexagonal preset', () => {
 
     describe('application rules', () => {
       it('should allow application to import domain', () => {
-        const rule = rules.find(r => r.id === 'application-to-core')
+        const rule = rules.find(r => r.id === 'application-to-domain')
         expect(rule).toBeDefined()
         expect(rule?.from.tag).toBe('application')
         expect(rule?.to.tag).toBe('domain')
@@ -143,28 +154,64 @@ describe('@stricture/hexagonal preset', () => {
       })
     })
 
-    describe('adapter rules', () => {
-      it('should allow adapters to implement ports', () => {
-        const rule = rules.find(r => r.id === 'adapters-to-ports')
+    describe('driving adapter rules', () => {
+      it('should allow driving adapters to call use cases', () => {
+        const rule = rules.find(r => r.id === 'driving-to-application')
         expect(rule).toBeDefined()
-        expect(rule?.from.tag).toBe('adapters')
-        expect(rule?.to.tag).toBe('ports')
-        expect(rule?.allowed).toBe(true)
-      })
-
-      it('should allow adapters to use application', () => {
-        const rule = rules.find(r => r.id === 'adapters-to-application')
-        expect(rule).toBeDefined()
-        expect(rule?.from.tag).toBe('adapters')
+        expect(rule?.from.tag).toBe('driving')
         expect(rule?.to.tag).toBe('application')
         expect(rule?.allowed).toBe(true)
       })
 
-      it('should prevent adapters from importing domain directly', () => {
-        const rule = rules.find(r => r.id === 'adapters-not-domain')
+      it('should allow driving adapters to use ports', () => {
+        const rule = rules.find(r => r.id === 'driving-to-ports')
         expect(rule).toBeDefined()
-        expect(rule?.from.tag).toBe('adapters')
+        expect(rule?.from.tag).toBe('driving')
+        expect(rule?.to.tag).toBe('ports')
+        expect(rule?.allowed).toBe(true)
+      })
+
+      it('should prevent driving adapters from importing driven adapters', () => {
+        const rule = rules.find(r => r.id === 'driving-not-driven')
+        expect(rule).toBeDefined()
+        expect(rule?.from.tag).toBe('driving')
+        expect(rule?.to.tag).toBe('driven')
+        expect(rule?.allowed).toBe(false)
+        expect(rule?.message).toBeTruthy()
+      })
+
+      it('should prevent driving adapters from importing domain directly', () => {
+        const rule = rules.find(r => r.id === 'driving-not-domain')
+        expect(rule).toBeDefined()
+        expect(rule?.from.tag).toBe('driving')
         expect(rule?.to.tag).toBe('domain')
+        expect(rule?.allowed).toBe(false)
+        expect(rule?.message).toBeTruthy()
+      })
+    })
+
+    describe('driven adapter rules', () => {
+      it('should allow driven adapters to implement ports', () => {
+        const rule = rules.find(r => r.id === 'driven-implements-ports')
+        expect(rule).toBeDefined()
+        expect(rule?.from.tag).toBe('driven')
+        expect(rule?.to.tag).toBe('ports')
+        expect(rule?.allowed).toBe(true)
+      })
+
+      it('should allow driven adapters to use domain types', () => {
+        const rule = rules.find(r => r.id === 'driven-to-domain')
+        expect(rule).toBeDefined()
+        expect(rule?.from.tag).toBe('driven')
+        expect(rule?.to.tag).toBe('domain')
+        expect(rule?.allowed).toBe(true)
+      })
+
+      it('should prevent driven adapters from calling use cases', () => {
+        const rule = rules.find(r => r.id === 'driven-not-application')
+        expect(rule).toBeDefined()
+        expect(rule?.from.tag).toBe('driven')
+        expect(rule?.to.tag).toBe('application')
         expect(rule?.allowed).toBe(false)
         expect(rule?.message).toBeTruthy()
       })
@@ -188,18 +235,18 @@ describe('@stricture/hexagonal preset', () => {
       expect(diagram.content).toContain('graph TB')
     })
 
-    it('should define 4 layers', () => {
-      expect(diagram.layers).toHaveLength(4)
+    it('should define 5 layers', () => {
+      expect(diagram.layers).toHaveLength(5)
     })
 
     it('should have layers in correct order', () => {
       const layerNames = diagram.layers.map(l => l.name)
-      expect(layerNames).toEqual(['Domain', 'Ports', 'Application', 'Adapters'])
+      expect(layerNames).toEqual(['Domain', 'Ports', 'Application', 'Driving Adapters', 'Driven Adapters'])
     })
 
     it('should have correct layer positions', () => {
       const positions = diagram.layers.map(l => l.position)
-      expect(positions).toEqual([0, 1, 2, 3])
+      expect(positions).toEqual([0, 1, 2, 3, 3])
     })
   })
 
@@ -219,7 +266,8 @@ describe('@stricture/hexagonal preset', () => {
       expect(paths).toContain('src/core/domain')
       expect(paths).toContain('src/core/ports')
       expect(paths).toContain('src/core/application')
-      expect(paths).toContain('src/adapters')
+      expect(paths).toContain('src/adapters/driving')
+      expect(paths).toContain('src/adapters/driven')
     })
 
     it('should include README files for each layer', () => {
@@ -227,7 +275,8 @@ describe('@stricture/hexagonal preset', () => {
       expect(paths).toContain('src/core/domain/README.md')
       expect(paths).toContain('src/core/ports/README.md')
       expect(paths).toContain('src/core/application/README.md')
-      expect(paths).toContain('src/adapters/README.md')
+      expect(paths).toContain('src/adapters/driving/README.md')
+      expect(paths).toContain('src/adapters/driven/README.md')
     })
 
     it('should have content for all files', () => {
