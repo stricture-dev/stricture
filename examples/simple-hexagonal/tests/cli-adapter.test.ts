@@ -1,5 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { CliAdapter } from '../src/adapters/cli'
+import { CliAdapter } from '../src/adapters/driving/cli'
+import { MemoryUserRepository } from '../src/adapters/driven/memory-repository'
+import { CreateUserUseCase } from '../src/core/application/create-user'
+import { ListUsersUseCase } from '../src/core/application/list-users'
 
 describe('CliAdapter', () => {
   let cliAdapter: CliAdapter
@@ -8,7 +11,14 @@ describe('CliAdapter', () => {
   let processExitSpy: ReturnType<typeof vi.spyOn>
 
   beforeEach(() => {
-    cliAdapter = new CliAdapter()
+    // Set up dependencies like composition root does
+    const repository = new MemoryUserRepository()
+    const createUserUseCase = new CreateUserUseCase(repository)
+    const listUsersUseCase = new ListUsersUseCase(repository)
+
+    // Create CLI adapter with dependencies
+    cliAdapter = new CliAdapter(createUserUseCase, listUsersUseCase)
+
     consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
     consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
     // Mock process.exit to throw to simulate process stopping

@@ -44,8 +44,8 @@ export function resolveConfig(
   }
 
   // 3. Apply project-specific boundaries and rules
-  resolvedBoundaries = mergeBoundaries(resolvedBoundaries, config.boundaries)
-  resolvedRules = mergeRules(resolvedRules, config.rules)
+  resolvedBoundaries = mergeBoundaries(resolvedBoundaries, config.boundaries || [])
+  resolvedRules = mergeRules(resolvedRules, config.rules || [])
 
   // 4. Apply overrides
   if (config.overrides) {

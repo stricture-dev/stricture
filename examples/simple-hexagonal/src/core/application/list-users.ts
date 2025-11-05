@@ -1,5 +1,5 @@
-import { User } from '../domain/user'
-import { UserRepository } from '../ports/user-repository'
+import { User } from '../domain/user.js'
+import { UserRepository } from '../ports/user-repository.js'
 
 /**
  * ListUsers use case - Retrieve all users

@@ -50,11 +50,17 @@ src/
 │   ├── domain/           # Pure business logic (entities, value objects)
 │   ├── ports/            # Interfaces for external interactions
 │   └── application/      # Use cases (orchestrate domain + ports)
-└── adapters/             # Implementations of ports
-    ├── api/              # HTTP/REST adapters
-    ├── database/         # Database adapters
-    ├── messaging/        # Message queue adapters
-    └── ...
+└── adapters/
+    ├── driving/          # Primary adapters (entry points)
+    │   ├── api/          # HTTP/REST controllers
+    │   ├── cli/          # Command-line interfaces
+    │   ├── graphql/      # GraphQL resolvers
+    │   └── ...
+    └── driven/           # Secondary adapters (implementations)
+        ├── database/     # Database repositories
+        ├── messaging/    # Message queue clients
+        ├── external/     # External API clients
+        └── ...
 ```
 
 ## Boundaries
@@ -66,7 +72,8 @@ The preset defines these boundaries:
 | **domain** | `src/core/domain/**` | Pure business entities and logic |
 | **ports** | `src/core/ports/**` | Interface definitions |
 | **application** | `src/core/application/**` | Use cases and workflows |
-| **adapters** | `src/adapters/**` | Infrastructure implementations |
+| **driving-adapters** | `src/adapters/driving/**` | Primary adapters (entry points) |
+| **driven-adapters** | `src/adapters/driven/**` | Secondary adapters (implementations) |
 
 ## Rules
 
@@ -182,6 +189,87 @@ export class UserController {
   }
 }
 ```
+
+## Adapter Types
+
+Hexagonal architecture distinguishes between two types of adapters:
+
+### Driving Adapters (Primary/Active)
+**Location**: `src/adapters/driving/**`
+
+**Purpose**: Entry points that receive input from the outside world and call the application.
+
+**Examples**: CLI, HTTP controllers, GraphQL resolvers, message consumers, scheduled jobs
+
+**Dependency direction**: `Driving Adapter → Application Layer`
+
+**Rules**:
+- ✅ Can import from application (to call use cases)
+- ✅ Can import from ports (for dependency injection)
+- ❌ Cannot import from driven adapters
+- ❌ Cannot import from domain directly
+
+**Example**:
+```typescript
+// src/adapters/driving/api/user-controller.ts
+import { CreateUserUseCase } from '../../../core/application/create-user'
+
+export class UserController {
+  constructor(private createUserUseCase: CreateUserUseCase) {}
+
+  async createUser(req: Request, res: Response) {
+    // Driving adapter CALLS the application
+    const user = await this.createUserUseCase.execute(req.body.email)
+    res.json(user)
+  }
+}
+```
+
+### Driven Adapters (Secondary/Passive)
+**Location**: `src/adapters/driven/**`
+
+**Purpose**: Implementations of port interfaces that the application calls to interact with external systems.
+
+**Examples**: Database repositories, file storage, external API clients, email services
+
+**Dependency direction**: `Application Layer → Port Interface ← Driven Adapter implements`
+
+**Rules**:
+- ✅ Can import from ports (implements interfaces)
+- ✅ Can import from domain (needed to implement ports that use domain types)
+- ❌ Cannot import from application (passive, doesn't call use cases)
+- ❌ Cannot import from driving adapters
+
+**Example**:
+```typescript
+// src/adapters/driven/database/postgres-user-repository.ts
+import { User } from '../../../core/domain/user'
+import { UserRepository } from '../../../core/ports/user-repository'
+
+export class PostgresUserRepository implements UserRepository {
+  // Driven adapter WAITS to be called by application through port
+  async save(user: User): Promise<void> {
+    await this.db.query('INSERT INTO users...', [user.id, user.email])
+  }
+
+  async findById(id: string): Promise<User | null> {
+    const row = await this.db.query('SELECT * FROM users WHERE id = $1', [id])
+    return row ? new User(row.id, row.email) : null
+  }
+}
+```
+
+### The Key Difference
+
+Think of it this way:
+- **Driving**: "Hey application, I got a user request!" → initiates action
+- **Driven**: "Here's the data you requested" → responds to application calls
+
+This separation is crucial for:
+- ✅ Maintaining dependency inversion principle
+- ✅ Making the application framework-agnostic
+- ✅ Enabling easy testing (mock driven adapters)
+- ✅ Enabling easy replacement (swap HTTP for GraphQL, swap PostgreSQL for MongoDB)
 
 ## Configuration
 

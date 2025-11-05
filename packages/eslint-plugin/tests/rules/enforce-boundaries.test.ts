@@ -16,7 +16,7 @@ const ruleTester = new RuleTester({
   }
 })
 
-const configPath = path.join(__dirname, '../fixtures/configs/hexagonal-config.json')
+const configPath = path.join(__dirname, '../fixtures/configs/simple-config.json')
 
 describe('enforce-boundaries rule', () => {
   it('should validate imports according to configured rules', () => {

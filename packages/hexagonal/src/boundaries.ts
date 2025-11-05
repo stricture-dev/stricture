@@ -3,11 +3,12 @@ import type { BoundaryDefinition } from '@stricture/core'
 /**
  * Hexagonal architecture boundary definitions
  *
- * Defines the four key layers:
+ * Defines the five key layers:
  * - domain: Pure business logic (innermost)
  * - ports: Interface definitions
  * - application: Use cases and orchestration
- * - adapters: Infrastructure implementations (outermost)
+ * - driving-adapters: Primary/Active adapters (entry points)
+ * - driven-adapters: Secondary/Passive adapters (implementations)
  */
 export const boundaries: BoundaryDefinition[] = [
   {
@@ -17,8 +18,7 @@ export const boundaries: BoundaryDefinition[] = [
     tags: ['core', 'domain'],
     metadata: {
       description: 'Pure business logic - entities, value objects, domain services',
-      layer: 0,  // Innermost layer
-      allowedDependencies: []
+      layer: 0  // Innermost layer
     }
   },
   {
@@ -28,8 +28,7 @@ export const boundaries: BoundaryDefinition[] = [
     tags: ['core', 'ports'],
     metadata: {
       description: 'Interface definitions for external interactions',
-      layer: 1,
-      allowedDependencies: ['domain']
+      layer: 1
     }
   },
   {
@@ -39,19 +38,27 @@ export const boundaries: BoundaryDefinition[] = [
     tags: ['core', 'application'],
     metadata: {
       description: 'Use cases that orchestrate domain and ports',
-      layer: 2,
-      allowedDependencies: ['domain', 'ports']
+      layer: 2
     }
   },
   {
-    name: 'adapters',
-    pattern: 'src/adapters/**',
+    name: 'driving-adapters',
+    pattern: 'src/adapters/driving/**',
     mode: 'file',
-    tags: ['adapters'],
+    tags: ['adapters', 'driving'],
     metadata: {
-      description: 'Infrastructure implementations of ports',
-      layer: 3,  // Outermost layer
-      allowedDependencies: ['ports', 'application']
+      description: 'Primary adapters - entry points that call the application (CLI, HTTP, etc.)',
+      layer: 3
+    }
+  },
+  {
+    name: 'driven-adapters',
+    pattern: 'src/adapters/driven/**',
+    mode: 'file',
+    tags: ['adapters', 'driven'],
+    metadata: {
+      description: 'Secondary adapters - implementations of ports called by application (Repositories, APIs)',
+      layer: 3
     }
   }
 ]

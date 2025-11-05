@@ -1,19 +1,23 @@
-import { CreateUserUseCase } from '../core/application/create-user'
-import { ListUsersUseCase } from '../core/application/list-users'
-import { MemoryUserRepository } from './memory-repository'
+import { CreateUserUseCase } from '../../core/application/create-user.js'
+import { ListUsersUseCase } from '../../core/application/list-users.js'
 
 /**
- * CLI adapter - Entry point for terminal commands
+ * CLI adapter - Driving adapter (Primary/Active)
  *
- * This is another "adapter" that provides a CLI interface:
- * - Adapts terminal input/output to use cases
- * - Creates and wires dependencies (dependency injection)
- * - Could be swapped with HTTP adapter, GraphQL adapter, etc.
+ * This is a driving adapter that provides a CLI interface:
+ * - Receives commands from the terminal (entry point)
+ * - Calls use cases from the application layer
+ * - Formats and displays results
+ * - Does NOT know about driven adapters (repositories, etc.)
+ *
+ * Dependencies are injected via constructor (composition root handles wiring).
+ * This allows swapping implementations without changing this adapter.
  */
 export class CliAdapter {
-  private readonly repository = new MemoryUserRepository()
-  private readonly createUserUseCase = new CreateUserUseCase(this.repository)
-  private readonly listUsersUseCase = new ListUsersUseCase(this.repository)
+  constructor(
+    private readonly createUserUseCase: CreateUserUseCase,
+    private readonly listUsersUseCase: ListUsersUseCase
+  ) {}
 
   async run(args: string[]): Promise<void> {
     const command = args[0]

@@ -58,12 +58,104 @@ Dependency Flow: Adapters → Application → Ports → Domain
                                   Domain is the core with ZERO outward dependencies
 ```
 
+## Adapter Types in Hexagonal Architecture
+
+Hexagonal architecture distinguishes between two types of adapters:
+
+### 🎯 Driving Adapters (Primary/Active) - `src/adapters/driving/`
+
+**What they do**: These adapters **drive** the application. They receive input from the outside world and call use cases.
+
+**Dependency direction**: `Driving Adapter → Application Layer`
+
+**In this example**:
+- **`cli.ts`** - Receives user commands from terminal and invokes the CreateUser use case
+- Future examples: HTTP controllers, GraphQL resolvers, message consumers
+
+**Key characteristic**: They are **active** - they initiate actions by calling the application.
+
+### 🔌 Driven Adapters (Secondary/Passive) - `src/adapters/driven/`
+
+**What they do**: These adapters are **driven** by the application. The application calls them through port interfaces to interact with external systems.
+
+**Dependency direction**: `Application Layer → Port Interface ← Driven Adapter implements`
+
+**In this example**:
+- **`memory-repository.ts`** - Implements the UserRepository port, stores users in memory
+- Future examples: Database repositories, external API clients, file storage
+
+**Key characteristic**: They are **passive** - they wait to be called by the application through ports.
+
+### The Key Difference
+
+Think of it this way:
+- **Driving**: "Hey application, I want to create a user!" → calls application
+- **Driven**: "Here's the user you asked me to save" → application calls it
+
+This separation helps maintain the **dependency inversion principle** - the application core doesn't depend on infrastructure details.
+
+## Composition Root Pattern
+
+The `index.ts` file acts as the **composition root** - the only place where concrete implementations are wired together:
+
+```typescript
+// index.ts - Composition Root
+const repository = new MemoryUserRepository()      // 1. Create infrastructure
+const createUseCase = new CreateUserUseCase(repository)  // 2. Wire use case
+const listUseCase = new ListUsersUseCase(repository)     // 3. Wire another use case
+const cli = new CliAdapter(createUseCase, listUseCase)   // 4. Wire entry point
+cli.run(process.argv.slice(2))                           // 5. Run
+```
+
+**Why this matters**:
+
+1. **Driving adapter (CLI)** only knows about use cases, not repositories
+2. **Use cases** only know about port interfaces, not concrete implementations
+3. **Driven adapters (Repository)** implement ports
+4. **Only index.ts** knows about concrete classes
+
+This means you can:
+- ✅ Swap MemoryRepository for PostgresRepository without changing CLI
+- ✅ Swap CLI for HTTPController without changing use cases
+- ✅ Test use cases with mock repositories
+- ✅ Test CLI with mock use cases
+
+**Key principle**: Dependencies flow **inward** (toward domain), but concrete implementations are known only at the edges (composition root).
+
+**Before** (❌ Violation):
+```typescript
+// src/adapters/driving/cli.ts
+import { MemoryUserRepository } from '../driven/memory-repository'  // ❌ Driving knows about driven!
+
+class CLI {
+  private repository = new MemoryUserRepository()  // ❌ Tight coupling
+  private useCase = new CreateUserUseCase(this.repository)
+}
+```
+
+**After** (✅ Correct):
+```typescript
+// src/adapters/driving/cli.ts
+import { CreateUserUseCase } from '../../core/application/create-user'  // ✅ Only knows about use cases
+
+class CLI {
+  constructor(
+    private createUserUseCase: CreateUserUseCase  // ✅ Dependency injection
+  ) {}
+}
+
+// index.ts - Composition Root
+const repository = new MemoryUserRepository()    // ✅ Wiring happens here
+const useCase = new CreateUserUseCase(repository)
+const cli = new CLI(useCase)
+```
+
 ## File Structure
 
 ```
 examples/simple-hexagonal/
 ├── .stricture/
-│   └── config.json              # Stricture configuration (hexagonal preset)
+│   └── config.json              # Stricture configuration (hexagonal preset with driving/driven)
 ├── .eslintrc.js                 # ESLint + Stricture integration
 ├── package.json                 # Dependencies and scripts
 ├── tsconfig.json                # TypeScript configuration
@@ -78,9 +170,11 @@ examples/simple-hexagonal/
 │   │   └── application/
 │   │       ├── create-user.ts   # Use case: create a user
 │   │       └── list-users.ts    # Use case: list all users
-│   └── adapters/                # Infrastructure implementations
-│       ├── memory-repository.ts # In-memory repository (adapter)
-│       └── cli.ts               # CLI adapter (entry point)
+│   └── adapters/
+│       ├── driving/             # 🎯 PRIMARY/ACTIVE adapters (entry points)
+│       │   └── cli.ts           # CLI adapter (entry point)
+│       └── driven/              # 🔌 SECONDARY/PASSIVE adapters (implementations)
+│           └── memory-repository.ts # In-memory repository (adapter)
 ├── index.ts                     # Main entry point
 └── examples/
     └── violation.example.ts     # Example of architectural violations (educational)
@@ -199,25 +293,71 @@ export class CreateUserUseCase {
 
 **Key principle:** The use case depends on the `UserRepository` interface, not on `MemoryUserRepository` or any concrete implementation. This is **dependency inversion** in action.
 
-### Adapters Layer (`src/adapters/`)
+### Adapters Layer
 
-**Purpose:** Provide concrete implementations of ports and adapt external systems to the domain.
+The adapters layer is split into two categories based on the direction of dependency:
 
-**In this example:** `MemoryUserRepository` (implements the repository interface) and `CliAdapter` (terminal interface).
+#### Driving Adapters (`src/adapters/driving/`)
+
+**Purpose:** Entry points that receive external input and call the application layer.
+
+**In this example:** `CliAdapter` receives terminal commands and invokes use cases.
 
 **Rules:**
-- ✅ Can import from ports and application
-- ✅ Can import from domain when implementing ports
-- ✅ Can use external libraries and frameworks
+- ✅ Can import from application (to call use cases)
+- ✅ Can import from ports (for dependency injection)
+- ❌ Should not import from domain directly
 
-**Code example** from `src/adapters/memory-repository.ts:13`:
+**Code example** from `src/adapters/driving/cli.ts:13`:
 ```typescript
-import { User } from '../core/domain/user'
-import { UserRepository } from '../core/ports/user-repository'
+import { CreateUserUseCase } from '../../core/application/create-user'
+import { MemoryUserRepository } from '../driven/memory-repository'
+
+export class CliAdapter {
+  private readonly repository = new MemoryUserRepository()
+  private readonly createUserUseCase = new CreateUserUseCase(this.repository)
+
+  async run(args: string[]): Promise<void> {
+    const command = args[0]
+
+    switch (command) {
+      case 'create':
+        await this.handleCreate(args[1], args[2])
+        break
+      // ...
+    }
+  }
+
+  private async handleCreate(name: string, email: string): Promise<void> {
+    // Driving adapter calls the application
+    const user = await this.createUserUseCase.execute(name, email)
+    console.log('✅ User created:', user)
+  }
+}
+```
+
+**Key principle:** Driving adapters are **active** - they initiate actions by calling use cases. They also handle dependency injection (wiring up implementations to interfaces).
+
+#### Driven Adapters (`src/adapters/driven/`)
+
+**Purpose:** Provide concrete implementations of port interfaces that the application calls.
+
+**In this example:** `MemoryUserRepository` implements the `UserRepository` port.
+
+**Rules:**
+- ✅ Can import from ports (implements interfaces)
+- ✅ Can import from domain (to work with domain types)
+- ❌ Cannot import from application (passive, doesn't call use cases)
+
+**Code example** from `src/adapters/driven/memory-repository.ts:13`:
+```typescript
+import { User } from '../../core/domain/user'
+import { UserRepository } from '../../core/ports/user-repository'
 
 export class MemoryUserRepository implements UserRepository {
   private users: Map<string, User> = new Map()
 
+  // Driven adapter is called by application through port
   async save(user: User): Promise<void> {
     this.users.set(user.id, user)
   }
@@ -232,7 +372,7 @@ export class MemoryUserRepository implements UserRepository {
 }
 ```
 
-**Key principle:** Adapters implement the port interfaces. You could swap `MemoryUserRepository` with `PostgresUserRepository` or `MongoUserRepository` without changing any code in the domain, ports, or application layers.
+**Key principle:** Driven adapters are **passive** - they wait to be called by the application through port interfaces. You could swap `MemoryUserRepository` with `PostgresUserRepository` or `MongoUserRepository` without changing any code in the domain, ports, or application layers.
 
 ## Installation
 
@@ -358,7 +498,7 @@ Edit `src/core/domain/user.ts` and add this import:
 
 ```typescript
 // ❌ BAD - Domain importing adapter
-import { MemoryUserRepository } from '../../adapters/memory-repository'
+import { MemoryUserRepository } from '../../adapters/driven/memory-repository'
 
 export class User {
   // Domain should never know about infrastructure!
@@ -385,7 +525,7 @@ Edit `src/core/application/create-user.ts`:
 
 ```typescript
 // ❌ BAD - Application importing concrete implementation
-import { MemoryUserRepository } from '../../adapters/memory-repository'
+import { MemoryUserRepository } from '../../adapters/driven/memory-repository'
 
 export class CreateUserUseCase {
   // Should depend on interface, not implementation!
