@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'vitest'
 import { resolveImportPath } from '../src/resolution/resolve-import.js'
-import path from 'node:path'
+import path from 'path'
 
 describe('resolveImportPath', () => {
   const baseDir = '/project'

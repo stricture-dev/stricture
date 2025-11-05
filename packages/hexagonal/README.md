@@ -298,13 +298,33 @@ The preset provides this configuration:
       "tags": ["core", "application"]
     },
     {
-      "name": "adapters",
-      "pattern": "src/adapters/**",
+      "name": "driving-adapters",
+      "pattern": "src/adapters/driving/**",
       "mode": "file",
-      "tags": ["adapters"]
+      "tags": ["adapters", "driving"],
+      "metadata": {
+        "description": "Primary adapters - entry points that call the application (CLI, HTTP, GraphQL)"
+      }
+    },
+    {
+      "name": "driven-adapters",
+      "pattern": "src/adapters/driven/**",
+      "mode": "file",
+      "tags": ["adapters", "driven"],
+      "metadata": {
+        "description": "Secondary adapters - implementations called by application (Repositories, APIs)"
+      }
     }
   ],
   "rules": [
+    {
+      "id": "domain-self-imports",
+      "name": "Domain Can Import Itself",
+      "severity": "error",
+      "from": { "tag": "domain" },
+      "to": { "tag": "domain" },
+      "allowed": true
+    },
     {
       "id": "domain-isolation",
       "name": "Domain Isolation",
@@ -315,16 +335,8 @@ The preset provides this configuration:
       "message": "Domain layer must remain pure - no dependencies on other layers or external libraries"
     },
     {
-      "id": "domain-self-imports",
-      "name": "Domain Can Import Itself",
-      "severity": "error",
-      "from": { "tag": "domain" },
-      "to": { "tag": "domain" },
-      "allowed": true
-    },
-    {
-      "id": "application-to-domain-and-ports",
-      "name": "Application Layer Dependencies",
+      "id": "application-not-adapters",
+      "name": "Application Isolated from Adapters",
       "severity": "error",
       "from": { "tag": "application" },
       "to": { "tag": "adapters" },
@@ -332,17 +344,37 @@ The preset provides this configuration:
       "message": "Application layer can only depend on domain and ports, not adapters"
     },
     {
-      "id": "adapters-via-ports",
-      "name": "Adapters Through Ports",
+      "id": "driving-to-application",
+      "name": "Driving Adapters Call Use Cases",
       "severity": "error",
-      "from": { "tag": "adapters" },
-      "to": { "tag": "domain" },
+      "from": { "tag": "driving" },
+      "to": { "tag": "application" },
+      "allowed": true,
+      "message": "Driving adapters (CLI, HTTP controllers) should call use cases from application layer"
+    },
+    {
+      "id": "driven-implements-ports",
+      "name": "Driven Adapters Implement Ports",
+      "severity": "error",
+      "from": { "tag": "driven" },
+      "to": { "tag": "ports" },
+      "allowed": true,
+      "message": "Driven adapters should implement interfaces defined in ports"
+    },
+    {
+      "id": "driving-not-driven",
+      "name": "Driving Adapters Independent",
+      "severity": "error",
+      "from": { "tag": "driving" },
+      "to": { "tag": "driven" },
       "allowed": false,
-      "message": "Adapters should depend on ports and application layer, not domain directly"
+      "message": "Driving adapters should not directly import driven adapters - use dependency injection"
     }
   ]
 }
 ```
+
+**Note**: The preset automatically provides separate boundaries for driving and driven adapters, enforcing the distinction between primary (driving) and secondary (driven) ports as described by Alistair Cockburn's original hexagonal architecture pattern. The `"adapters"` parent tag is available on both boundaries for rules that apply to all adapters.
 
 ## Dependency Flow
 

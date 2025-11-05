@@ -308,35 +308,60 @@ The adapters layer is split into two categories based on the direction of depend
 - ✅ Can import from ports (for dependency injection)
 - ❌ Should not import from domain directly
 
-**Code example** from `src/adapters/driving/cli.ts:13`:
+**Code example** from `src/adapters/driving/cli.ts:16`:
 ```typescript
 import { CreateUserUseCase } from '../../core/application/create-user'
-import { MemoryUserRepository } from '../driven/memory-repository'
+import { ListUsersUseCase } from '../../core/application/list-users'
 
 export class CliAdapter {
-  private readonly repository = new MemoryUserRepository()
-  private readonly createUserUseCase = new CreateUserUseCase(this.repository)
+  constructor(
+    private readonly createUserUseCase: CreateUserUseCase,
+    private readonly listUsersUseCase: ListUsersUseCase
+  ) {
+    // Dependencies injected via constructor - CLI doesn't know about repository!
+  }
 
   async run(args: string[]): Promise<void> {
     const command = args[0]
 
-    switch (command) {
-      case 'create':
-        await this.handleCreate(args[1], args[2])
-        break
-      // ...
+    try {
+      switch (command) {
+        case 'create':
+          await this.handleCreate(args[1], args[2])
+          break
+        case 'list':
+          await this.handleList()
+          break
+        default:
+          this.showHelp()
+      }
+    } catch (error) {
+      if (error instanceof Error) {
+        console.error(`❌ Error: ${error.message}`)
+      }
     }
   }
 
   private async handleCreate(name: string, email: string): Promise<void> {
     // Driving adapter calls the application
     const user = await this.createUserUseCase.execute(name, email)
-    console.log('✅ User created:', user)
+    console.log('✅ User created successfully!')
+    console.log(`ID: ${user.id}`)
+    console.log(`Name: ${user.name}`)
+    console.log(`Email: ${user.email}`)
+  }
+
+  private async handleList(): Promise<void> {
+    const users = await this.listUsersUseCase.execute()
+    console.log(`📋 Users (${users.length}):`)
+    users.forEach(user => {
+      console.log(`- ${user.getDisplayName()}`)
+    })
   }
 }
 ```
 
-**Key principle:** Driving adapters are **active** - they initiate actions by calling use cases. They also handle dependency injection (wiring up implementations to interfaces).
+**Key principle:** Driving adapters are **active** - they initiate actions by calling use cases. Notice the CLI receives use cases via constructor, not repositories. It has no knowledge of `MemoryUserRepository`. This is the composition root pattern in action - all wiring happens in `index.ts`, not in the adapter itself.
 
 #### Driven Adapters (`src/adapters/driven/`)
 
