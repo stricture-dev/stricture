@@ -10,16 +10,21 @@ Clean Architecture organizes code in concentric circles:
 %%{init: {'theme':'base', 'themeVariables': { 'primaryColor':'hsl(187, 61%, 79%)','primaryBorderColor':'hsl(187, 54%, 68%)','secondaryColor':'hsl(100, 64%, 86%)','secondaryBorderColor':'hsl(100, 41%, 76%)','tertiaryColor':'hsl(182, 29%, 96%)','tertiaryBorderColor':'hsl(187, 54%, 68%)'}}}%%
 graph TB
     subgraph Frameworks["Frameworks & Drivers"]
+        FW["UI, DB, Web"]
         subgraph InterfaceAdapters["Interface Adapters"]
+            IA["Controllers, Presenters"]
             subgraph UseCases["Use Cases"]
-                Entities["Entities"]
+                UC["Application Logic"]
+                subgraph EntitiesLayer["Entities"]
+                    E["Business Rules"]
+                end
             end
         end
     end
 
-    Frameworks -.depends inward.-> InterfaceAdapters
-    InterfaceAdapters -.depends inward.-> UseCases
-    UseCases -.depends inward.-> Entities
+    FW -.-> IA
+    IA -.-> UC
+    UC -.-> E
 ```
 
 **Dependencies point INWARD only →**
