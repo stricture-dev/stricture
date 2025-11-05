@@ -94,6 +94,62 @@ Think of it this way:
 
 This separation helps maintain the **dependency inversion principle** - the application core doesn't depend on infrastructure details.
 
+## Composition Root Pattern
+
+The `index.ts` file acts as the **composition root** - the only place where concrete implementations are wired together:
+
+```typescript
+// index.ts - Composition Root
+const repository = new MemoryUserRepository()      // 1. Create infrastructure
+const createUseCase = new CreateUserUseCase(repository)  // 2. Wire use case
+const listUseCase = new ListUsersUseCase(repository)     // 3. Wire another use case
+const cli = new CliAdapter(createUseCase, listUseCase)   // 4. Wire entry point
+cli.run(process.argv.slice(2))                           // 5. Run
+```
+
+**Why this matters**:
+
+1. **Driving adapter (CLI)** only knows about use cases, not repositories
+2. **Use cases** only know about port interfaces, not concrete implementations
+3. **Driven adapters (Repository)** implement ports
+4. **Only index.ts** knows about concrete classes
+
+This means you can:
+- ✅ Swap MemoryRepository for PostgresRepository without changing CLI
+- ✅ Swap CLI for HTTPController without changing use cases
+- ✅ Test use cases with mock repositories
+- ✅ Test CLI with mock use cases
+
+**Key principle**: Dependencies flow **inward** (toward domain), but concrete implementations are known only at the edges (composition root).
+
+**Before** (❌ Violation):
+```typescript
+// src/adapters/driving/cli.ts
+import { MemoryUserRepository } from '../driven/memory-repository'  // ❌ Driving knows about driven!
+
+class CLI {
+  private repository = new MemoryUserRepository()  // ❌ Tight coupling
+  private useCase = new CreateUserUseCase(this.repository)
+}
+```
+
+**After** (✅ Correct):
+```typescript
+// src/adapters/driving/cli.ts
+import { CreateUserUseCase } from '../../core/application/create-user'  // ✅ Only knows about use cases
+
+class CLI {
+  constructor(
+    private createUserUseCase: CreateUserUseCase  // ✅ Dependency injection
+  ) {}
+}
+
+// index.ts - Composition Root
+const repository = new MemoryUserRepository()    // ✅ Wiring happens here
+const useCase = new CreateUserUseCase(repository)
+const cli = new CLI(useCase)
+```
+
 ## File Structure
 
 ```
