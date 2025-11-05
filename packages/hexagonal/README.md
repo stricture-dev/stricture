@@ -14,6 +14,7 @@ Hexagonal Architecture, also known as Ports and Adapters, is a pattern that:
 ## Architecture Layers
 
 ```mermaid
+%%{init: {'theme':'base', 'themeVariables': { 'primaryColor':'#e2fffe','primaryBorderColor':'#99e5ee','secondaryColor':'#fef7fe','secondaryBorderColor':'#e5d5e5','tertiaryColor':'#feff9a','tertiaryBorderColor':'#d5d580'}}}%%
 graph TB
     subgraph Adapters["Adapters (Outside)"]
         subgraph Application["Application Layer (Use Cases)"]
@@ -21,11 +22,6 @@ graph TB
             Ports["Ports (Interfaces)"]
         end
     end
-
-    style Domain fill:#98fece
-    style Ports fill:#e1eafe
-    style Application fill:#e2fffe
-    style Adapters fill:#fee6d0
 ```
 
 ## Installation
@@ -379,17 +375,13 @@ The preset provides this configuration:
 ## Dependency Flow
 
 ```mermaid
+%%{init: {'theme':'base', 'themeVariables': { 'primaryColor':'#e2fffe','primaryBorderColor':'#99e5ee','secondaryColor':'#fef7fe','secondaryBorderColor':'#e5d5e5','tertiaryColor':'#feff9a','tertiaryBorderColor':'#d5d580'}}}%%
 graph LR
     Adapters --> Application
     Application --> Domain
     Adapters --> Ports
     Application --> Ports
     Ports -.depends on.-> Domain
-
-    style Domain fill:#98fece
-    style Ports fill:#e1eafe
-    style Application fill:#e2fffe
-    style Adapters fill:#fee6d0
 ```
 
 **Allowed**:

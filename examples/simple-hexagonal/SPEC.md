@@ -441,6 +441,7 @@ export class HttpAdapter {
 ### Allowed Dependencies
 
 ```mermaid
+%%{init: {'theme':'base', 'themeVariables': { 'primaryColor':'#e2fffe','primaryBorderColor':'#99e5ee','secondaryColor':'#fef7fe','secondaryBorderColor':'#e5d5e5','tertiaryColor':'#feff9a','tertiaryBorderColor':'#d5d580'}}}%%
 graph LR
     Adapters --> Application
     Adapters --> Ports
@@ -448,11 +449,6 @@ graph LR
     Application --> Domain
     Application --> Ports
     Ports --> Domain
-
-    style Domain fill:#98fece
-    style Ports fill:#e1eafe
-    style Application fill:#e2fffe
-    style Adapters fill:#fee6d0
 ```
 
 **Allowed:**

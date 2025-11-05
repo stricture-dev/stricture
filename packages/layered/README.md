@@ -13,6 +13,7 @@ Layered architecture organizes code into horizontal layers where:
 ## Architecture Layers
 
 ```mermaid
+%%{init: {'theme':'base', 'themeVariables': { 'primaryColor':'#e2fffe','primaryBorderColor':'#99e5ee','secondaryColor':'#fef7fe','secondaryBorderColor':'#e5d5e5','tertiaryColor':'#feff9a','tertiaryBorderColor':'#d5d580'}}}%%
 graph TB
     Presentation["Presentation Layer<br/><i>UI, Controllers, Views</i>"]
     Business["Business Logic Layer<br/><i>Services, Use Cases</i>"]
@@ -22,11 +23,6 @@ graph TB
     Presentation --> Business
     Business --> Data
     Data --> Infrastructure
-
-    style Presentation fill:#a8f7fe
-    style Business fill:#feff9a
-    style Data fill:#f9e3fe
-    style Infrastructure fill:#fee6d0
 ```
 
 **Dependency flow:** Top → Bottom only

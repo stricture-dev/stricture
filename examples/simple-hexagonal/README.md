@@ -19,6 +19,7 @@ This example exists as the perfect starting point for understanding hexagonal ar
 ## Architecture Diagram
 
 ```mermaid
+%%{init: {'theme':'base', 'themeVariables': { 'primaryColor':'#e2fffe','primaryBorderColor':'#99e5ee','secondaryColor':'#fef7fe','secondaryBorderColor':'#e5d5e5','tertiaryColor':'#feff9a','tertiaryBorderColor':'#d5d580'}}}%%
 graph TB
     subgraph Adapters["Outer Layer (Adapters)"]
         CLI["CLI Adapter<br/>(cli.ts)"]
@@ -46,13 +47,6 @@ graph TB
     CreateUser -.uses.-> UserRepo
     ListUsers -.uses.-> UserRepo
     UserRepo -.depends on.-> User
-
-    style User fill:#98fece
-    style UserRepo fill:#e1eafe
-    style CreateUser fill:#a8f7fe
-    style ListUsers fill:#a8f7fe
-    style CLI fill:#fee6d0
-    style MemRepo fill:#fee6d0
 ```
 
 **Dependency Flow:** Adapters → Application → Ports → Domain
