@@ -4,6 +4,56 @@ import type { BoundaryDefinition, BoundaryPattern } from '../types/boundary.js'
 import { matchesPattern } from '../matching/match-pattern.js'
 
 /**
+ * Calculate specificity score for a rule
+ * Higher score = more specific = higher priority
+ *
+ * Scoring system:
+ * - Specific node_modules pattern: 10000
+ * - Regular pattern: 1000
+ * - Specific tag: 100
+ * - Wildcard (*): 1
+ */
+function calculateRuleSpecificity(rule: ArchRule): number {
+  let score = 0
+
+  // Calculate 'from' specificity
+  if (rule.from.pattern) {
+    if (rule.from.pattern.includes('node_modules/') && !rule.from.pattern.includes('**')) {
+      score += 10000  // Very specific: node_modules/@types/node
+    } else if (rule.from.pattern === '**' || rule.from.pattern === '*') {
+      score += 1      // Very generic: match everything
+    } else {
+      score += 1000   // Medium: src/domain/**
+    }
+  } else if (rule.from.tag) {
+    if (rule.from.tag === '*') {
+      score += 1      // Wildcard
+    } else {
+      score += 100    // Specific tag name
+    }
+  }
+
+  // Calculate 'to' specificity (same logic)
+  if (rule.to.pattern) {
+    if (rule.to.pattern.includes('node_modules/') && !rule.to.pattern.includes('**')) {
+      score += 10000
+    } else if (rule.to.pattern === '**' || rule.to.pattern === '*') {
+      score += 1
+    } else {
+      score += 1000
+    }
+  } else if (rule.to.tag) {
+    if (rule.to.tag === '*') {
+      score += 1
+    } else {
+      score += 100
+    }
+  }
+
+  return score
+}
+
+/**
  * This is the core validation engine - validates whether an import statement violates architectural rules
  *
  * Algorithm (from SPEC.md lines 452-521):
@@ -51,14 +101,9 @@ export function validateImport(
   }
 
   // 4. Check all applicable rules
-  // Sort rules by specificity: pattern-based rules before tag-based rules
+  // Sort rules by specificity (highest score first)
   const sortedRules = [...rules].sort((a, b) => {
-    // Pattern-based rules are more specific than tag-based rules
-    const aHasPattern = !!a.to.pattern
-    const bHasPattern = !!b.to.pattern
-    if (aHasPattern && !bHasPattern) return -1
-    if (!aHasPattern && bHasPattern) return 1
-    return 0
+    return calculateRuleSpecificity(b) - calculateRuleSpecificity(a)
   })
 
   for (const rule of sortedRules) {
@@ -87,7 +132,7 @@ export function validateImport(
           fromBoundary: fromBoundary?.name,
           toBoundary: toBoundary?.name,
           message:
-            rule.message ||
+            rule.message ??
             buildMessage(fromBoundary, toBoundary, isExternal),
           suggestion: generateSuggestion(rule, isExternal)
         } satisfies ImportValidationResult
@@ -97,9 +142,30 @@ export function validateImport(
     }
   }
 
-  // 5. No violations found (or no rule targets this combination)
-  // By default, imports are allowed if no rule blocks them
-  return { valid: true }
+  // 5. No matching rule found - DENY by default
+  const fromName = fromBoundary?.name ?? 'unknown boundary'
+  const toName = isExternal ? 'external dependency' : (toBoundary?.name ?? 'unknown boundary')
+
+  return {
+    valid: false,
+    message: `No architectural rule defined for this import.
+
+From: ${fromName} (${fromPath})
+To:   ${toName} (${toPath})
+
+Stricture uses deny-by-default policy for safety. Add an explicit rule to allow this import:
+
+{
+  "rules": [{
+    "id": "allow-${fromName.replace(/[^a-z0-9]/gi, '-')}-to-${toName.replace(/[^a-z0-9]/gi, '-')}",
+    "from": { "tag": "${fromBoundary?.tags?.[0] ?? fromName}" },
+    "to": { ${isExternal ? `"tag": "external"` : `"tag": "${toBoundary?.tags?.[0] ?? toName}"`} },
+    "allowed": true
+  }]
+}
+
+Or add to your preset if this should be a standard architectural rule.`
+  }
 }
 
 /**
@@ -130,7 +196,7 @@ function matchesRuleBoundary(
     // Match by boundary name or tags array
     return (
       boundary.name === pattern.tag ||
-      boundary.tags?.includes(pattern.tag) ||
+      boundary.tags?.includes(pattern.tag) ??
       false
     )
   }
@@ -173,8 +239,8 @@ function buildMessage(
   to: BoundaryDefinition | undefined,
   isExternal: boolean
 ): string {
-  const fromName = from?.name || 'unknown'
-  const toName = to?.name || 'unknown'
+  const fromName = from?.name ?? 'unknown'
+  const toName = to?.name ?? 'unknown'
 
   if (isExternal) {
     return `'${fromName}' cannot import external dependencies`

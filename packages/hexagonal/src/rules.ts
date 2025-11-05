@@ -9,83 +9,61 @@ import type { ArchRule } from '@stricture/core'
  * - Driving adapters call application, driven adapters implement ports
  * - Proper separation between driving and driven adapters
  *
- * NOTE: Order matters! More specific rules should come first.
+ * With deny-by-default policy, we only need to define:
+ * 1. Critical restrictions with helpful messages (allowed: false)
+ * 2. Explicit allowances (allowed: true)
  */
 export const rules: ArchRule[] = [
-  // Domain layer rules - most specific first
-  {
-    id: 'domain-self-imports',
-    name: 'Domain Can Import Itself',
-    description: 'Domain files can import other domain files',
-    severity: 'error',
-    from: { mode: 'file', tag: 'domain' },
-    to: { mode: 'file', tag: 'domain' },
-    allowed: true,
-    examples: {
-      good: [
-        "import { Order } from './order'",
-        "import { Money } from './value-objects/money'"
-      ],
-      bad: []
-    }
-  },
+  // Critical restrictions with helpful messages
   {
     id: 'domain-isolation',
     name: 'Domain Isolation',
     description: 'Domain layer must remain pure with no external dependencies',
     severity: 'error',
-    from: { mode: 'file', tag: 'domain' },
-    to: { mode: 'file', tag: '*' },
+    from: { tag: 'domain', mode: 'file' },
+    to: { tag: '*', mode: 'file' },
     allowed: false,
     message: 'Domain layer must remain pure - no dependencies on other layers or external libraries',
     examples: {
-      good: [],
       bad: [
         "import { Database } from '../../adapters/database'",
         "import axios from 'axios'",
         "import { UserRepository } from '../ports/user-repository'"
+      ],
+      good: [
+        "import { Order } from './order'",
+        "import { Money } from './value-objects/money'"
       ]
     }
   },
-
-  // Ports layer rules
   {
-    id: 'ports-to-domain',
-    name: 'Ports Can Reference Domain',
-    description: 'Ports define interfaces using domain types',
+    id: 'driving-not-driven',
+    name: 'Driving Adapters Independent from Driven',
+    description: 'Driving adapters should not import driven adapters directly',
     severity: 'error',
-    from: { mode: 'file', tag: 'ports' },
-    to: { mode: 'file', tag: 'domain' },
-    allowed: true,
-    message: 'Ports should reference domain types in their interfaces'
-  },
-
-  // Application layer rules
-  {
-    id: 'application-to-domain',
-    name: 'Application Uses Domain',
-    description: 'Application layer orchestrates domain entities',
-    severity: 'error',
-    from: { mode: 'file', tag: 'application' },
-    to: { mode: 'file', tag: 'domain' },
-    allowed: true
-  },
-  {
-    id: 'application-to-ports',
-    name: 'Application Uses Ports',
-    description: 'Application layer depends on port interfaces',
-    severity: 'error',
-    from: { mode: 'file', tag: 'application' },
-    to: { mode: 'file', tag: 'ports' },
-    allowed: true
+    from: { tag: 'driving', mode: 'file' },
+    to: { tag: 'driven', mode: 'file' },
+    allowed: false,
+    message: 'Driving adapters should not directly import driven adapters. Use dependency injection via composition root.',
+    examples: {
+      bad: [
+        "import { PostgresRepository } from '../driven/postgres-repository'"
+      ],
+      good: [
+        "// In index.ts (composition root):",
+        "const repo = new PostgresRepository()",
+        "const useCase = new CreateUserUseCase(repo)",
+        "const cli = new CLI(useCase)"
+      ]
+    }
   },
   {
     id: 'application-not-adapters',
     name: 'Application Isolated from Adapters',
     description: 'Application layer cannot import adapters directly',
     severity: 'error',
-    from: { mode: 'file', tag: 'application' },
-    to: { mode: 'file', tag: 'adapters' },
+    from: { tag: 'application', mode: 'file' },
+    to: { tag: 'adapters', mode: 'file' },
     allowed: false,
     message: 'Application layer should depend on port interfaces, not concrete adapter implementations',
     examples: {
@@ -93,110 +71,147 @@ export const rules: ArchRule[] = [
         "import { PostgresRepository } from '../../adapters/driven/postgres-repository'"
       ],
       good: [
-        "import { UserRepository } from '../ports/user-repository'"
+        "import { UserRepository } from '../ports/user-repository'",
+        "// Inject concrete implementation from composition root"
+      ]
+    }
+  },
+  {
+    id: 'adapters-not-domain',
+    name: 'Adapters Through Ports Only',
+    description: 'Adapters should not import domain directly',
+    severity: 'error',
+    from: { tag: 'adapters', mode: 'file' },
+    to: { tag: 'domain', mode: 'file' },
+    allowed: false,
+    message: 'Adapters should depend on ports and application layer, not domain directly',
+    examples: {
+      bad: [
+        "import { User } from '../../core/domain/user'"
+      ],
+      good: [
+        "import { UserRepository } from '../../core/ports/user-repository'",
+        "import { CreateUserUseCase } from '../../core/application/create-user'"
       ]
     }
   },
 
-  // Driving adapters rules (CLI, HTTP, GraphQL, etc.) - more specific, comes first
+  // Allowed imports (all allowed:true)
+  {
+    id: 'domain-self-imports',
+    name: 'Domain Can Import Itself',
+    description: 'Domain files can import other domain files',
+    severity: 'error',
+    from: { tag: 'domain', mode: 'file' },
+    to: { tag: 'domain', mode: 'file' },
+    allowed: true
+  },
+  {
+    id: 'ports-to-domain',
+    name: 'Ports Can Reference Domain',
+    description: 'Ports define interfaces using domain types',
+    severity: 'error',
+    from: { tag: 'ports', mode: 'file' },
+    to: { tag: 'domain', mode: 'file' },
+    allowed: true
+  },
+  {
+    id: 'ports-self-imports',
+    name: 'Ports Can Import Each Other',
+    description: 'Port interfaces can reference other port interfaces',
+    severity: 'error',
+    from: { tag: 'ports', mode: 'file' },
+    to: { tag: 'ports', mode: 'file' },
+    allowed: true
+  },
+  {
+    id: 'ports-external',
+    name: 'Ports Can Use External Types',
+    description: 'Port interfaces may use external types in signatures',
+    severity: 'error',
+    from: { tag: 'ports', mode: 'file' },
+    to: { tag: 'external', mode: 'file' },
+    allowed: true
+  },
+  {
+    id: 'application-to-domain',
+    name: 'Application Uses Domain',
+    description: 'Application layer orchestrates domain entities',
+    severity: 'error',
+    from: { tag: 'application', mode: 'file' },
+    to: { tag: 'domain', mode: 'file' },
+    allowed: true
+  },
+  {
+    id: 'application-to-ports',
+    name: 'Application Uses Ports',
+    description: 'Application layer depends on port interfaces',
+    severity: 'error',
+    from: { tag: 'application', mode: 'file' },
+    to: { tag: 'ports', mode: 'file' },
+    allowed: true
+  },
+  {
+    id: 'application-self-imports',
+    name: 'Application Can Import Itself',
+    description: 'Use cases can import other use cases',
+    severity: 'error',
+    from: { tag: 'application', mode: 'file' },
+    to: { tag: 'application', mode: 'file' },
+    allowed: true
+  },
+  {
+    id: 'application-external',
+    name: 'Application Can Use External Libraries',
+    description: 'Use cases can use external utilities',
+    severity: 'error',
+    from: { tag: 'application', mode: 'file' },
+    to: { tag: 'external', mode: 'file' },
+    allowed: true
+  },
   {
     id: 'driving-to-application',
     name: 'Driving Adapters Call Use Cases',
     description: 'Driving adapters invoke application use cases',
     severity: 'error',
-    from: { mode: 'file', tag: 'driving' },
-    to: { mode: 'file', tag: 'application' },
-    allowed: true,
-    message: 'Driving adapters (CLI, HTTP controllers) should call use cases from application layer'
+    from: { tag: 'driving', mode: 'file' },
+    to: { tag: 'application', mode: 'file' },
+    allowed: true
   },
   {
     id: 'driving-to-ports',
     name: 'Driving Adapters Can Use Ports',
     description: 'Driving adapters can reference ports for dependency injection',
     severity: 'error',
-    from: { mode: 'file', tag: 'driving' },
-    to: { mode: 'file', tag: 'ports' },
-    allowed: true,
-    message: 'Driving adapters can import ports for wiring dependencies'
+    from: { tag: 'driving', mode: 'file' },
+    to: { tag: 'ports', mode: 'file' },
+    allowed: true
   },
   {
-    id: 'driving-not-driven',
-    name: 'Driving Adapters Independent',
-    description: 'Driving adapters should not import driven adapters',
+    id: 'driving-external',
+    name: 'Driving Adapters Can Use Frameworks',
+    description: 'Driving adapters can use external frameworks',
     severity: 'error',
-    from: { mode: 'file', tag: 'driving' },
-    to: { mode: 'file', tag: 'driven' },
-    allowed: false,
-    message: 'Driving adapters should not directly import driven adapters - use dependency injection instead',
-    examples: {
-      bad: [
-        "import { PostgresRepository } from '../driven/postgres-repository'"
-      ],
-      good: [
-        "import { UserRepository } from '../../core/ports/user-repository'",
-        "// Inject repository through constructor"
-      ]
-    }
+    from: { tag: 'driving', mode: 'file' },
+    to: { tag: 'external', mode: 'file' },
+    allowed: true
   },
-
-  // Driven adapters rules (Repositories, External APIs, etc.) - more specific, comes first
   {
-    id: 'driven-implements-ports',
+    id: 'driven-to-ports',
     name: 'Driven Adapters Implement Ports',
     description: 'Driven adapters implement port interfaces',
     severity: 'error',
-    from: { mode: 'file', tag: 'driven' },
-    to: { mode: 'file', tag: 'ports' },
-    allowed: true,
-    message: 'Driven adapters should implement interfaces defined in ports'
+    from: { tag: 'driven', mode: 'file' },
+    to: { tag: 'ports', mode: 'file' },
+    allowed: true
   },
   {
-    id: 'driven-to-domain',
-    name: 'Driven Adapters Can Use Domain Types',
-    description: 'Driven adapters can import domain types when implementing ports',
+    id: 'driven-external',
+    name: 'Driven Adapters Can Use External Libraries',
+    description: 'Driven adapters can use databases, APIs, etc.',
     severity: 'error',
-    from: { mode: 'file', tag: 'driven' },
-    to: { mode: 'file', tag: 'domain' },
-    allowed: true,
-    message: 'Driven adapters can import domain types needed to implement port interfaces'
-  },
-  {
-    id: 'driven-not-application',
-    name: 'Driven Adapters Passive',
-    description: 'Driven adapters should not call application layer',
-    severity: 'error',
-    from: { mode: 'file', tag: 'driven' },
-    to: { mode: 'file', tag: 'application' },
-    allowed: false,
-    message: 'Driven adapters are passive - they should not call use cases. Application calls them through ports.',
-    examples: {
-      bad: [
-        "import { CreateUserUseCase } from '../../core/application/create-user'"
-      ],
-      good: [
-        "import { UserRepository } from '../../core/ports/user-repository'",
-        "// This adapter IMPLEMENTS the port, doesn't call the application"
-      ]
-    }
-  },
-
-  // General adapter rules - less specific, comes last
-  {
-    id: 'driving-not-domain',
-    name: 'Driving Adapters Through Application',
-    description: 'Driving adapters should use application layer, not domain directly',
-    severity: 'error',
-    from: { mode: 'file', tag: 'driving' },
-    to: { mode: 'file', tag: 'domain' },
-    allowed: false,
-    message: 'Driving adapters should call application use cases, not import domain directly',
-    examples: {
-      bad: [
-        "import { User } from '../../core/domain/user'"
-      ],
-      good: [
-        "import { CreateUserUseCase } from '../../core/application/create-user'"
-      ]
-    }
+    from: { tag: 'driven', mode: 'file' },
+    to: { tag: 'external', mode: 'file' },
+    allowed: true
   }
 ]
