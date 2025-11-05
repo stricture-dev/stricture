@@ -12,19 +12,24 @@ Layered architecture organizes code into horizontal layers where:
 
 ## Architecture Layers
 
-```
-┌─────────────────────────┐
-│   Presentation Layer    │  ← UI, Controllers, Views
-├─────────────────────────┤
-│   Business Logic Layer  │  ← Services, Use Cases
-├─────────────────────────┤
-│   Data Access Layer     │  ← Repositories, Models
-├─────────────────────────┤
-│   Infrastructure Layer  │  ← Database, External APIs
-└─────────────────────────┘
+```mermaid
+graph TB
+    Presentation["Presentation Layer<br/><i>UI, Controllers, Views</i>"]
+    Business["Business Logic Layer<br/><i>Services, Use Cases</i>"]
+    Data["Data Access Layer<br/><i>Repositories, Models</i>"]
+    Infrastructure["Infrastructure Layer<br/><i>Database, External APIs</i>"]
 
-Dependency flow: Top → Bottom only
+    Presentation --> Business
+    Business --> Data
+    Data --> Infrastructure
+
+    style Presentation fill:#e3f2fd
+    style Business fill:#fff9c4
+    style Data fill:#f3e5f5
+    style Infrastructure fill:#e8f5e9
 ```
+
+**Dependency flow:** Top → Bottom only
 
 ## Installation
 

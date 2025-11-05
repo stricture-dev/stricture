@@ -13,19 +13,19 @@ Hexagonal Architecture, also known as Ports and Adapters, is a pattern that:
 
 ## Architecture Layers
 
-```
-┌─────────────────────────────────────┐
-│          Adapters (Outside)         │
-│  ┌───────────────────────────────┐  │
-│  │   Application Layer (Use Cases) │  │
-│  │  ┌─────────────────────────┐  │  │
-│  │  │   Domain (Core Logic)   │  │  │
-│  │  └─────────────────────────┘  │  │
-│  │  ┌─────────────────────────┐  │  │
-│  │  │    Ports (Interfaces)   │  │  │
-│  │  └─────────────────────────┘  │  │
-│  └───────────────────────────────┘  │
-└─────────────────────────────────────┘
+```mermaid
+graph TB
+    subgraph Adapters["Adapters (Outside)"]
+        subgraph Application["Application Layer (Use Cases)"]
+            Domain["Domain (Core Logic)"]
+            Ports["Ports (Interfaces)"]
+        end
+    end
+
+    style Domain fill:#e1f5ff
+    style Ports fill:#fff4e1
+    style Application fill:#f0f0f0
+    style Adapters fill:#e8e8e8
 ```
 
 ## Installation
@@ -378,10 +378,18 @@ The preset provides this configuration:
 
 ## Dependency Flow
 
-```
-Adapters → Application → Domain
-    ↓           ↓
-  Ports ← ← ← ← ←
+```mermaid
+graph LR
+    Adapters --> Application
+    Application --> Domain
+    Adapters --> Ports
+    Application --> Ports
+    Ports -.depends on.-> Domain
+
+    style Domain fill:#e1f5ff
+    style Ports fill:#fff4e1
+    style Application fill:#f0f0f0
+    style Adapters fill:#e8e8e8
 ```
 
 **Allowed**:

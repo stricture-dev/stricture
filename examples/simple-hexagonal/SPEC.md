@@ -440,14 +440,19 @@ export class HttpAdapter {
 
 ### Allowed Dependencies
 
-```
-┌───────────┐
-│  Adapters │ → Application → Domain
-└───────────┘       ↓
-      ↓           Ports
-    Ports           ↓
-      ↓           Domain
-    Domain
+```mermaid
+graph LR
+    Adapters --> Application
+    Adapters --> Ports
+    Adapters --> Domain
+    Application --> Domain
+    Application --> Ports
+    Ports --> Domain
+
+    style Domain fill:#4caf50
+    style Ports fill:#81c784
+    style Application fill:#c8e6c9
+    style Adapters fill:#e8f5e9
 ```
 
 **Allowed:**

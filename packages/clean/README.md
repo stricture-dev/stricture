@@ -6,25 +6,27 @@ Uncle Bob's Clean Architecture preset for Stricture. Enforces the Dependency Rul
 
 Clean Architecture organizes code in concentric circles:
 
-```
-┌─────────────────────────────────────┐
-│  Frameworks & Drivers (UI, DB, Web) │  ← Outermost
-│  ┌────────────────────────────────┐ │
-│  │ Interface Adapters (Controllers,│ │
-│  │    Presenters, Gateways)       │ │
-│  │  ┌──────────────────────────┐  │ │
-│  │  │ Use Cases (Application   │  │ │
-│  │  │   Business Rules)        │  │ │
-│  │  │  ┌────────────────────┐  │  │ │
-│  │  │  │   Entities         │  │  │ │
-│  │  │  │ (Enterprise Rules) │  │  │ │
-│  │  │  └────────────────────┘  │  │ │
-│  │  └──────────────────────────┘  │ │
-│  └────────────────────────────────┘ │
-└─────────────────────────────────────┘
+```mermaid
+graph TB
+    subgraph Frameworks["Frameworks & Drivers<br/><i>UI, DB, Web</i>"]
+        subgraph InterfaceAdapters["Interface Adapters<br/><i>Controllers, Presenters, Gateways</i>"]
+            subgraph UseCases["Use Cases<br/><i>Application Business Rules</i>"]
+                Entities["Entities<br/><i>Enterprise Rules</i>"]
+            end
+        end
+    end
 
-Dependencies point INWARD only →
+    Frameworks -.depends inward.-> InterfaceAdapters
+    InterfaceAdapters -.depends inward.-> UseCases
+    UseCases -.depends inward.-> Entities
+
+    style Entities fill:#4caf50
+    style UseCases fill:#81c784
+    style InterfaceAdapters fill:#c8e6c9
+    style Frameworks fill:#e8f5e9
 ```
+
+**Dependencies point INWARD only →**
 
 ## The Dependency Rule
 
