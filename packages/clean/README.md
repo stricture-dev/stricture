@@ -20,10 +20,10 @@ graph TB
     InterfaceAdapters -.depends inward.-> UseCases
     UseCases -.depends inward.-> Entities
 
-    style Entities fill:#4caf50
-    style UseCases fill:#81c784
-    style InterfaceAdapters fill:#c8e6c9
-    style Frameworks fill:#e8f5e9
+    style Entities fill:#98fece
+    style UseCases fill:#e1eafe
+    style InterfaceAdapters fill:#e2fffe
+    style Frameworks fill:#fee6d0
 ```
 
 **Dependencies point INWARD only →**

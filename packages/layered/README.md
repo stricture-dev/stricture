@@ -23,10 +23,10 @@ graph TB
     Business --> Data
     Data --> Infrastructure
 
-    style Presentation fill:#e3f2fd
-    style Business fill:#fff9c4
-    style Data fill:#f3e5f5
-    style Infrastructure fill:#e8f5e9
+    style Presentation fill:#a8f7fe
+    style Business fill:#feff9a
+    style Data fill:#f9e3fe
+    style Infrastructure fill:#fee6d0
 ```
 
 **Dependency flow:** Top → Bottom only

@@ -47,12 +47,12 @@ graph TB
     ListUsers -.uses.-> UserRepo
     UserRepo -.depends on.-> User
 
-    style User fill:#4caf50
-    style UserRepo fill:#81c784
-    style CreateUser fill:#c8e6c9
-    style ListUsers fill:#c8e6c9
-    style CLI fill:#e8f5e9
-    style MemRepo fill:#e8f5e9
+    style User fill:#98fece
+    style UserRepo fill:#e1eafe
+    style CreateUser fill:#a8f7fe
+    style ListUsers fill:#a8f7fe
+    style CLI fill:#fee6d0
+    style MemRepo fill:#fee6d0
 ```
 
 **Dependency Flow:** Adapters → Application → Ports → Domain

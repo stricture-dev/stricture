@@ -22,10 +22,10 @@ graph TB
         end
     end
 
-    style Domain fill:#e1f5ff
-    style Ports fill:#fff4e1
-    style Application fill:#f0f0f0
-    style Adapters fill:#e8e8e8
+    style Domain fill:#98fece
+    style Ports fill:#e1eafe
+    style Application fill:#e2fffe
+    style Adapters fill:#fee6d0
 ```
 
 ## Installation
@@ -386,10 +386,10 @@ graph LR
     Application --> Ports
     Ports -.depends on.-> Domain
 
-    style Domain fill:#e1f5ff
-    style Ports fill:#fff4e1
-    style Application fill:#f0f0f0
-    style Adapters fill:#e8e8e8
+    style Domain fill:#98fece
+    style Ports fill:#e1eafe
+    style Application fill:#e2fffe
+    style Adapters fill:#fee6d0
 ```
 
 **Allowed**:

@@ -449,10 +449,10 @@ graph LR
     Application --> Ports
     Ports --> Domain
 
-    style Domain fill:#4caf50
-    style Ports fill:#81c784
-    style Application fill:#c8e6c9
-    style Adapters fill:#e8f5e9
+    style Domain fill:#98fece
+    style Ports fill:#e1eafe
+    style Application fill:#e2fffe
+    style Adapters fill:#fee6d0
 ```
 
 **Allowed:**
