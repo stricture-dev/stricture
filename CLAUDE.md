@@ -89,7 +89,7 @@ All checks must pass without warnings or errors.
 
 - **DO NOT reduce scope** to save time
 - **DO NOT skip tests** to speed up development
-- **DO NOT remove functionality** to avoid complexity
+- **DO NOT remove functionality** to avoid effort
 - **DO NOT lower compiler/linter strictness** to bypass errors
 
 ### Strict Configurations
@@ -283,33 +283,6 @@ Before submitting a PR, verify:
 - [ ] Examples updated if API changed
 - [ ] Commit messages follow conventions
 - [ ] No reduction in scope or quality
-
-## Philosophy
-
-### Why This Workflow?
-
-1. **Documentation First** - Clarifies intent before implementation
-2. **Tests Second** - Defines success criteria objectively
-3. **Implementation Third** - Code becomes the solution to pass tests
-4. **Quality Always** - No shortcuts, maintain high standards
-
-### Why Strict Rules?
-
-This project enforces architectural boundaries for others. We must:
-- **Dogfood our own tool** - Use Stricture on itself
-- **Set an example** - Demonstrate best practices
-- **Maintain trust** - Users rely on our quality standards
-- **Enable scale** - Strict rules prevent technical debt
-
-### Why No Shortcuts?
-
-Shortcuts compound:
-- Skipped tests = bugs in production
-- Reduced scope = incomplete features
-- Relaxed configs = type errors and runtime failures
-- Outdated docs = confused users
-
-**Quality is not negotiable.**
 
 ## Resources
 
