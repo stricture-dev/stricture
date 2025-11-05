@@ -22,20 +22,20 @@ This example exists as the perfect starting point for understanding hexagonal ar
 %%{init: {'theme':'base', 'themeVariables': { 'primaryColor':'hsl(187, 61%, 79%)','primaryBorderColor':'hsl(187, 54%, 68%)','secondaryColor':'hsl(100, 64%, 86%)','secondaryBorderColor':'hsl(100, 41%, 76%)','tertiaryColor':'hsl(182, 29%, 96%)','tertiaryBorderColor':'hsl(187, 54%, 68%)'}}}%%
 graph TB
     subgraph Adapters["Outer Layer (Adapters)"]
-        CLI["CLI Adapter<br/>(cli.ts)"]
-        MemRepo["Memory Repository<br/>(memory-repository.ts)"]
+        CLI["CLI Adapter"]
+        MemRepo["Memory Repository"]
 
         subgraph Application["Application Layer (Use Cases)"]
-            CreateUser["CreateUser<br/>(UseCase)"]
-            ListUsers["ListUsers<br/>(UseCase)"]
+            CreateUser["CreateUser"]
+            ListUsers["ListUsers"]
 
             subgraph PortsAndDomain["Core"]
                 subgraph Ports["Ports Layer (Interfaces)"]
-                    UserRepo["UserRepository<br/>(interface)"]
+                    UserRepo["UserRepository"]
                 end
 
                 subgraph Domain["Domain Layer (Entities)"]
-                    User["User (entity)<br/>- Validation<br/>- Business Logic<br/><i>(Zero Dependencies)</i>"]
+                    User["User"]
                 end
             end
         end
