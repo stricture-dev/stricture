@@ -7,7 +7,7 @@ Uncle Bob's Clean Architecture preset for Stricture. Enforces the Dependency Rul
 Clean Architecture organizes code in concentric circles:
 
 ```mermaid
-%%{init: {'theme':'base', 'themeVariables': { 'primaryColor':'#e2fffe','primaryBorderColor':'#99e5ee','secondaryColor':'#fef7fe','secondaryBorderColor':'#e5d5e5','tertiaryColor':'#feff9a','tertiaryBorderColor':'#d5d580'}}}%%
+%%{init: {'theme':'base', 'themeVariables': { 'primaryColor':'hsl(187, 61%, 79%)','primaryBorderColor':'hsl(187, 54%, 68%)','secondaryColor':'hsl(100, 64%, 86%)','secondaryBorderColor':'hsl(100, 41%, 76%)','tertiaryColor':'hsl(182, 29%, 96%)','tertiaryBorderColor':'hsl(187, 54%, 68%)'}}}%%
 graph TB
     subgraph Frameworks["Frameworks & Drivers<br/><i>UI, DB, Web</i>"]
         subgraph InterfaceAdapters["Interface Adapters<br/><i>Controllers, Presenters, Gateways</i>"]
