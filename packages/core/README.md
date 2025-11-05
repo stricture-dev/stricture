@@ -216,6 +216,60 @@ const rule: ArchRule = {
 
 **Note**: By default, external dependencies are allowed unless explicitly blocked by a rule.
 
+## Rule Precedence and Specificity
+
+When multiple rules could match an import, **the most specific rule wins**, regardless of order in the config.
+
+**Specificity hierarchy** (highest to lowest):
+
+1. **Specific patterns** - `node_modules/@types/**`
+2. **Regular patterns** - `src/domain/**`
+3. **Specific tags** - `{ tag: 'domain' }`
+4. **Wildcard tags** - `{ tag: '*' }`
+5. **Generic patterns** - `**` or `*`
+
+### Example
+
+```typescript
+const rules: ArchRule[] = [
+  {
+    id: 'domain-isolation',
+    name: 'Domain Isolation',
+    description: 'Domain isolated from everything',
+    severity: 'error',
+    from: { tag: 'domain' },
+    to: { tag: '*' },        // Less specific (wildcard)
+    allowed: false
+  },
+  {
+    id: 'domain-self',
+    name: 'Domain Self Imports',
+    description: 'Domain can import itself',
+    severity: 'error',
+    from: { tag: 'domain' },
+    to: { tag: 'domain' },   // More specific
+    allowed: true
+  }
+]
+```
+
+For `import { Order } from './order'` in domain:
+1. Both rules match
+2. `domain-self` is more specific (specific tag vs wildcard)
+3. `domain-self` wins → **Allowed** ✅
+
+### Why This Matters
+
+You can write general restrictive rules (like `domain → *` denied) and then add specific exceptions (like `domain → domain` allowed) without worrying about array order.
+
+**Specificity scores** (for reference):
+- Both specific tags: 200 points
+- One specific tag + wildcard: 101 points
+- Pattern + tag: 1100+ points
+- Both wildcards: 2 points
+
+The rule with the highest score that matches the import wins.
+
 ## Utilities
 
 ### `validateConfig(config: unknown): ValidationResult`

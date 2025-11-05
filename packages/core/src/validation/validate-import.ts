@@ -4,6 +4,58 @@ import type { BoundaryDefinition, BoundaryPattern } from '../types/boundary.js'
 import { matchesPattern } from '../matching/match-pattern.js'
 
 /**
+ * Calculate specificity score for a rule.
+ * Higher score = more specific = higher priority.
+ *
+ * Specificity hierarchy (highest to lowest):
+ * 1. Specific pattern with node_modules
+ * 2. Regular pattern with paths
+ * 3. Generic wildcard patterns
+ * 4. Specific tag names
+ * 5. Wildcard tags
+ */
+function calculateRuleSpecificity(rule: ArchRule): number {
+  let score = 0
+
+  // Calculate 'from' specificity
+  if (rule.from.pattern) {
+    // Specific patterns (with node_modules, @types, etc.)
+    if (rule.from.pattern.includes('node_modules/') && !rule.from.pattern.includes('**')) {
+      score += 10000  // Very specific node_modules path
+    } else if (rule.from.pattern === '**' || rule.from.pattern === '*') {
+      score += 1      // Match everything - very generic
+    } else {
+      score += 1000   // Regular pattern - moderately specific
+    }
+  } else if (rule.from.tag) {
+    if (rule.from.tag === '*') {
+      score += 1      // Wildcard - very generic
+    } else {
+      score += 100    // Specific tag name
+    }
+  }
+
+  // Calculate 'to' specificity (same logic)
+  if (rule.to.pattern) {
+    if (rule.to.pattern.includes('node_modules/') && !rule.to.pattern.includes('**')) {
+      score += 10000
+    } else if (rule.to.pattern === '**' || rule.to.pattern === '*') {
+      score += 1
+    } else {
+      score += 1000
+    }
+  } else if (rule.to.tag) {
+    if (rule.to.tag === '*') {
+      score += 1
+    } else {
+      score += 100
+    }
+  }
+
+  return score
+}
+
+/**
  * This is the core validation engine - validates whether an import statement violates architectural rules
  *
  * Algorithm (from SPEC.md lines 452-521):
@@ -51,14 +103,10 @@ export function validateImport(
   }
 
   // 4. Check all applicable rules
-  // Sort rules by specificity: pattern-based rules before tag-based rules
+  // Sort rules by specificity: more specific rules (higher score) first
   const sortedRules = [...rules].sort((a, b) => {
-    // Pattern-based rules are more specific than tag-based rules
-    const aHasPattern = !!a.to.pattern
-    const bHasPattern = !!b.to.pattern
-    if (aHasPattern && !bHasPattern) return -1
-    if (!aHasPattern && bHasPattern) return 1
-    return 0
+    // Sort by specificity (highest first)
+    return calculateRuleSpecificity(b) - calculateRuleSpecificity(a)
   })
 
   for (const rule of sortedRules) {
