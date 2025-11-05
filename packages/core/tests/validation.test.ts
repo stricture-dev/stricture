@@ -499,4 +499,196 @@ describe('validateImport', () => {
       expect(result.message).toContain('adapters')
     })
   })
+
+  describe('rule specificity and precedence', () => {
+    test('specific rule takes precedence over general wildcard', () => {
+      const boundaries: BoundaryDefinition[] = [
+        { name: 'domain', pattern: 'src/domain/**', mode: 'file', tags: ['domain'] }
+      ]
+
+      const rules: ArchRule[] = [
+        // General rule first
+        {
+          id: 'domain-isolation',
+          name: 'Domain Isolation',
+          description: 'Domain isolated from everything',
+          severity: 'error',
+          from: { tag: 'domain', mode: 'file' },
+          to: { tag: '*', mode: 'file' },        // Wildcard - generic
+          allowed: false
+        },
+        // Specific rule second
+        {
+          id: 'domain-self',
+          name: 'Domain Self Imports',
+          description: 'Domain can import itself',
+          severity: 'error',
+          from: { tag: 'domain', mode: 'file' },
+          to: { tag: 'domain', mode: 'file' },   // Specific
+          allowed: true
+        }
+      ]
+
+      // domain → domain should be allowed (specific rule wins)
+      const result = validateImport(
+        'src/domain/user.ts',
+        'src/domain/order.ts',
+        rules,
+        boundaries
+      )
+
+      expect(result.valid).toBe(true)
+    })
+
+    test('specific rule takes precedence regardless of array order', () => {
+      const boundaries: BoundaryDefinition[] = [
+        { name: 'domain', pattern: 'src/domain/**', mode: 'file', tags: ['domain'] }
+      ]
+
+      // Test with rules in reverse order
+      const rules: ArchRule[] = [
+        // Specific rule first this time
+        {
+          id: 'domain-self',
+          name: 'Domain Self Imports',
+          description: 'Domain can import itself',
+          severity: 'error',
+          from: { tag: 'domain', mode: 'file' },
+          to: { tag: 'domain', mode: 'file' },   // Specific
+          allowed: true
+        },
+        // General rule second
+        {
+          id: 'domain-isolation',
+          name: 'Domain Isolation',
+          description: 'Domain isolated from everything',
+          severity: 'error',
+          from: { tag: 'domain', mode: 'file' },
+          to: { tag: '*', mode: 'file' },        // Wildcard - generic
+          allowed: false
+        }
+      ]
+
+      // domain → domain should still be allowed
+      const result = validateImport(
+        'src/domain/user.ts',
+        'src/domain/order.ts',
+        rules,
+        boundaries
+      )
+
+      expect(result.valid).toBe(true)
+    })
+
+    test('pattern-based rule more specific than tag-based', () => {
+      const boundaries: BoundaryDefinition[] = [
+        { name: 'domain', pattern: 'src/domain/**', mode: 'file', tags: ['domain'] }
+      ]
+
+      const rules: ArchRule[] = [
+        {
+          id: 'tag-based',
+          name: 'Tag Based Rule',
+          description: 'Domain cannot import external',
+          severity: 'error',
+          from: { tag: 'domain', mode: 'file' },
+          to: { tag: 'external', mode: 'file' },
+          allowed: false
+        },
+        {
+          id: 'pattern-based',
+          name: 'Pattern Based Rule',
+          description: 'Domain can import types',
+          severity: 'error',
+          from: { tag: 'domain', mode: 'file' },
+          to: { pattern: 'node_modules/@types/**', mode: 'file' },  // More specific
+          allowed: true
+        }
+      ]
+
+      const result = validateImport(
+        'src/domain/user.ts',
+        'node_modules/@types/node/index.d.ts',
+        rules,
+        boundaries
+      )
+
+      expect(result.valid).toBe(true)
+    })
+
+    test('more specific patterns have higher precedence', () => {
+      const boundaries: BoundaryDefinition[] = [
+        { name: 'domain', pattern: 'src/domain/**', mode: 'file', tags: ['domain'] }
+      ]
+
+      const rules: ArchRule[] = [
+        {
+          id: 'generic-pattern',
+          name: 'Generic Pattern',
+          description: 'Block all external',
+          severity: 'error',
+          from: { tag: 'domain', mode: 'file' },
+          to: { pattern: '**', mode: 'file' },  // Very generic
+          allowed: false
+        },
+        {
+          id: 'specific-pattern',
+          name: 'Specific Pattern',
+          description: 'Allow specific path',
+          severity: 'error',
+          from: { tag: 'domain', mode: 'file' },
+          to: { pattern: 'src/domain/**', mode: 'file' },  // More specific
+          allowed: true
+        }
+      ]
+
+      const result = validateImport(
+        'src/domain/user.ts',
+        'src/domain/order.ts',
+        rules,
+        boundaries
+      )
+
+      expect(result.valid).toBe(true)
+    })
+
+    test('wildcard is least specific and evaluated last', () => {
+      const boundaries: BoundaryDefinition[] = [
+        { name: 'domain', pattern: 'src/domain/**', mode: 'file', tags: ['domain'] },
+        { name: 'ports', pattern: 'src/ports/**', mode: 'file', tags: ['ports'] }
+      ]
+
+      const rules: ArchRule[] = [
+        // Wildcard rule - should be evaluated last
+        {
+          id: 'wildcard-deny',
+          name: 'Wildcard Deny',
+          description: 'Deny everything by default',
+          severity: 'error',
+          from: { tag: '*', mode: 'file' },
+          to: { tag: '*', mode: 'file' },
+          allowed: false
+        },
+        // Specific rule - should be evaluated first
+        {
+          id: 'domain-ports-allow',
+          name: 'Domain Can Use Ports',
+          description: 'Domain can import ports',
+          severity: 'error',
+          from: { tag: 'domain', mode: 'file' },
+          to: { tag: 'ports', mode: 'file' },
+          allowed: true
+        }
+      ]
+
+      const result = validateImport(
+        'src/domain/user.ts',
+        'src/ports/user-port.ts',
+        rules,
+        boundaries
+      )
+
+      expect(result.valid).toBe(true)
+    })
+  })
 })
