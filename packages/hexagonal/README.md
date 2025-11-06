@@ -381,7 +381,7 @@ graph LR
     Application --> Domain
     Adapters --> Ports
     Application --> Ports
-    Ports -.depends on.-> Domain
+    Ports --> Domain
 ```
 
 **Allowed**:
