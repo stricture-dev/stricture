@@ -493,3 +493,108 @@ rules: [
 - [ ] Monorepo with multiple .stricture/config.json files
 - [ ] Per-package configurations
 - [ ] Shared presets across projects
+
+---
+
+## Implementation Checklist
+
+Before submitting any change, verify:
+
+### Before Writing Code
+
+- [ ] Read relevant SPEC.md section(s)
+- [ ] Read relevant README.md section(s)
+- [ ] Understand which package is affected (core/eslint-plugin/preset/example)
+- [ ] Check if similar code exists elsewhere to maintain consistency
+- [ ] Review architectural decisions above that apply to this change
+
+### While Writing Code
+
+#### If Modifying Core Validation
+- [ ] Does it follow the algorithm in SPEC.md lines 452-521?
+- [ ] Does it maintain specificity-based rule sorting?
+- [ ] Does it implement deny-by-default correctly?
+- [ ] Does it handle external dependencies correctly?
+- [ ] Does it match patterns using matchesPattern() correctly?
+
+#### If Modifying ESLint Plugin
+- [ ] Is this delegating to core, not reimplementing logic?
+- [ ] Am I only doing ESLint-specific work (AST, formatting)?
+- [ ] Would this logic be useful in other integrations? (If yes, move to core)
+
+#### If Modifying a Preset
+- [ ] Is this pure data (ArchPreset), no logic?
+- [ ] Do rules cover ALL legitimate imports for this architecture?
+- [ ] Are driving/driven boundaries separate (for hexagonal)?
+- [ ] Do `allowed: false` rules provide valuable custom messages?
+- [ ] Are there redundant rules that deny-by-default would catch?
+
+#### If Modifying an Example
+- [ ] Does config use preset without overrides?
+- [ ] Does file structure match preset expectations?
+- [ ] Does composition root demonstrate proper DI?
+- [ ] Can I run the example and see it work?
+
+### After Writing Code
+
+- [ ] Write/update tests FIRST if using TDD (or now if not)
+- [ ] Run tests: `pnpm test`
+- [ ] Run build: `pnpm build`
+- [ ] Run lint: `pnpm lint`
+- [ ] Check TypeScript: `pnpm type-check`
+- [ ] Verify README examples still work
+- [ ] Update SPEC.md if algorithm changed
+- [ ] Update README.md if user-facing behavior changed
+- [ ] Add comments explaining WHY, not just WHAT
+
+### Before Committing
+
+- [ ] All tests pass
+- [ ] No TypeScript errors
+- [ ] No ESLint violations
+- [ ] Code examples in docs are tested/verified
+- [ ] Commit message explains WHY, not just WHAT changed
+- [ ] If fixing bug: explain what was wrong and how fix works
+
+### Red Flags (STOP and Ask)
+
+Stop and ask if you're about to:
+- [ ] Add validation logic to ESLint plugin
+- [ ] Import validation functions in a preset
+- [ ] Make presets use generic "adapters" boundary
+- [ ] Change rule precedence to depend on array order
+- [ ] Allow imports by default (unless there's a strong reason)
+- [ ] Remove deny-by-default behavior
+- [ ] Add complexity without clear architectural benefit
+- [ ] Change core algorithm without updating SPEC.md
+- [ ] Break backwards compatibility without version bump
+
+### Common Mistakes to Avoid
+
+When you realize you're doing any of these, stop:
+- [ ] "I'll just put this validation logic in the plugin..." → NO, use core
+- [ ] "I'll add a quick fix without tests..." → NO, TDD or tests after
+- [ ] "The comment is outdated but I'll fix it later..." → NO, fix now
+- [ ] "This rule order matters..." → NO, specificity handles it
+- [ ] "I'll make adapters import domain via port re-exports..." → NO, direct import OK for driven
+- [ ] "I'll add node: prefix to imports..." → NO, use plain imports
+- [ ] "I'll simplify the preset by removing driving/driven split..." → NO, that's fundamental
+- [ ] "I'll allow imports without rules as default..." → NO, deny by default
+
+### Questions to Ask Yourself
+
+- [ ] Would a new developer understand this code in 6 months?
+- [ ] Does this follow the principle of least surprise?
+- [ ] Is this the simplest solution that works correctly?
+- [ ] Have I introduced any coupling between packages?
+- [ ] Does this change maintain backwards compatibility?
+- [ ] Would this work in a real project, not just the example?
+
+### Final Check
+
+- [ ] Read through all changes one more time
+- [ ] Verify changes align with architectural decisions above
+- [ ] Ensure no temporary debug code remains
+- [ ] Check that imports use correct style (no node:, .js extensions)
+- [ ] Confirm tests cover the new code paths
+- [ ] Push and watch CI pass
