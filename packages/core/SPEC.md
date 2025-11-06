@@ -92,7 +92,7 @@ interface BoundaryDefinition {
 }
 ```
 
-**Note**: If no rule targets `external`, external dependencies are allowed by default.
+**Note**: External dependencies follow deny-by-default policy. Without explicit rules allowing external imports, they will be denied. Add rules to allow external dependencies where needed.
 
 #### `ArchPreset`
 Complete architecture preset definition.
@@ -592,6 +592,36 @@ function matchesRuleBoundary(boundary, pattern, boundaries) {
 }
 ```
 
+#### Deny-By-Default Policy
+
+When no rule matches an import, Stricture denies by default. The error message includes a suggested rule to fix it:
+```typescript
+{
+  valid: false,
+  message: `No architectural rule defined for this import.
+
+From: api (src/api/controller.ts)
+To:   database (src/database/connection.ts)
+
+Add an explicit rule to allow this import:
+{
+  "rules": [{
+    "id": "allow-api-to-database",
+    "from": { "tag": "api" },
+    "to": { "tag": "database" },
+    "allowed": true
+  }]
+}`
+}
+```
+
+**Why deny-by-default:**
+- Safe by default: Better to error than allow unintended dependencies
+- Forces explicit architecture: No implicit allowances
+- Presets must be comprehensive: Missing rules are caught immediately
+
+**When to use allowed: false:** Only when providing custom error messages or overriding more general rules. Otherwise rely on deny-by-default.
+
 #### Pattern Matching Algorithm
 
 ```typescript
@@ -732,6 +762,51 @@ const rules = [{
 
 // Domain cannot import ANYTHING except other domain files
 ```
+
+#### Driven Adapters and Domain Types
+
+**Driven adapters CAN import domain types** - this is correct and necessary:
+```typescript
+// Port uses domain type in signature
+export interface UserRepository {
+  save(user: User): Promise<void>  // User from domain
+}
+
+// Driven adapter MUST import User to implement port
+import { User } from '../../core/domain/user'  // ✅ Correct
+import type { UserRepository } from '../../core/ports/user-repository'
+
+export class MemoryUserRepository implements UserRepository {
+  async save(user: User): Promise<void> {
+    // Must know User type to implement interface
+  }
+}
+```
+
+**What we prevent:**
+- ❌ Driving adapters importing domain (use application layer)
+- ❌ Adapters calling domain methods (only application orchestrates)
+
+**What we allow:**
+- ✅ Driven adapters importing domain types (necessary for ports)
+
+**Rule configuration:**
+```typescript
+{
+  id: 'driven-to-domain',
+  from: { tag: 'driven' },
+  to: { tag: 'domain' },
+  allowed: true  // Necessary to implement ports
+},
+{
+  id: 'driving-not-domain',
+  from: { tag: 'driving' },
+  to: { tag: 'domain' },
+  allowed: false  // Entry points use application
+}
+```
+
+**Anti-pattern:** Do NOT re-export domain from ports - driven adapters should import domain directly.
 
 ## Dependencies
 
