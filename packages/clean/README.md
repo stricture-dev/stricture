@@ -6,25 +6,28 @@ Uncle Bob's Clean Architecture preset for Stricture. Enforces the Dependency Rul
 
 Clean Architecture organizes code in concentric circles:
 
-```
-┌─────────────────────────────────────┐
-│  Frameworks & Drivers (UI, DB, Web) │  ← Outermost
-│  ┌────────────────────────────────┐ │
-│  │ Interface Adapters (Controllers,│ │
-│  │    Presenters, Gateways)       │ │
-│  │  ┌──────────────────────────┐  │ │
-│  │  │ Use Cases (Application   │  │ │
-│  │  │   Business Rules)        │  │ │
-│  │  │  ┌────────────────────┐  │  │ │
-│  │  │  │   Entities         │  │  │ │
-│  │  │  │ (Enterprise Rules) │  │  │ │
-│  │  │  └────────────────────┘  │  │ │
-│  │  └──────────────────────────┘  │ │
-│  └────────────────────────────────┘ │
-└─────────────────────────────────────┘
+```mermaid
+%%{init: {'theme':'base', 'themeVariables': { 'primaryColor':'hsl(187, 61%, 79%)','primaryBorderColor':'hsl(187, 54%, 68%)','secondaryColor':'hsl(100, 64%, 86%)','secondaryBorderColor':'hsl(100, 41%, 76%)','tertiaryColor':'hsl(182, 29%, 96%)','tertiaryBorderColor':'hsl(187, 54%, 68%)'}}}%%
+graph TB
+    subgraph Frameworks["Frameworks & Drivers"]
+        FW["UI, DB, Web"]
+        subgraph InterfaceAdapters["Interface Adapters"]
+            IA["Controllers, Presenters"]
+            subgraph UseCases["Use Cases"]
+                UC["Application Logic"]
+                subgraph EntitiesLayer["Entities"]
+                    E["Business Rules"]
+                end
+            end
+        end
+    end
 
-Dependencies point INWARD only →
+    FW -.-> IA
+    IA -.-> UC
+    UC -.-> E
 ```
+
+**Dependencies point INWARD only →**
 
 ## The Dependency Rule
 

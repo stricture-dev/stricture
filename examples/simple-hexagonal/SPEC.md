@@ -440,14 +440,15 @@ export class HttpAdapter {
 
 ### Allowed Dependencies
 
-```
-┌───────────┐
-│  Adapters │ → Application → Domain
-└───────────┘       ↓
-      ↓           Ports
-    Ports           ↓
-      ↓           Domain
-    Domain
+```mermaid
+%%{init: {'theme':'base', 'themeVariables': { 'primaryColor':'hsl(187, 61%, 79%)','primaryBorderColor':'hsl(187, 54%, 68%)','secondaryColor':'hsl(100, 64%, 86%)','secondaryBorderColor':'hsl(100, 41%, 76%)','tertiaryColor':'hsl(182, 29%, 96%)','tertiaryBorderColor':'hsl(187, 54%, 68%)'}}}%%
+graph LR
+    Adapters --> Application
+    Adapters --> Ports
+    Adapters --> Domain
+    Application --> Domain
+    Application --> Ports
+    Ports --> Domain
 ```
 
 **Allowed:**

@@ -12,19 +12,20 @@ Layered architecture organizes code into horizontal layers where:
 
 ## Architecture Layers
 
-```
-┌─────────────────────────┐
-│   Presentation Layer    │  ← UI, Controllers, Views
-├─────────────────────────┤
-│   Business Logic Layer  │  ← Services, Use Cases
-├─────────────────────────┤
-│   Data Access Layer     │  ← Repositories, Models
-├─────────────────────────┤
-│   Infrastructure Layer  │  ← Database, External APIs
-└─────────────────────────┘
+```mermaid
+%%{init: {'theme':'base', 'themeVariables': { 'primaryColor':'hsl(187, 61%, 79%)','primaryBorderColor':'hsl(187, 54%, 68%)','secondaryColor':'hsl(42, 97%, 85%)','secondaryBorderColor':'hsl(42, 100%, 73%)','tertiaryColor':'hsl(335, 52%, 92%)','tertiaryBorderColor':'hsl(335, 82%, 86%)'}}}%%
+graph TB
+    Presentation["Presentation Layer"]
+    Business["Business Logic Layer"]
+    Data["Data Access Layer"]
+    Infrastructure["Infrastructure Layer"]
 
-Dependency flow: Top → Bottom only
+    Presentation --> Business
+    Business --> Data
+    Data --> Infrastructure
 ```
+
+**Dependency flow:** Top → Bottom only
 
 ## Installation
 

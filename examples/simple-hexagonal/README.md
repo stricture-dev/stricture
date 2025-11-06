@@ -18,45 +18,39 @@ This example exists as the perfect starting point for understanding hexagonal ar
 
 ## Architecture Diagram
 
-```
-┌────────────────────────────────────────────────────────────┐
-│                     Outer Layer (Adapters)                 │
-│  ┌──────────────┐                      ┌────────────────┐  │
-│  │ CLI Adapter  │                      │   Memory       │  │
-│  │  (cli.ts)    │                      │  Repository    │  │
-│  └──────┬───────┘                      └────────┬───────┘  │
-│         │                                       │          │
-│         ↓                                       ↓          │
-│  ┌─────────────────────────────────────────────────────┐  │
-│  │           Application Layer (Use Cases)             │  │
-│  │  ┌───────────────┐      ┌──────────────────┐       │  │
-│  │  │ CreateUser    │      │   ListUsers      │       │  │
-│  │  │  (UseCase)    │      │   (UseCase)      │       │  │
-│  │  └───────────────┘      └──────────────────┘       │  │
-│  │         ↓                         ↓                 │  │
-│  │  ┌──────────────────────────────────────────────┐  │  │
-│  │  │         Ports Layer (Interfaces)             │  │  │
-│  │  │  ┌────────────────────────────────────┐      │  │  │
-│  │  │  │     UserRepository (interface)     │      │  │  │
-│  │  │  └────────────────────────────────────┘      │  │  │
-│  │  │                   ↓                          │  │  │
-│  │  │  ┌────────────────────────────────────┐      │  │  │
-│  │  │  │       Domain Layer (Entities)      │      │  │  │
-│  │  │  │      ┌──────────────────┐          │      │  │  │
-│  │  │  │      │  User (entity)   │          │      │  │  │
-│  │  │  │      │  - Validation    │          │      │  │  │
-│  │  │  │      │  - Business Logic│          │      │  │  │
-│  │  │  │      └──────────────────┘          │      │  │  │
-│  │  │  │     (Zero Dependencies)            │      │  │  │
-│  │  │  └────────────────────────────────────┘      │  │  │
-│  │  └──────────────────────────────────────────────┘  │  │
-│  └─────────────────────────────────────────────────────┘  │
-└────────────────────────────────────────────────────────────┘
+```mermaid
+%%{init: {'theme':'base', 'themeVariables': { 'primaryColor':'hsl(187, 61%, 79%)','primaryBorderColor':'hsl(187, 54%, 68%)','secondaryColor':'hsl(100, 64%, 86%)','secondaryBorderColor':'hsl(100, 41%, 76%)','tertiaryColor':'hsl(182, 29%, 96%)','tertiaryBorderColor':'hsl(187, 54%, 68%)'}}}%%
+graph TB
+    subgraph Adapters["Outer Layer (Adapters)"]
+        CLI["CLI Adapter"]
+        MemRepo["Memory Repository"]
 
-Dependency Flow: Adapters → Application → Ports → Domain
-                                    ↓
-                                  Domain is the core with ZERO outward dependencies
+        subgraph Application["Application Layer (Use Cases)"]
+            CreateUser["CreateUser"]
+            ListUsers["ListUsers"]
+
+            subgraph PortsAndDomain["Core"]
+                subgraph Ports["Ports Layer (Interfaces)"]
+                    UserRepo["UserRepository"]
+                end
+
+                subgraph Domain["Domain Layer (Entities)"]
+                    User["User"]
+                end
+            end
+        end
+    end
+
+    CLI -.calls.-> CreateUser
+    CLI -.calls.-> ListUsers
+    MemRepo -.implements.-> UserRepo
+    CreateUser -.uses.-> UserRepo
+    ListUsers -.uses.-> UserRepo
+    UserRepo -.depends on.-> User
 ```
+
+**Dependency Flow:** Adapters → Application → Ports → Domain
+**Core Principle:** Domain is the core with ZERO outward dependencies
 
 ## Adapter Types in Hexagonal Architecture
 
