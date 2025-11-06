@@ -9,13 +9,11 @@ import type { ArchRule } from '@stricture/core'
  * - Driving adapters call application, driven adapters implement ports
  * - Proper separation between driving and driven adapters
  *
- * Rule order matters for specificity:
- * 1. Specific allowances first (domain-self-imports allows domain → domain)
- * 2. Then broad restrictions (domain-isolation denies domain → *)
- * 3. Other restrictions and allowances
+ * Rules are automatically sorted by specificity - array order doesn't matter.
+ * More specific rules (domain → domain) take precedence over wildcards (domain → *).
+ * Specificity is calculated based on pattern/tag specificity in validate-import.ts.
  */
 export const rules: ArchRule[] = [
-  // Specific allowances must come before broad restrictions
   {
     id: 'domain-self-imports',
     name: 'Domain Can Import Itself',
@@ -123,6 +121,65 @@ export const rules: ArchRule[] = [
       good: [
         "import { UserRepository } from '../../core/ports/user-repository'",
         "// Repositories implement ports, they don't call use cases"
+      ]
+    }
+  },
+  {
+    id: 'driving-independent',
+    name: 'Driving Adapters Are Independent',
+    description: 'Driving adapters should not import each other',
+    severity: 'error',
+    from: { tag: 'driving', mode: 'file' },
+    to: { tag: 'driving', mode: 'file' },
+    allowed: false,
+    message: 'Driving adapters (CLI, HTTP, GraphQL) should be independent entry points. They should not import each other.',
+    examples: {
+      bad: [
+        "import { CLI } from './cli'  // In http-controller.ts",
+        "import { HTTPController } from './http-controller'  // In graphql-resolver.ts"
+      ],
+      good: [
+        "// Each driving adapter is completely independent",
+        "// They share nothing except calling the same use cases"
+      ]
+    }
+  },
+  {
+    id: 'driven-independent',
+    name: 'Driven Adapters Are Independent',
+    description: 'Driven adapters should not import each other',
+    severity: 'error',
+    from: { tag: 'driven', mode: 'file' },
+    to: { tag: 'driven', mode: 'file' },
+    allowed: false,
+    message: 'Driven adapters (repositories, API clients) should be independent. If they share logic, create a shared port or helper.',
+    examples: {
+      bad: [
+        "import { PostgresRepository } from './postgres-repository'  // In mongo-repository.ts",
+        "import { DatabaseConnection } from './database-adapter'  // In cache-adapter.ts"
+      ],
+      good: [
+        "import { UserRepository } from '../../core/ports/user-repository'",
+        "// Both PostgresRepository and MongoRepository implement the same port independently"
+      ]
+    }
+  },
+  {
+    id: 'driven-not-driving',
+    name: 'Driven Adapters Cannot Import Driving Adapters',
+    description: 'Driven adapters are passive and should not know about entry points',
+    severity: 'error',
+    from: { tag: 'driven', mode: 'file' },
+    to: { tag: 'driving', mode: 'file' },
+    allowed: false,
+    message: 'Driven adapters (repositories) should not import driving adapters (CLI, HTTP). This inverts the dependency flow.',
+    examples: {
+      bad: [
+        "import { CLI } from '../../driving/cli'  // In repository"
+      ],
+      good: [
+        "import { UserRepository } from '../../core/ports/user-repository'",
+        "// Driven adapters only implement ports"
       ]
     }
   },

@@ -110,8 +110,7 @@ export function validateImport(
     // Check if rule's from matches source boundary
     const fromMatches = matchesRuleBoundary(
       fromBoundary,
-      rule.from,
-      boundaries
+      rule.from
     )
 
     // Check if rule's to matches target path/boundary
@@ -173,8 +172,7 @@ Or add to your preset if this should be a standard architectural rule.`
  */
 function matchesRuleBoundary(
   boundary: BoundaryDefinition | undefined,
-  pattern: BoundaryPattern,
-  _boundaries: BoundaryDefinition[]
+  pattern: BoundaryPattern
 ): boolean {
   // Handle wildcard - matches ANY boundary including external
   if (pattern.pattern === '**' || pattern.tag === '*') {
@@ -227,7 +225,7 @@ function matchesRuleBoundaryOrPath(
   }
 
   // Otherwise use boundary matching
-  return matchesRuleBoundary(boundary, pattern, boundaries)
+  return matchesRuleBoundary(boundary, pattern)
 }
 
 /**

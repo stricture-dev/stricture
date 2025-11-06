@@ -290,6 +290,53 @@ This separation is crucial for:
 - ✅ Enabling easy testing (mock driven adapters)
 - ✅ Enabling easy replacement (swap HTTP for GraphQL, swap PostgreSQL for MongoDB)
 
+### Adapter Independence
+
+**Critical principle**: Adapters at the same level should be completely independent.
+
+#### Driving Adapters Don't Share Code
+```typescript
+// ❌ BAD - CLI importing HTTP
+// src/adapters/driving/cli.ts
+import { HTTPController } from './http-controller'  // Violation!
+
+// ✅ GOOD - Each adapter is independent
+// src/adapters/driving/cli.ts
+import { CreateUserUseCase } from '../../core/application/create-user'
+
+// src/adapters/driving/http-controller.ts
+import { CreateUserUseCase } from '../../core/application/create-user'
+```
+
+Both driving adapters can call the same use case, but they don't know about each other.
+
+#### Driven Adapters Don't Share Code
+```typescript
+// ❌ BAD - Repository importing another repository
+// src/adapters/driven/mongo-repository.ts
+import { PostgresRepository } from './postgres-repository'  // Violation!
+
+// ✅ GOOD - Both implement the same port independently
+// src/adapters/driven/postgres-repository.ts
+import type { UserRepository } from '../../core/ports/user-repository'
+export class PostgresRepository implements UserRepository { ... }
+
+// src/adapters/driven/mongo-repository.ts
+import type { UserRepository } from '../../core/ports/user-repository'
+export class MongoRepository implements UserRepository { ... }
+```
+
+**If adapters need shared logic**:
+- Create a helper function in a shared utilities folder
+- Create a new port if it's a domain concern
+- Extract to a separate adapter that both can use via dependency injection
+
+**Why this matters**:
+- ✅ Easier to swap implementations
+- ✅ Clearer boundaries
+- ✅ Better testability
+- ✅ Prevents coupling between infrastructure components
+
 ## Configuration
 
 The preset provides this configuration:
