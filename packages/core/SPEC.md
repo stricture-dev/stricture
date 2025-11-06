@@ -470,15 +470,10 @@ function validateImport(fromPath, toPath, rules, boundaries) {
       )
 
   // 4. Check all applicable rules
-  // Sort rules by specificity: pattern-based rules (more specific) before tag-based rules
-  // This ensures specific patterns override general tags
-  // First matching rule wins (early return)
+  // 4.1 Sort rules by specificity (highest score first)
+  // This ensures specific rules override general ones regardless of array order
   const sortedRules = [...rules].sort((a, b) => {
-    const aHasPattern = !!a.to.pattern
-    const bHasPattern = !!b.to.pattern
-    if (aHasPattern && !bHasPattern) return -1
-    if (!aHasPattern && bHasPattern) return 1
-    return 0
+    return calculateRuleSpecificity(b) - calculateRuleSpecificity(a)
   })
 
   for (const rule of sortedRules) {
@@ -508,8 +503,65 @@ function validateImport(fromPath, toPath, rules, boundaries) {
     }
   }
 
-  // 5. No violations found (or no rule targets this combination)
-  return { valid: true }
+  // 5. No matching rule found - DENY by default (Step 7)
+  // This is the deny-by-default policy for safety
+  const fromName = fromBoundary?.name || 'unknown boundary'
+  const toName = isExternal ? 'external dependency' : (toBoundary?.name || 'unknown boundary')
+
+  return {
+    valid: false,
+    message: "No architectural rule defined - add explicit rule"
+  }
+}
+
+/**
+ * Calculate specificity score for a rule (Step 4.1)
+ * Higher score = more specific = higher priority
+ *
+ * Scoring system:
+ * - Specific node_modules pattern: 10000
+ * - Regular pattern: 1000
+ * - Specific tag: 100
+ * - Wildcard (*): 1
+ */
+function calculateRuleSpecificity(rule: ArchRule): number {
+  let score = 0
+
+  // from + to scoring
+  if (rule.from.pattern) {
+    if (rule.from.pattern.includes('node_modules/') && !rule.from.pattern.includes('**')) {
+      score += 10000
+    } else if (rule.from.pattern === '**' || rule.from.pattern === '*') {
+      score += 1
+    } else {
+      score += 1000
+    }
+  } else if (rule.from.tag) {
+    if (rule.from.tag === '*') {
+      score += 1
+    } else {
+      score += 100
+    }
+  }
+
+  // Same for 'to'
+  if (rule.to.pattern) {
+    if (rule.to.pattern.includes('node_modules/') && !rule.to.pattern.includes('**')) {
+      score += 10000
+    } else if (rule.to.pattern === '**' || rule.to.pattern === '*') {
+      score += 1
+    } else {
+      score += 1000
+    }
+  } else if (rule.to.tag) {
+    if (rule.to.tag === '*') {
+      score += 1
+    } else {
+      score += 100
+    }
+  }
+
+  return score
 }
 
 function buildMessage(from, to, isExternal) {

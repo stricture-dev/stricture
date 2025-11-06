@@ -216,6 +216,77 @@ const rule: ArchRule = {
 
 **Note**: By default, external dependencies are allowed unless explicitly blocked by a rule.
 
+## Deny-By-Default Policy
+
+Stricture is **strict by default** for architectural safety:
+
+- ✅ If an explicit `allowed: true` rule matches → **Allowed**
+- ❌ If an explicit `allowed: false` rule matches → **Denied** with custom message
+- ❌ If NO rule matches → **Denied** with generic message (safe default)
+
+**Example**:
+```typescript
+// With no rules for application → external:
+import _ from 'lodash'  // ❌ Denied by default
+
+// Add explicit rule to allow:
+{
+  "rules": [{
+    "from": { "tag": "application" },
+    "to": { "tag": "external" },
+    "allowed": true
+  }]
+}
+```
+
+**Why this matters**: Better to error than allow unintended dependencies. Forces explicit architectural decisions.
+
+**When to use allowed: false**: Only for custom error messages or overriding more general rules. Otherwise, rely on deny-by-default.
+
+## Rule Specificity
+
+When multiple rules could match an import, **the most specific rule wins**, regardless of config order.
+
+**Specificity hierarchy** (highest → lowest):
+
+1. Specific node_modules pattern (`node_modules/@types/**`)
+2. Regular patterns (`src/domain/**`)
+3. Specific tags (`{ tag: 'domain' }`)
+4. Wildcard tags (`{ tag: '*' }`)
+
+**Example**:
+```json
+{
+  "rules": [
+    {
+      "id": "domain-isolation",
+      "from": { "tag": "domain" },
+      "to": { "tag": "*" },        // Generic (score: 101)
+      "allowed": false
+    },
+    {
+      "id": "domain-self",
+      "from": { "tag": "domain" },
+      "to": { "tag": "domain" },   // Specific (score: 200)
+      "allowed": true
+    }
+  ]
+}
+```
+
+For `import { Order } from './order'` in domain:
+- Both rules match
+- `domain-self` is more specific
+- Result: **Allowed** ✅
+
+**Specificity scores**:
+- Both specific tags: 200
+- Specific tag + wildcard: 101
+- Pattern + tag: 1100+
+- Both wildcards: 2
+
+**Why this matters**: Write general rules first, then exceptions. Order doesn't matter.
+
 ## Utilities
 
 ### `validateConfig(config: unknown): ValidationResult`

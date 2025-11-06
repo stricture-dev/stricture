@@ -255,7 +255,7 @@ describe('validateImport', () => {
   ]
 
   describe('basic validation', () => {
-    test('allows imports when no rule blocks them', () => {
+    test('denies imports when no rule matches (deny-by-default)', () => {
       const rules: ArchRule[] = []
 
       const result = validateImport(
@@ -265,8 +265,8 @@ describe('validateImport', () => {
         boundaries
       )
 
-      expect(result.valid).toBe(true)
-      expect(result.violatedRule).toBeUndefined()
+      expect(result.valid).toBe(false)
+      expect(result.message).toContain('No architectural rule defined')
     })
 
     test('blocks imports when rule forbids them', () => {
@@ -319,7 +319,7 @@ describe('validateImport', () => {
   })
 
   describe('external dependencies', () => {
-    test('allows external dependencies by default (no rule)', () => {
+    test('denies external dependencies by default (no rule)', () => {
       const rules: ArchRule[] = []
 
       const result = validateImport(
@@ -329,7 +329,8 @@ describe('validateImport', () => {
         boundaries
       )
 
-      expect(result.valid).toBe(true)
+      expect(result.valid).toBe(false)
+      expect(result.message).toContain('No architectural rule defined')
     })
 
     test('blocks external dependencies when rule forbids them', () => {
@@ -497,6 +498,167 @@ describe('validateImport', () => {
       expect(result.valid).toBe(false)
       expect(result.message).toContain('domain')
       expect(result.message).toContain('adapters')
+    })
+  })
+
+  describe('deny-by-default policy', () => {
+    test('denies import when no rule matches', () => {
+      const testBoundaries: BoundaryDefinition[] = [
+        { name: 'a', pattern: 'src/a/**', mode: 'file', tags: ['a'] },
+        { name: 'b', pattern: 'src/b/**', mode: 'file', tags: ['b'] }
+      ]
+
+      const rules: ArchRule[] = [
+        {
+          id: 'a-to-b',
+          name: 'A to B',
+          severity: 'error',
+          from: { tag: 'a' },
+          to: { tag: 'b' },
+          allowed: true
+        }
+      ]
+
+      // b → a has NO rule - should deny by default
+      const result = validateImport(
+        'src/b/file.ts',
+        'src/a/file.ts',
+        rules,
+        testBoundaries
+      )
+
+      expect(result.valid).toBe(false)
+      expect(result.message).toContain('No architectural rule defined')
+      expect(result.message).toContain('deny-by-default')
+    })
+
+    test('provides helpful error message with example rule', () => {
+      const testBoundaries: BoundaryDefinition[] = [
+        { name: 'domain', pattern: 'src/domain/**', mode: 'file', tags: ['domain'] },
+        { name: 'adapters', pattern: 'src/adapters/**', mode: 'file', tags: ['adapters'] }
+      ]
+
+      const result = validateImport(
+        'src/domain/user.ts',
+        'src/adapters/repo.ts',
+        [],  // No rules at all
+        testBoundaries
+      )
+
+      expect(result.valid).toBe(false)
+      expect(result.message).toContain('From: domain')
+      expect(result.message).toContain('To:   adapters')
+      expect(result.message).toContain('"allowed": true')
+    })
+
+    test('denies external dependencies by default', () => {
+      const testBoundaries: BoundaryDefinition[] = [
+        { name: 'domain', pattern: 'src/domain/**', mode: 'file', tags: ['domain'] }
+      ]
+
+      const result = validateImport(
+        'src/domain/user.ts',
+        'node_modules/lodash/index.js',
+        [],  // No rules
+        testBoundaries
+      )
+
+      expect(result.valid).toBe(false)
+      expect(result.message).toContain('No architectural rule defined')
+      expect(result.message).toContain('external dependency')
+    })
+  })
+
+  describe('rule specificity and precedence', () => {
+    test('specific rule takes precedence over wildcard', () => {
+      const testBoundaries: BoundaryDefinition[] = [
+        { name: 'domain', pattern: 'src/domain/**', mode: 'file', tags: ['domain'] }
+      ]
+
+      const rules: ArchRule[] = [
+        {
+          id: 'domain-isolation',
+          name: 'Domain Isolation',
+          severity: 'error',
+          from: { tag: 'domain' },
+          to: { tag: '*' },        // Wildcard (score: 101)
+          allowed: false
+        },
+        {
+          id: 'domain-self',
+          name: 'Domain Self Imports',
+          severity: 'error',
+          from: { tag: 'domain' },
+          to: { tag: 'domain' },   // Specific (score: 200)
+          allowed: true
+        }
+      ]
+
+      // domain → domain should be allowed (specific rule wins)
+      const result = validateImport(
+        'src/domain/user.ts',
+        'src/domain/order.ts',
+        rules,
+        testBoundaries
+      )
+
+      expect(result.valid).toBe(true)
+    })
+
+    test('specificity is independent of array order', () => {
+      const testBoundaries: BoundaryDefinition[] = [
+        { name: 'domain', pattern: 'src/domain/**', mode: 'file', tags: ['domain'] }
+      ]
+
+      // Try both orders
+      const rulesOrder1: ArchRule[] = [
+        { id: 'specific', severity: 'error', from: { tag: 'domain' }, to: { tag: 'domain' }, allowed: true },
+        { id: 'wildcard', severity: 'error', from: { tag: 'domain' }, to: { tag: '*' }, allowed: false }
+      ]
+
+      const rulesOrder2: ArchRule[] = [
+        { id: 'wildcard', severity: 'error', from: { tag: 'domain' }, to: { tag: '*' }, allowed: false },
+        { id: 'specific', severity: 'error', from: { tag: 'domain' }, to: { tag: 'domain' }, allowed: true }
+      ]
+
+      const result1 = validateImport('src/domain/user.ts', 'src/domain/order.ts', rulesOrder1, testBoundaries)
+      const result2 = validateImport('src/domain/user.ts', 'src/domain/order.ts', rulesOrder2, testBoundaries)
+
+      // Both should give same result (allowed)
+      expect(result1.valid).toBe(true)
+      expect(result2.valid).toBe(true)
+    })
+
+    test('pattern-based rule more specific than tag-based', () => {
+      const testBoundaries: BoundaryDefinition[] = [
+        { name: 'domain', pattern: 'src/domain/**', mode: 'file', tags: ['domain'] }
+      ]
+
+      const rules: ArchRule[] = [
+        {
+          id: 'tag-based',
+          severity: 'error',
+          from: { tag: 'domain' },
+          to: { tag: 'external' },
+          allowed: false
+        },
+        {
+          id: 'pattern-based',
+          severity: 'error',
+          from: { tag: 'domain' },
+          to: { pattern: 'node_modules/@types/**' },  // More specific
+          allowed: true
+        }
+      ]
+
+      const result = validateImport(
+        'src/domain/user.ts',
+        'node_modules/@types/node/index.d.ts',
+        rules,
+        testBoundaries
+      )
+
+      expect(result.valid).toBe(true)
     })
   })
 })
