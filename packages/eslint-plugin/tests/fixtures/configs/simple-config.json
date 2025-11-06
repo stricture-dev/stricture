@@ -7,6 +7,18 @@
       "tags": ["core", "domain"]
     },
     {
+      "name": "ports",
+      "pattern": "**/src/core/ports/**",
+      "mode": "file",
+      "tags": ["core", "ports"]
+    },
+    {
+      "name": "application",
+      "pattern": "**/src/core/application/**",
+      "mode": "file",
+      "tags": ["core", "application"]
+    },
+    {
       "name": "adapters",
       "pattern": "**/src/adapters/**",
       "mode": "file",
@@ -14,6 +26,15 @@
     }
   ],
   "rules": [
+    {
+      "id": "domain-self-imports",
+      "name": "Domain Can Import Itself",
+      "description": "Domain files can import other domain files",
+      "severity": "error",
+      "from": { "tag": "domain" },
+      "to": { "tag": "domain" },
+      "allowed": true
+    },
     {
       "id": "domain-isolation",
       "name": "Domain Isolation",
@@ -33,6 +54,24 @@
       "to": { "tag": "domain" },
       "allowed": false,
       "message": "Adapters must access domain through ports"
+    },
+    {
+      "id": "adapters-to-ports",
+      "name": "Adapters Can Use Ports",
+      "description": "Adapters can import from ports",
+      "severity": "error",
+      "from": { "tag": "adapters" },
+      "to": { "tag": "ports" },
+      "allowed": true
+    },
+    {
+      "id": "application-to-domain",
+      "name": "Application Can Use Domain",
+      "description": "Application can import from domain",
+      "severity": "error",
+      "from": { "tag": "application" },
+      "to": { "tag": "domain" },
+      "allowed": true
     }
   ]
 }

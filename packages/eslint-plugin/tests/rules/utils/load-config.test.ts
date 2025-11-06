@@ -62,7 +62,7 @@ describe('loadConfig', () => {
 
     // Config should be loaded successfully
     expect(config).toBeDefined()
-    expect(config.boundaries).toHaveLength(2)
-    expect(config.rules).toHaveLength(2) // domain-isolation and adapters-via-ports
+    expect(config.boundaries).toHaveLength(4) // domain, ports, application, adapters
+    expect(config.rules).toHaveLength(5) // domain-self-imports, domain-isolation, adapters-via-ports, adapters-to-ports, application-to-domain
   })
 })
