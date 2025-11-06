@@ -19,7 +19,7 @@ export function formatErrorMessage(result: ImportValidationResult): string {
   }
 
   // Start with the main message from core
-  let message = result.message || 'Import not allowed'
+  let message = result.message ?? 'Import not allowed'
 
   // Add suggestion if available
   if (result.suggestion) {

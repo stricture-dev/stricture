@@ -196,8 +196,7 @@ function matchesRuleBoundary(
     // Match by boundary name or tags array
     return (
       boundary.name === pattern.tag ||
-      boundary.tags?.includes(pattern.tag) ??
-      false
+      (boundary.tags?.includes(pattern.tag) ?? false)
     )
   }
 
