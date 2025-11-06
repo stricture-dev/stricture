@@ -661,4 +661,91 @@ describe('validateImport', () => {
       expect(result.valid).toBe(true)
     })
   })
+
+  describe('adapter independence rules', () => {
+    test('prevents driving adapters from importing each other', () => {
+      const testBoundaries: BoundaryDefinition[] = [
+        { name: 'driving', pattern: 'src/adapters/driving/**', mode: 'file', tags: ['adapters', 'driving'] }
+      ]
+
+      const rules: ArchRule[] = [
+        {
+          id: 'driving-independent',
+          name: 'Driving Adapters Are Independent',
+          severity: 'error',
+          from: { tag: 'driving', mode: 'file' },
+          to: { tag: 'driving', mode: 'file' },
+          allowed: false,
+          message: 'Driving adapters should be independent'
+        }
+      ]
+
+      const result = validateImport(
+        'src/adapters/driving/cli.ts',
+        'src/adapters/driving/http.ts',
+        rules,
+        testBoundaries
+      )
+
+      expect(result.valid).toBe(false)
+      expect(result.message).toContain('independent')
+    })
+
+    test('prevents driven adapters from importing each other', () => {
+      const testBoundaries: BoundaryDefinition[] = [
+        { name: 'driven', pattern: 'src/adapters/driven/**', mode: 'file', tags: ['adapters', 'driven'] }
+      ]
+
+      const rules: ArchRule[] = [
+        {
+          id: 'driven-independent',
+          name: 'Driven Adapters Are Independent',
+          severity: 'error',
+          from: { tag: 'driven', mode: 'file' },
+          to: { tag: 'driven', mode: 'file' },
+          allowed: false,
+          message: 'Driven adapters should be independent'
+        }
+      ]
+
+      const result = validateImport(
+        'src/adapters/driven/postgres-repo.ts',
+        'src/adapters/driven/mongo-repo.ts',
+        rules,
+        testBoundaries
+      )
+
+      expect(result.valid).toBe(false)
+      expect(result.message).toContain('independent')
+    })
+
+    test('prevents driven adapters from importing driving adapters', () => {
+      const testBoundaries: BoundaryDefinition[] = [
+        { name: 'driven', pattern: 'src/adapters/driven/**', mode: 'file', tags: ['adapters', 'driven'] },
+        { name: 'driving', pattern: 'src/adapters/driving/**', mode: 'file', tags: ['adapters', 'driving'] }
+      ]
+
+      const rules: ArchRule[] = [
+        {
+          id: 'driven-not-driving',
+          name: 'Driven Adapters Cannot Import Driving Adapters',
+          severity: 'error',
+          from: { tag: 'driven', mode: 'file' },
+          to: { tag: 'driving', mode: 'file' },
+          allowed: false,
+          message: 'Driven adapters should not import driving adapters'
+        }
+      ]
+
+      const result = validateImport(
+        'src/adapters/driven/postgres-repo.ts',
+        'src/adapters/driving/cli.ts',
+        rules,
+        testBoundaries
+      )
+
+      expect(result.valid).toBe(false)
+      expect(result.message).toContain('should not import driving')
+    })
+  })
 })
