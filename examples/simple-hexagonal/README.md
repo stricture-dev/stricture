@@ -88,6 +88,33 @@ Think of it this way:
 
 This separation helps maintain the **dependency inversion principle** - the application core doesn't depend on infrastructure details.
 
+### Why Driven Adapters Can Import Domain Types
+
+**Important**: Driven adapters (repositories) CAN import domain types. This is correct and necessary!
+
+```typescript
+// src/adapters/driven/memory-repository.ts
+import { User } from '../../core/domain/user'  // ✅ Necessary
+import { UserRepository } from '../../core/ports/user-repository'
+
+export class MemoryUserRepository implements UserRepository {
+  async save(user: User): Promise<void> {
+    // Implementation uses domain type from port signature
+  }
+}
+```
+
+**Why this is allowed**:
+- The port interface uses `User` in its method signatures: `save(user: User)`
+- To implement the interface, the adapter must import `User`
+- The adapter doesn't call domain methods - it just stores/retrieves
+- This is standard practice in hexagonal architecture
+
+**What Stricture enforces**:
+- ✅ Driven adapters CAN import domain types (necessary for implementation)
+- ❌ Driven adapters CANNOT call application use cases (passive!)
+- ❌ Driving adapters CANNOT import domain (use application instead)
+
 ## Composition Root Pattern
 
 The `index.ts` file acts as the **composition root** - the only place where concrete implementations are wired together:

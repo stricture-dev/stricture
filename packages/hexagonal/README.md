@@ -163,18 +163,35 @@ export class PostgresUserRepository implements UserRepository {
 }
 ```
 
-### 5. No Adapter-to-Domain Imports
+### 5. Driven Adapters Can Import Domain Types
 
-**Adapters cannot import domain directly, only through ports.**
+**Important distinction**: Driven adapters (repositories) CAN import domain types because they implement ports that use those types. Driving adapters (CLI, HTTP) should NOT import domain.
 
 ```typescript
-// ❌ BAD - Adapter importing domain
-// src/adapters/api/user-controller.ts
-import { User } from '../../core/domain/user'
+// ✅ GOOD - Driven adapter importing domain type
+// src/adapters/driven/database/postgres-user-repository.ts
+import { User } from '../../../core/domain/user'  // ✅ Necessary!
+import { UserRepository } from '../../../core/ports/user-repository'
 
-// ✅ GOOD - Adapter uses application layer
-// src/adapters/api/user-controller.ts
-import { CreateUserUseCase } from '../../core/application/create-user'
+export class PostgresUserRepository implements UserRepository {
+  async save(user: User): Promise<void> {
+    // Must know about User type to implement port interface
+    await this.db.query('INSERT INTO users...', [user.id, user.email])
+  }
+
+  async findById(id: string): Promise<User | null> {
+    const row = await this.db.query('SELECT * FROM users WHERE id = $1', [id])
+    return row ? new User(row.id, row.email) : null
+  }
+}
+
+// ❌ BAD - Driving adapter importing domain
+// src/adapters/driving/api/user-controller.ts
+import { User } from '../../../core/domain/user'  // ❌ Don't do this!
+
+// ✅ GOOD - Driving adapter uses application layer
+// src/adapters/driving/api/user-controller.ts
+import { CreateUserUseCase } from '../../../core/application/create-user'
 
 export class UserController {
   constructor(private createUser: CreateUserUseCase) {}
@@ -185,6 +202,12 @@ export class UserController {
   }
 }
 ```
+
+**Why this makes sense**:
+- **Ports use domain types** in their signatures: `save(user: User)`
+- **Driven adapters implement ports**, so they MUST import those domain types
+- **Driving adapters call use cases**, so they don't need direct domain access
+- This is standard practice in real hexagonal architectures (Java Spring, .NET, etc.)
 
 ## Adapter Types
 
@@ -385,15 +408,17 @@ graph LR
 ```
 
 **Allowed**:
-- Domain → (nothing)
+- Domain → Domain (self-imports only)
 - Ports → Domain
 - Application → Domain, Ports
-- Adapters → Ports, Application
+- Driving Adapters → Application, Ports
+- Driven Adapters → Ports, Domain
 
 **Forbidden**:
-- Domain → Anything
+- Domain → Anything else (must remain pure)
 - Application → Adapters
-- Adapters → Domain
+- Driving Adapters → Domain (must use application layer)
+- Driven Adapters → Application (passive adapters don't call use cases)
 
 ## External Dependencies
 

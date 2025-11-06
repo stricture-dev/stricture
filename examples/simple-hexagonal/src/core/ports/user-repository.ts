@@ -1,4 +1,4 @@
-import { User } from '../domain/user.js'
+import type { User } from '../domain/user.js'
 
 /**
  * UserRepository port - Interface that defines the contract for user persistence

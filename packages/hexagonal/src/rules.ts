@@ -9,11 +9,23 @@ import type { ArchRule } from '@stricture/core'
  * - Driving adapters call application, driven adapters implement ports
  * - Proper separation between driving and driven adapters
  *
- * With deny-by-default policy, we only need to define:
- * 1. Critical restrictions with helpful messages (allowed: false)
- * 2. Explicit allowances (allowed: true)
+ * Rule order matters for specificity:
+ * 1. Specific allowances first (domain-self-imports allows domain → domain)
+ * 2. Then broad restrictions (domain-isolation denies domain → *)
+ * 3. Other restrictions and allowances
  */
 export const rules: ArchRule[] = [
+  // Specific allowances must come before broad restrictions
+  {
+    id: 'domain-self-imports',
+    name: 'Domain Can Import Itself',
+    description: 'Domain files can import other domain files',
+    severity: 'error',
+    from: { tag: 'domain', mode: 'file' },
+    to: { tag: 'domain', mode: 'file' },
+    allowed: true
+  },
+
   // Critical restrictions with helpful messages
   {
     id: 'domain-isolation',
@@ -77,35 +89,45 @@ export const rules: ArchRule[] = [
     }
   },
   {
-    id: 'adapters-not-domain',
-    name: 'Adapters Through Ports Only',
-    description: 'Adapters should not import domain directly',
+    id: 'driving-not-domain',
+    name: 'Driving Adapters Isolated from Domain',
+    description: 'Driving adapters should not import domain directly',
     severity: 'error',
-    from: { tag: 'adapters', mode: 'file' },
+    from: { tag: 'driving', mode: 'file' },
     to: { tag: 'domain', mode: 'file' },
     allowed: false,
-    message: 'Adapters should depend on ports and application layer, not domain directly',
+    message: 'Driving adapters (CLI, HTTP) should call the application layer, not domain directly',
     examples: {
       bad: [
-        "import { User } from '../../core/domain/user'"
+        "import { User } from '../../core/domain/user'  // In CLI adapter"
+      ],
+      good: [
+        "import { CreateUserUseCase } from '../../core/application/create-user'",
+        "// CLI calls use cases, not domain entities"
+      ]
+    }
+  },
+  {
+    id: 'driven-not-application',
+    name: 'Driven Adapters Cannot Call Use Cases',
+    description: 'Driven adapters are passive and cannot call application use cases',
+    severity: 'error',
+    from: { tag: 'driven', mode: 'file' },
+    to: { tag: 'application', mode: 'file' },
+    allowed: false,
+    message: 'Driven adapters (repositories, external APIs) are passive. They cannot call use cases.',
+    examples: {
+      bad: [
+        "import { CreateUserUseCase } from '../../core/application/create-user'  // In repository"
       ],
       good: [
         "import { UserRepository } from '../../core/ports/user-repository'",
-        "import { CreateUserUseCase } from '../../core/application/create-user'"
+        "// Repositories implement ports, they don't call use cases"
       ]
     }
   },
 
   // Allowed imports (all allowed:true)
-  {
-    id: 'domain-self-imports',
-    name: 'Domain Can Import Itself',
-    description: 'Domain files can import other domain files',
-    severity: 'error',
-    from: { tag: 'domain', mode: 'file' },
-    to: { tag: 'domain', mode: 'file' },
-    allowed: true
-  },
   {
     id: 'ports-to-domain',
     name: 'Ports Can Reference Domain',
@@ -197,12 +219,21 @@ export const rules: ArchRule[] = [
     allowed: true
   },
   {
-    id: 'driven-to-ports',
+    id: 'driven-implements-ports',
     name: 'Driven Adapters Implement Ports',
     description: 'Driven adapters implement port interfaces',
     severity: 'error',
     from: { tag: 'driven', mode: 'file' },
     to: { tag: 'ports', mode: 'file' },
+    allowed: true
+  },
+  {
+    id: 'driven-to-domain',
+    name: 'Driven Adapters Can Import Domain Types',
+    description: 'Driven adapters can import domain types used in ports they implement',
+    severity: 'error',
+    from: { tag: 'driven', mode: 'file' },
+    to: { tag: 'domain', mode: 'file' },
     allowed: true
   },
   {

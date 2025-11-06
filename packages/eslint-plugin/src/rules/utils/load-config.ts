@@ -117,9 +117,9 @@ function loadPreset(presetName: string, fromDir: string): ArchPreset {
     const presetModule = require(resolvedPath)
 
     // Get the default export or named export
-    const preset = presetModule.default || presetModule.hexagonalPreset || presetModule
+    const preset = presetModule.default ?? presetModule.hexagonalPreset ?? presetModule
 
-    if (!preset || !preset.boundaries || !preset.rules) {
+    if (!preset?.boundaries || !preset?.rules) {
       throw new Error(`Invalid preset: ${presetName} does not export boundaries and rules`)
     }
 

@@ -64,8 +64,8 @@ const enforceBoundariesRule: Rule.RuleModule = {
 
   create(context: Rule.RuleContext): Rule.RuleListener {
     // Get options
-    const options: RuleOptions = context.options[0] || {}
-    const configPath = options.configPath || '.stricture/config.json'
+    const options: RuleOptions = context.options[0] ?? {}
+    const configPath = options.configPath ?? '.stricture/config.json'
     const checkDynamicImports = options.checkDynamicImports !== false // default true
 
     // Load configuration
@@ -114,7 +114,7 @@ const enforceBoundariesRule: Rule.RuleModule = {
         sourceFile,
         importSpecifier,
         baseDir,
-        tsconfigPaths || undefined
+        tsconfigPaths ?? undefined
       )
 
       // Validate import using core
