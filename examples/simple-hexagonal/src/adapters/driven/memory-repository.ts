@@ -1,4 +1,5 @@
-import type { User, UserRepository } from '../../core/ports/user-repository.js'
+import type { User } from '../../core/domain/user.js'
+import type { UserRepository } from '../../core/ports/user-repository.js'
 
 /**
  * In-memory implementation of UserRepository

@@ -77,8 +77,8 @@ describe('@stricture/hexagonal preset', () => {
   })
 
   describe('rules', () => {
-    it('should define 13 rules', () => {
-      expect(rules).toHaveLength(13)
+    it('should define 19 rules', () => {
+      expect(rules).toHaveLength(19)
     })
 
     it('should have unique rule IDs', () => {

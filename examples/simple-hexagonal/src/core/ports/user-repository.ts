@@ -1,7 +1,4 @@
-import { User } from '../domain/user.js'
-
-// Re-export domain types so adapters can import them from the port
-export type { User }
+import type { User } from '../domain/user.js'
 
 /**
  * UserRepository port - Interface that defines the contract for user persistence
