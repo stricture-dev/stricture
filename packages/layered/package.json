@@ -1,11 +1,11 @@
 {
   "name": "@stricture/layered",
   "version": "0.1.0",
-  "description": "Layered (3-tier) architecture preset for Stricture",
+  "description": "Layered (N-tier) architecture preset for Stricture",
   "keywords": [
     "stricture",
     "layered",
-    "3-tier",
+    "n-tier",
     "architecture",
     "preset"
   ],
@@ -31,11 +31,11 @@
     "dist"
   ],
   "scripts": {
-    "build": "echo 'Package not yet implemented - skipping build'",
-    "dev": "echo 'Package not yet implemented'",
-    "test": "echo 'Package not yet implemented - skipping tests'",
-    "type-check": "echo 'Package not yet implemented - skipping type-check'",
-    "lint": "echo 'Package not yet implemented - skipping lint'",
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "vitest",
+    "type-check": "tsc --noEmit",
+    "lint": "eslint \"src/**/*.ts\"",
     "clean": "rm -rf dist"
   },
   "dependencies": {
