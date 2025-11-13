@@ -3,8 +3,6 @@
  */
 
 import type { Task, CreateTaskInput } from './types.js'
-// ✅ Import from user module's public API
-import type { User } from '../user/index.js'
 
 // In-memory storage for demo
 const tasks: Map<string, Task> = new Map()
