@@ -77,8 +77,8 @@ export const layeredPreset: ArchPreset = {
 - Pattern: `src/infrastructure/**`
 - Tags: `infrastructure`, `data`
 - Responsibilities: Database access, external APIs, file system, messaging, persistence implementations
-- Can depend on: external (database drivers, HTTP clients)
-- Cannot depend on: presentation, application, domain (except interfaces)
+- Can depend on: domain (for entities/types), external (database drivers, HTTP clients)
+- Cannot depend on: presentation, application
 
 ## Boundaries (4 layers)
 
@@ -158,10 +158,10 @@ The preset defines 21 comprehensive rules enforcing layered dependencies:
 ### Infrastructure Layer (Layer 3 - Bottom)
 
 16. **`infrastructure-self-imports`** - Infrastructure files can import each other (allowed: true)
-17. **`infrastructure-external`** - Infrastructure can use external data libraries (allowed: true)
-18. **`infrastructure-not-presentation`** - Infrastructure cannot depend on presentation (allowed: false, with message & examples)
-19. **`infrastructure-not-application`** - Infrastructure cannot depend on application (allowed: false, with message & examples)
-20. **`infrastructure-not-domain`** - Infrastructure cannot depend on domain logic (allowed: false, with message & examples)
+17. **`infrastructure-to-domain`** - Infrastructure can import domain entities (allowed: true)
+18. **`infrastructure-external`** - Infrastructure can use external data libraries (allowed: true)
+19. **`infrastructure-not-presentation`** - Infrastructure cannot depend on presentation (allowed: false, with message & examples)
+20. **`infrastructure-not-application`** - Infrastructure cannot depend on application (allowed: false, with message & examples)
 
 ### Type Definitions
 
@@ -202,9 +202,9 @@ Each violation provides:
 
 ## Design Decisions
 
-### Why Infrastructure Can't Import Domain
+### Why Infrastructure Can Import Domain
 
-In true layered architecture, infrastructure is the bottom layer and should not depend on any business logic. However, it needs to implement interfaces defined by upper layers. We allow infrastructure to reference domain *interfaces* for dependency inversion, but not domain *logic*.
+In practical layered architecture, the infrastructure layer (data access) needs to work with domain entities for repository implementations. While infrastructure is the bottom layer, it's allowed to import domain entities and value objects. This is a pragmatic choice that simplifies repository implementations without requiring DTOs for every data operation.
 
 ### Layer Skipping
 

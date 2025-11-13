@@ -224,6 +224,14 @@ describe('@stricture/layered preset', () => {
         expect(rule?.allowed).toBe(true)
       })
 
+      it('should allow infrastructure to import domain entities', () => {
+        const rule = rules.find(r => r.id === 'infrastructure-to-domain')
+        expect(rule).toBeDefined()
+        expect(rule?.from.tag).toBe('infrastructure')
+        expect(rule?.to.tag).toBe('domain')
+        expect(rule?.allowed).toBe(true)
+      })
+
       it('should allow infrastructure to use external libraries', () => {
         const rule = rules.find(r => r.id === 'infrastructure-external')
         expect(rule).toBeDefined()
@@ -250,16 +258,6 @@ describe('@stricture/layered preset', () => {
         expect(rule?.allowed).toBe(false)
         expect(rule?.message).toBeTruthy()
         expect(rule?.message).toContain('cannot depend on application')
-      })
-
-      it('should prevent infrastructure from depending on domain logic', () => {
-        const rule = rules.find(r => r.id === 'infrastructure-not-domain')
-        expect(rule).toBeDefined()
-        expect(rule?.from.tag).toBe('infrastructure')
-        expect(rule?.to.tag).toBe('domain')
-        expect(rule?.allowed).toBe(false)
-        expect(rule?.message).toBeTruthy()
-        expect(rule?.message).toContain('cannot depend on domain')
       })
     })
 

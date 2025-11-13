@@ -223,6 +223,15 @@ export const rules: ArchRule[] = [
     allowed: true
   },
   {
+    id: 'infrastructure-to-domain',
+    name: 'Infrastructure Can Use Domain Entities',
+    description: 'Infrastructure layer can import domain entities for repository implementations',
+    severity: 'error',
+    from: { tag: 'infrastructure', mode: 'file' },
+    to: { tag: 'domain', mode: 'file' },
+    allowed: true
+  },
+  {
     id: 'infrastructure-external',
     name: 'Infrastructure Can Use External Libraries',
     description: 'Infrastructure layer can use external data libraries, database drivers, etc.',
@@ -280,38 +289,6 @@ export const rules: ArchRule[] = [
         '',
         'export class CreateUserUseCase {',
         '  constructor(private userRepo: UserRepository) {}',
-        '}'
-      ]
-    }
-  },
-  {
-    id: 'infrastructure-not-domain',
-    name: 'Infrastructure Cannot Depend on Domain Logic',
-    description: 'Infrastructure layer must not import domain logic',
-    severity: 'error',
-    from: { tag: 'infrastructure', mode: 'file' },
-    to: { tag: 'domain', mode: 'file' },
-    allowed: false,
-    message:
-      'Infrastructure layer cannot depend on domain logic. While infrastructure may reference domain types/interfaces for dependency inversion, it should not import domain business logic. Keep infrastructure focused on data access and external systems.',
-    examples: {
-      bad: [
-        "import { User } from '../domain/user'",
-        '// Using domain entity business logic in infrastructure',
-        'if (user.isValid()) { ... }'
-      ],
-      good: [
-        '// Infrastructure implements interfaces defined by domain:',
-        "// domain/repositories/user-repository.interface.ts",
-        "export interface IUserRepository {",
-        "  save(user: UserData): Promise<void>",
-        '}',
-        '',
-        "// infrastructure/repositories/user-repository.ts",
-        "import { IUserRepository } from '../../domain/repositories/user-repository.interface'",
-        '',
-        'export class UserRepository implements IUserRepository {',
-        '  async save(data: UserData): Promise<void> { ... }',
         '}'
       ]
     }
