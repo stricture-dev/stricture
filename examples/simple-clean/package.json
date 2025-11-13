@@ -10,7 +10,7 @@
     "dev": "ts-node --esm index.ts",
     "lint": "eslint \"src/**/*.ts\"",
     "type-check": "tsc --noEmit",
-    "test": "vitest"
+    "test": "echo 'No tests yet for example - skipping'"
   },
   "keywords": [
     "clean-architecture",
