@@ -1,29 +1,3 @@
 {
-  "preset": "@stricture/clean",
-  "boundaries": [
-    {
-      "name": "entities",
-      "pattern": "src/entities/**",
-      "mode": "file",
-      "tags": ["entities", "core"]
-    },
-    {
-      "name": "use-cases",
-      "pattern": "src/use-cases/**",
-      "mode": "file",
-      "tags": ["use-cases", "core"]
-    },
-    {
-      "name": "interface-adapters",
-      "pattern": "src/interface-adapters/**",
-      "mode": "file",
-      "tags": ["interface-adapters", "adapters"]
-    },
-    {
-      "name": "frameworks-drivers",
-      "pattern": "src/frameworks-drivers/**",
-      "mode": "file",
-      "tags": ["frameworks-drivers", "infrastructure"]
-    }
-  ]
+  "preset": "@stricture/clean"
 }

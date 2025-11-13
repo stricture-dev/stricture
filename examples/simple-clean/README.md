@@ -417,33 +417,17 @@ See `.stricture/config.json`:
 
 ```json
 {
-  "preset": "@stricture/clean",
-  "boundaries": [
-    {
-      "name": "entities",
-      "pattern": "src/entities/**",
-      "mode": "file"
-    },
-    {
-      "name": "use-cases",
-      "pattern": "src/use-cases/**",
-      "mode": "file"
-    },
-    {
-      "name": "interface-adapters",
-      "pattern": "src/interface-adapters/**",
-      "mode": "file"
-    },
-    {
-      "name": "frameworks-drivers",
-      "pattern": "src/frameworks-drivers/**",
-      "mode": "file"
-    }
-  ]
+  "preset": "@stricture/clean"
 }
 ```
 
-The preset automatically enforces the Dependency Rule across all layers.
+That's it! Just 3 lines. The preset automatically provides:
+- 4 boundary definitions (entities, use-cases, interface-adapters, frameworks-drivers)
+- 17 dependency rules enforcing the Dependency Rule
+- Mermaid diagram for visualization
+- Scaffolding templates for new projects
+
+This demonstrates the **zero-config principle** - presets work out-of-the-box without customization.
 
 ## Learning More
 
