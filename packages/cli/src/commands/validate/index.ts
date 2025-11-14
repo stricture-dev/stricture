@@ -13,7 +13,7 @@ export async function validate(
 ): Promise<boolean> {
   const projectRoot = process.cwd()
   const configPath =
-    options.configPath || path.join(projectRoot, '.stricture/config.json')
+    options.configPath ?? path.join(projectRoot, '.stricture/config.json')
 
   logger.log('')
   logger.heading('Validating configuration...')

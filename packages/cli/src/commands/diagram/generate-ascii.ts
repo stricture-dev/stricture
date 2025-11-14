@@ -32,8 +32,8 @@ export function generateAsciiDiagram(config: StrictureConfig): string {
     lines.push('  (none)')
   } else {
     for (const rule of allowedRules) {
-      const fromDesc = rule.from.tag || rule.from.pattern || 'any'
-      const toDesc = rule.to.tag || rule.to.pattern || 'any'
+      const fromDesc = rule.from.tag ?? rule.from.pattern ?? 'any'
+      const toDesc = rule.to.tag ?? rule.to.pattern ?? 'any'
       lines.push(`  ${fromDesc} → ${toDesc}`)
     }
   }

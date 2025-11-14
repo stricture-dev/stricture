@@ -14,7 +14,7 @@ import { promptConfirm } from '../../utils/prompts.js'
  * Initialize Stricture in a project
  */
 export async function init(options: InitOptions = {}): Promise<void> {
-  const projectRoot = options.projectRoot || process.cwd()
+  const projectRoot = options.projectRoot ?? process.cwd()
 
   logger.log('')
   logger.heading('🏗️  Stricture Initialization')
@@ -98,8 +98,8 @@ export async function init(options: InitOptions = {}): Promise<void> {
   // 8. Install dependencies (if requested)
   if (options.install !== false) {
     const shouldInstall =
-      options.install === true ||
-      options.yes ||
+      (options.install === true) ||
+      (options.yes === true) ||
       (await promptConfirm('Install required dependencies?', true))
 
     if (shouldInstall) {
