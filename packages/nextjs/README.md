@@ -380,9 +380,7 @@ graph TB
         CompClient["client/<br/><i>Client Components</i>"]
     end
 
-    subgraph actions["📁 actions/"]
-        Actions["<i>Server Actions</i>"]
-    end
+    Actions["📁 actions/<br/><i>Server Actions</i>"]
 
     subgraph lib["📁 lib/"]
         LibServer["server/<br/><i>Database, Auth, Email</i>"]
@@ -402,14 +400,13 @@ graph TB
 
     style app fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
     style components fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
-    style actions fill:#fff3e0,stroke:#f57c00,stroke-width:2px
     style lib fill:#e8f5e9,stroke:#388e3c,stroke-width:2px
 
     style AppAPI fill:#b3d9ff,stroke:#333,stroke-width:1px
     style AppPages fill:#b3ffff,stroke:#333,stroke-width:1px
     style CompServer fill:#b3ffff,stroke:#333,stroke-width:1px
     style CompClient fill:#b3d9ff,stroke:#333,stroke-width:1px
-    style Actions fill:#ffd9b3,stroke:#333,stroke-width:1px
+    style Actions fill:#ffd9b3,stroke:#333,stroke-width:2px
     style LibServer fill:#b3ffb3,stroke:#333,stroke-width:1px
     style LibUtils fill:#d9ffb3,stroke:#333,stroke-width:1px
 
