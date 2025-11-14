@@ -35,7 +35,7 @@ export const boundaries: BoundaryDefinition[] = [
   },
   {
     name: 'app-routes',
-    pattern: 'app/**/!(*api)/*.{ts,tsx}',
+    pattern: 'app/**',
     mode: 'file',
     tags: ['app', 'routes'],
     metadata: {

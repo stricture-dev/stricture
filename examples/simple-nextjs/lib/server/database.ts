@@ -60,9 +60,11 @@ export const db = {
       const index = todos.findIndex(t => t.id === id)
       if (index === -1) return null
 
-      const updated: Todo = { ...todos[index], ...data }
-      todos[index] = updated
-      return Promise.resolve(updated)
+      todos[index] = {
+        ...todos[index],
+        ...data
+      } as Todo
+      return Promise.resolve(todos[index])
     },
     
     delete: async (id: string): Promise<boolean> => {
