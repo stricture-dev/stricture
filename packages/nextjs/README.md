@@ -390,12 +390,13 @@ graph TB
     end
 
     AppPages --> CompClient
-    AppPages --> LibServer
-    AppAPI --> LibServer
+    AppPages --> lib
+    AppAPI --> lib
     CompServer --> CompClient
-    CompServer --> LibServer
+    CompServer --> lib
     CompClient --> Actions
-    Actions --> LibServer
+    CompClient --> LibUtils
+    Actions --> lib
 
     style app fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
     style components fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
@@ -410,7 +411,7 @@ graph TB
     style LibServer fill:#b3ffb3,stroke:#333,stroke-width:1px
     style LibUtils fill:#d9ffb3,stroke:#333,stroke-width:1px
 
-    linkStyle 0,1,2,3,4,5,6 stroke:#22c55e,stroke-width:2px
+    linkStyle 0,1,2,3,4,5,6,7 stroke:#22c55e,stroke-width:2px
 ```
 
 ## Troubleshooting
