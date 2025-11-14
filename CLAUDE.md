@@ -359,6 +359,10 @@ validateImport(fromPath, toPath, rules, boundaries) {
   - `graph LR` (left to right) for data flows
   - Subgraphs for grouping related components
   - Use `-->` for solid arrows (dependencies), `-.->` for dashed arrows (optional/indirect)
+- [ ] **Color format for style declarations**: Use hex colors, NOT HSL
+  - Mermaid accepts HSL in themeVariables (init block) but NOT in style declarations
+  - Use hex format: `style Node fill:#b3d9ff` NOT `style Node fill:hsl(210, 100%, 85%)`
+  - Common colors: `#b3d9ff` (blue), `#b3ffff` (cyan), `#b3ffcc` (green-cyan), `#b3ffb3` (green), `#ffffb3` (yellow)
 - [ ] Example mermaid diagram structure:
   ```mermaid
   %%{init: {'theme':'base', 'themeVariables': {...}}}%%
@@ -370,8 +374,8 @@ validateImport(fromPath, toPath, rules, boundaries) {
           Node2["Another Component"]
       end
       Node1 --> Node2
-      style Layer1 fill:hsl(210, 100%, 85%)
-      style Layer2 fill:hsl(180, 100%, 85%)
+      style Layer1 fill:#b3d9ff
+      style Layer2 fill:#b3ffff
   ```
 - [ ] Benefits of Mermaid over ASCII art:
   - Renders beautifully in GitHub, VS Code, and documentation sites
