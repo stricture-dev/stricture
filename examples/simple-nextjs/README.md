@@ -21,30 +21,47 @@ This example exists as the perfect starting point for understanding Next.js App 
 ```mermaid
 %%{init: {'theme':'base', 'themeVariables': { 'primaryColor':'hsl(210, 100%, 85%)','primaryBorderColor':'hsl(210, 100%, 70%)','secondaryColor':'hsl(180, 100%, 85%)','secondaryBorderColor':'hsl(180, 100%, 70%)','tertiaryColor':'hsl(120, 100%, 85%)','tertiaryBorderColor':'hsl(120, 100%, 70%)'}}}%%
 graph TB
-    subgraph Client["Client Components<br/>(Browser-only, Interactive UI)"]
-        CC["✅ Can import: Client Components<br/>✅ Can call: Server Actions<br/>❌ Cannot import: Server Utils"]
+    subgraph app["📁 app/"]
+        AppAPI["api/<br/><i>API Routes</i>"]
+        AppPages["page.tsx, layout.tsx<br/><i>Pages & Layouts</i>"]
     end
 
-    subgraph Server["Server Components<br/>(Server-only, Async Data Fetching)"]
-        SC["✅ Can import: Server Utils, Client Comps<br/>✅ Can use: Database, Auth, etc."]
+    subgraph components["📁 components/"]
+        CompServer["server/<br/><i>Server Components</i>"]
+        CompClient["client/<br/><i>Client Components</i>"]
     end
 
-    subgraph ServerUtils["Server-Only Utilities<br/>(Database, Auth, Email, etc.)"]
-        SU["⚠️ Never exposed to client bundle"]
+    Actions["📁 actions/<br/><i>Server Actions</i>"]
+
+    subgraph lib["📁 lib/"]
+        LibServer["server/<br/><i>Database, Auth, Email</i>"]
+        LibUtils["utils/<br/><i>Shared Utilities</i>"]
     end
 
-    subgraph API["API Routes<br/>(RESTful endpoints)"]
-        AR["✅ Can import: Server Utils<br/>❌ Cannot import: Components"]
-    end
+    AppPages --> CompClient
+    AppPages --> CompServer
+    AppPages --> Actions
+    AppPages --> lib
+    AppAPI --> lib
+    CompServer --> CompClient
+    CompServer --> lib
+    CompClient --> Actions
+    CompClient --> LibUtils
+    Actions --> lib
 
-    Client -.-> Server
-    Server --> ServerUtils
-    API --> ServerUtils
+    style app fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
+    style components fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+    style lib fill:#e8f5e9,stroke:#388e3c,stroke-width:2px
 
-    style Client fill:hsl(210, 100%, 85%)
-    style Server fill:hsl(180, 100%, 85%)
-    style ServerUtils fill:hsl(120, 100%, 85%)
-    style API fill:hsl(60, 100%, 85%)
+    style AppAPI fill:#b3d9ff,stroke:#333,stroke-width:1px
+    style AppPages fill:#b3ffff,stroke:#333,stroke-width:1px
+    style CompServer fill:#b3ffff,stroke:#333,stroke-width:1px
+    style CompClient fill:#b3d9ff,stroke:#333,stroke-width:1px
+    style Actions fill:#ffd9b3,stroke:#333,stroke-width:2px
+    style LibServer fill:#b3ffb3,stroke:#333,stroke-width:1px
+    style LibUtils fill:#d9ffb3,stroke:#333,stroke-width:1px
+
+    linkStyle 0,1,2,3,4,5,6,7,8,9 stroke:#22c55e,stroke-width:2px
 ```
 
 ## File Structure
