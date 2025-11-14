@@ -59,9 +59,10 @@ export const db = {
     update: async (id: string, data: Partial<Omit<Todo, 'id' | 'createdAt'>>): Promise<Todo | null> => {
       const index = todos.findIndex(t => t.id === id)
       if (index === -1) return null
-      
-      todos[index] = { ...todos[index], ...data }
-      return Promise.resolve(todos[index])
+
+      const updated: Todo = { ...todos[index], ...data }
+      todos[index] = updated
+      return Promise.resolve(updated)
     },
     
     delete: async (id: string): Promise<boolean> => {
