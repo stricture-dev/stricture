@@ -372,7 +372,7 @@ export function formatCurrency(amount: number) {
 graph TB
     subgraph app["📁 app/"]
         AppAPI["api/<br/><i>API Routes</i>"]
-        AppPages["page.tsx, layout.tsx<br/><i>Server Components</i>"]
+        AppPages["page.tsx, layout.tsx<br/><i>Pages & Layouts</i>"]
     end
 
     subgraph components["📁 components/"]
