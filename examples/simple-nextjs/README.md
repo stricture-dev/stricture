@@ -21,30 +21,47 @@ This example exists as the perfect starting point for understanding Next.js App 
 ```mermaid
 %%{init: {'theme':'base', 'themeVariables': { 'primaryColor':'hsl(210, 100%, 85%)','primaryBorderColor':'hsl(210, 100%, 70%)','secondaryColor':'hsl(180, 100%, 85%)','secondaryBorderColor':'hsl(180, 100%, 70%)','tertiaryColor':'hsl(120, 100%, 85%)','tertiaryBorderColor':'hsl(120, 100%, 70%)'}}}%%
 graph TB
-    Client["Client Components<br/>(Browser-only, Interactive UI)"]
-    Server["Server Components<br/>(Server-only, Async Data Fetching)"]
-    ServerUtils["Server-Only Utilities<br/>(Database, Auth, Email)"]
-    Actions["Server Actions<br/>(Form Mutations)"]
-    API["API Routes<br/>(RESTful Endpoints)"]
+    subgraph app["📁 app/"]
+        AppAPI["api/<br/><i>API Routes</i>"]
+        AppPages["page.tsx, layout.tsx<br/><i>Server Components</i>"]
+    end
 
-    Server -->|"✅ can import"| Client
-    Server -->|"✅ can import"| ServerUtils
-    Client -->|"✅ can call"| Actions
-    Client -->|"❌ forbidden"| ServerUtils
-    Client -->|"❌ forbidden"| API
-    Actions -->|"✅ can import"| ServerUtils
-    API -->|"✅ can import"| ServerUtils
-    API -->|"❌ forbidden"| Client
-    API -->|"❌ forbidden"| Server
+    subgraph components["📁 components/"]
+        CompServer["server/<br/><i>Server Components</i>"]
+        CompClient["client/<br/><i>Client Components</i>"]
+    end
 
-    style Client fill:#b3d9ff,stroke:#333,stroke-width:2px
-    style Server fill:#b3ffff,stroke:#333,stroke-width:2px
-    style ServerUtils fill:#b3ffb3,stroke:#333,stroke-width:2px
-    style Actions fill:#d9b3ff,stroke:#333,stroke-width:2px
-    style API fill:#ffffb3,stroke:#333,stroke-width:2px
+    subgraph actions["📁 actions/"]
+        Actions["<i>Server Actions</i>"]
+    end
 
-    linkStyle 0,1,2,5,6 stroke:#22c55e,stroke-width:2px
-    linkStyle 3,4,7,8 stroke:#ef4444,stroke-width:2px
+    subgraph lib["📁 lib/"]
+        LibServer["server/<br/><i>Database, Auth, Email</i>"]
+        LibUtils["utils/<br/><i>Shared Utilities</i>"]
+    end
+
+    AppPages --> CompClient
+    AppPages --> LibServer
+    AppAPI --> LibServer
+    CompServer --> CompClient
+    CompServer --> LibServer
+    CompClient --> Actions
+    Actions --> LibServer
+
+    style app fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
+    style components fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+    style actions fill:#fff3e0,stroke:#f57c00,stroke-width:2px
+    style lib fill:#e8f5e9,stroke:#388e3c,stroke-width:2px
+
+    style AppAPI fill:#b3d9ff,stroke:#333,stroke-width:1px
+    style AppPages fill:#b3ffff,stroke:#333,stroke-width:1px
+    style CompServer fill:#b3ffff,stroke:#333,stroke-width:1px
+    style CompClient fill:#b3d9ff,stroke:#333,stroke-width:1px
+    style Actions fill:#ffd9b3,stroke:#333,stroke-width:1px
+    style LibServer fill:#b3ffb3,stroke:#333,stroke-width:1px
+    style LibUtils fill:#d9ffb3,stroke:#333,stroke-width:1px
+
+    linkStyle 0,1,2,3,4,5,6 stroke:#22c55e,stroke-width:2px
 ```
 
 ## File Structure
