@@ -1,9 +1,5 @@
 module.exports = {
-  extends: ['next/core-web-vitals'],
-  plugins: ['@stricture'],
-  rules: {
-    '@stricture/enforce-boundaries': 'error'
-  },
+  extends: ['next/core-web-vitals', 'plugin:@stricture/recommended'],
   root: true,
   parserOptions: {
     project: './tsconfig.json',
