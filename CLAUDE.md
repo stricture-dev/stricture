@@ -384,9 +384,51 @@ validateImport(fromPath, toPath, rules, boundaries) {
   - Consistent styling across all docs
   - Can be exported to SVG/PNG if needed
 
+#### 31. Architecture Diagrams for Presets and Examples
+- [ ] **Read the preset implementation first** - Don't guess, read `boundaries.ts` and `rules.ts`
+- [ ] **Diagrams must match preset rules exactly** - The diagram is a visual representation of what Stricture enforces
+- [ ] **Use folder structure as the foundation**:
+  - Use actual folder names with 📁 emoji (e.g., `📁 app/`, `📁 components/`)
+  - Show first-level subfolders inside parent folders
+  - Use subgraphs for folders WITH subfolders: `subgraph app["📁 app/"]`
+  - Use simple nodes for folders WITHOUT subfolders: `Actions["📁 actions/<br/><i>Server Actions</i>"]`
+- [ ] **Only show allowed dependencies** (green arrows):
+  - Use green arrows (#22c55e, 2px width) for allowed imports
+  - NO red arrows for forbidden imports - absence of arrow indicates restriction
+  - Hide self-import arrows (e.g., `client → client`) to reduce clutter
+- [ ] **Simplification rule for parent folders**:
+  - If a node needs to import from ALL children of a parent folder, point to the parent
+  - Example: Server code imports from both `lib/server/` and `lib/utils/` → point to `lib/`
+  - If a node imports from ONLY SOME children, point to specific children
+  - Example: Client code imports ONLY from `lib/utils/` → point to `LibUtils` specifically
+- [ ] **Verify completeness**:
+  - Count allowed rules in preset (exclude self-imports and external)
+  - Count arrows in diagram
+  - They should match (or diagram arrows = preset cross-boundary rules)
+- [ ] **Color coding**:
+  - Different background color for each parent folder group (app, components, actions, lib)
+  - Consistent node colors for similar types (e.g., all server components same color)
+  - All arrows green (#22c55e) for allowed dependencies
+- [ ] **Example structure**:
+  ```mermaid
+  graph TB
+      subgraph app["📁 app/"]
+          AppAPI["api/<br/><i>API Routes</i>"]
+          AppPages["page.tsx<br/><i>Server Components</i>"]
+      end
+
+      Actions["📁 actions/<br/><i>Server Actions</i>"]
+
+      AppPages --> Actions
+
+      style app fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
+      style Actions fill:#ffd9b3,stroke:#333,stroke-width:2px
+      linkStyle 0 stroke:#22c55e,stroke-width:2px
+  ```
+
 ### Common Anti-Patterns to Avoid
 
-#### 31. DO NOT Re-export Domain from Ports
+#### 32. DO NOT Re-export Domain from Ports
 ```typescript
 // ❌ WRONG
 // ports/user-repository.ts
@@ -397,7 +439,7 @@ export { User } from '../domain/user'  // Anti-pattern!
 import { User } from '../../core/domain/user'  // Direct import OK
 ```
 
-#### 32. DO NOT Put Validation Logic in Presets
+#### 33. DO NOT Put Validation Logic in Presets
 ```typescript
 // ❌ WRONG - preset importing validation
 import { validateBoundary } from '@stricture/core'
@@ -409,7 +451,7 @@ export const hexagonalPreset: ArchPreset = {
 }
 ```
 
-#### 33. DO NOT Duplicate Logic from Core in ESLint Plugin
+#### 34. DO NOT Duplicate Logic from Core in ESLint Plugin
 ```typescript
 // ❌ WRONG - plugin has its own validation
 function checkViolation(from, to) { /* custom logic */ }
@@ -419,7 +461,7 @@ import { validateImport } from '@stricture/core'
 const result = validateImport(from, to, rules, boundaries)
 ```
 
-#### 34. DO NOT Assume Array Order Matters (Post-Specificity)
+#### 35. DO NOT Assume Array Order Matters (Post-Specificity)
 ```typescript
 // ❌ WRONG assumption
 rules: [
@@ -434,7 +476,7 @@ rules: [
 ]
 ```
 
-#### 35. DO NOT Use Generic "adapters" Boundary in Hexagonal
+#### 36. DO NOT Use Generic "adapters" Boundary in Hexagonal
 ```typescript
 // ❌ WRONG - too generic
 { name: 'adapters', pattern: 'src/adapters/**' }
@@ -446,94 +488,94 @@ rules: [
 
 ### Preset Design
 
-#### 36. Presets Must Be Complete
+#### 37. Presets Must Be Complete
 - [ ] With deny-by-default, presets must cover ALL legitimate imports
 - [ ] Missing allowed rule = user gets confusing deny-by-default error
 - [ ] Better to have comprehensive rules than minimal rules
 
-#### 37. Preset Boundaries Should Match Real Projects
+#### 38. Preset Boundaries Should Match Real Projects
 - [ ] Use patterns that work with common project structures
 - [ ] `src/core/domain/**` not `domain/**` (too broad)
 - [ ] Consider variations: `src/{core/,}domain/**` to match multiple styles
 
-#### 38. Rule IDs Should Be Descriptive
+#### 39. Rule IDs Should Be Descriptive
 - [ ] Use kebab-case: `domain-isolation` not `domainIsolation`
 - [ ] Include direction: `driving-to-application` not `driving-rule`
 - [ ] Include purpose: `driven-implements-ports` not `driven-ports`
 
 ### Edge Cases & Special Handling
 
-#### 39. External Type Definitions (@types)
+#### 40. External Type Definitions (@types)
 - [ ] `node_modules/@types/**` are external but often needed
 - [ ] Allow with specific pattern: `{ to: { pattern: 'node_modules/@types/**' }, allowed: true }`
 - [ ] This overrides general external denial via specificity
 
-#### 40. Self-Imports at All Levels
+#### 41. Self-Imports at All Levels
 - [ ] Every layer should be able to import itself
 - [ ] domain → domain, ports → ports, application → application, etc.
 - [ ] Use explicit rules, don't rely on absence of deny rule
 
-#### 41. Multiple Boundaries Can Have Same Tag
+#### 42. Multiple Boundaries Can Have Same Tag
 - [ ] `driving-adapters` and `driven-adapters` both have `adapters` tag
 - [ ] This allows rules like: `from: { tag: 'adapters' }, to: { tag: 'domain' }, allowed: false`
 - [ ] More specific tags (`driving`, `driven`) allow finer control
 
 ### CI/CD
 
-#### 42. GitHub Actions Configuration
+#### 43. GitHub Actions Configuration
 - [ ] Use exact pnpm version from package.json (8.15.0)
 - [ ] Use Node.js 20.x (LTS)
 - [ ] Cache pnpm store and turbo cache
 - [ ] Run: build, test, lint, type-check
 - [ ] Fast-fail on any error
 
-#### 43. Turbo Configuration
+#### 44. Turbo Configuration
 - [ ] Use turbo for parallel builds/tests
 - [ ] Cache builds between runs
 - [ ] Pipeline: install → build → test → lint
 
 ### Version Management
 
-#### 44. Semantic Versioning
+#### 45. Semantic Versioning
 - [ ] Breaking changes (API changes) → Major version
 - [ ] New features (new presets, new rules) → Minor version
 - [ ] Bug fixes, docs → Patch version
 
-#### 45. Changelog
+#### 46. Changelog
 - [ ] Document all preset changes (rules added/removed/modified)
 - [ ] Document breaking changes prominently
 - [ ] Link to migration guides for breaking changes
 
 ### Performance
 
-#### 46. Rule Sorting is Cached
+#### 47. Rule Sorting is Cached
 - [ ] Sort rules by specificity ONCE per validation run
 - [ ] Don't re-calculate specificity for each import
 - [ ] Cache boundary matches where possible
 
-#### 47. Pattern Matching Optimization
+#### 48. Pattern Matching Optimization
 - [ ] Use micromatch efficiently
 - [ ] Normalize paths once, not per rule
 - [ ] Consider caching boundary matches for same file
 
 ### Future Considerations
 
-#### 48. Plugin System (Future)
+#### 49. Plugin System (Future)
 - [ ] Custom rules should use same specificity system
 - [ ] Custom rules integrated into existing rule sorting
 - [ ] Plugin interface should delegate to core validation
 
-#### 49. IDE Integration (Future)
+#### 50. IDE Integration (Future)
 - [ ] Same validation logic as ESLint (reuse core)
 - [ ] Show violations inline in editor
 - [ ] Provide quick-fixes based on rule suggestions
 
-#### 50. Config Schema Validation (Future)
+#### 51. Config Schema Validation (Future)
 - [ ] JSON schema for .stricture/config.json
 - [ ] Validate on load, fail fast with clear messages
 - [ ] Auto-complete in IDEs via JSON schema
 
-#### 51. Multi-Project Support (Future)
+#### 52. Multi-Project Support (Future)
 - [ ] Monorepo with multiple .stricture/config.json files
 - [ ] Per-package configurations
 - [ ] Shared presets across projects
