@@ -37,11 +37,14 @@ graph TB
     API -->|"❌ forbidden"| Client
     API -->|"❌ forbidden"| Server
 
-    style Client fill:#b3d9ff
-    style Server fill:#b3ffff
-    style ServerUtils fill:#b3ffb3
-    style Actions fill:#d9b3ff
-    style API fill:#ffffb3
+    style Client fill:#b3d9ff,stroke:#333,stroke-width:2px
+    style Server fill:#b3ffff,stroke:#333,stroke-width:2px
+    style ServerUtils fill:#b3ffb3,stroke:#333,stroke-width:2px
+    style Actions fill:#d9b3ff,stroke:#333,stroke-width:2px
+    style API fill:#ffffb3,stroke:#333,stroke-width:2px
+
+    linkStyle 0,1,2,5,6 stroke:#22c55e,stroke-width:2px
+    linkStyle 3,4,7,8 stroke:#ef4444,stroke-width:2px
 ```
 
 ## File Structure
