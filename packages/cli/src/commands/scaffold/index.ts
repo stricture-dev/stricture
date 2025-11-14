@@ -14,7 +14,7 @@ export async function scaffold(
 ): Promise<void> {
   const projectRoot = process.cwd()
   const configPath =
-    options.configPath || path.join(projectRoot, '.stricture/config.json')
+    options.configPath ?? path.join(projectRoot, '.stricture/config.json')
 
   logger.log('')
   logger.heading('Scaffolding directory structure...')

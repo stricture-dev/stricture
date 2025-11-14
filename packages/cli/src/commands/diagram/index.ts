@@ -15,7 +15,7 @@ export async function diagram(
 ): Promise<void> {
   const projectRoot = process.cwd()
   const configPath =
-    options.configPath || path.join(projectRoot, '.stricture/config.json')
+    options.configPath ?? path.join(projectRoot, '.stricture/config.json')
 
   // Load config
   if (!(await fileExists(configPath))) {
@@ -27,7 +27,7 @@ export async function diagram(
   const config = await readJsonFile<StrictureConfig>(configPath)
 
   // Generate diagram based on format
-  const format = options.format || 'mermaid'
+  const format = options.format ?? 'mermaid'
   let diagramContent: string
 
   switch (format) {

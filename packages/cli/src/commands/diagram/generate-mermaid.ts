@@ -52,13 +52,13 @@ function getBoundaryByPattern(
 ): BoundaryDefinition | null {
   if (pattern.tag) {
     return (
-      boundaries.find((b) => b.tags && b.tags.includes(pattern.tag ?? '')) ||
+      boundaries.find((b) => b.tags && b.tags.includes(pattern.tag ?? '')) ??
       null
     )
   }
 
   if (pattern.pattern) {
-    return boundaries.find((b) => b.pattern === pattern.pattern) || null
+    return boundaries.find((b) => b.pattern === pattern.pattern) ?? null
   }
 
   return null

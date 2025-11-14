@@ -20,8 +20,8 @@ module.exports = {
     '@typescript-eslint/await-thenable': 'error',
     // Code quality
     '@typescript-eslint/no-unnecessary-type-assertion': 'error',
-    '@typescript-eslint/prefer-nullish-coalescing': 'warn',
-    '@typescript-eslint/prefer-optional-chain': 'warn'
+    '@typescript-eslint/prefer-nullish-coalescing': 'error',
+    '@typescript-eslint/prefer-optional-chain': 'error'
   },
   env: {
     node: true,

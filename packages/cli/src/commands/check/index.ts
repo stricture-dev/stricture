@@ -17,7 +17,7 @@ export async function check(
 ): Promise<CheckResult> {
   const projectRoot = process.cwd()
   const configPath =
-    options.configPath || path.join(projectRoot, '.stricture/config.json')
+    options.configPath ?? path.join(projectRoot, '.stricture/config.json')
 
   // 1. Load and validate config
   const spinner = createSpinner('Loading configuration...').start()

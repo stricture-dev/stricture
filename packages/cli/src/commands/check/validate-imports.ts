@@ -50,7 +50,7 @@ export async function checkFile(
           rule: result.violatedRule,
           from: fromBoundary,
           to: toBoundary,
-          message: result.message || 'Import not allowed'
+          message: result.message ?? 'Import not allowed'
         })
       }
     } catch (error) {
