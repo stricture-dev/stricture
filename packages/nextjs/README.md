@@ -370,29 +370,26 @@ export function formatCurrency(amount: number) {
 ```mermaid
 %%{init: {'theme':'base', 'themeVariables': { 'primaryColor':'hsl(210, 100%, 85%)','primaryBorderColor':'hsl(210, 100%, 70%)','secondaryColor':'hsl(180, 100%, 85%)','secondaryBorderColor':'hsl(180, 100%, 70%)','tertiaryColor':'hsl(120, 100%, 85%)','tertiaryBorderColor':'hsl(120, 100%, 70%)'}}}%%
 graph TB
-    subgraph Client["Client Components<br/>(Browser-only, Interactive UI)"]
-        CC["✅ Can import: Client Components<br/>✅ Can call: Server Actions<br/>❌ Cannot import: Server Utils"]
-    end
+    Client["Client Components<br/>(Browser-only, Interactive UI)"]
+    Server["Server Components<br/>(Server-only, Async Data Fetching)"]
+    ServerUtils["Server-Only Utilities<br/>(Database, Auth, Email)"]
+    Actions["Server Actions<br/>(Form Mutations)"]
+    API["API Routes<br/>(RESTful Endpoints)"]
 
-    subgraph Server["Server Components<br/>(Server-only, Async Data Fetching)"]
-        SC["✅ Can import: Server Utils, Client Comps<br/>✅ Can use: Database, Auth, etc."]
-    end
-
-    subgraph ServerUtils["Server-Only Utilities<br/>(Database, Auth, Email, etc.)"]
-        SU["⚠️ Never exposed to client bundle"]
-    end
-
-    subgraph API["API Routes<br/>(RESTful endpoints)"]
-        AR["✅ Can import: Server Utils<br/>❌ Cannot import: Components"]
-    end
-
-    Client -.-> Server
-    Server --> ServerUtils
-    API --> ServerUtils
+    Server -->|"✅ can import"| Client
+    Server -->|"✅ can import"| ServerUtils
+    Client -->|"✅ can call"| Actions
+    Client -->|"❌ forbidden"| ServerUtils
+    Client -->|"❌ forbidden"| API
+    Actions -->|"✅ can import"| ServerUtils
+    API -->|"✅ can import"| ServerUtils
+    API -->|"❌ forbidden"| Client
+    API -->|"❌ forbidden"| Server
 
     style Client fill:#b3d9ff
     style Server fill:#b3ffff
     style ServerUtils fill:#b3ffb3
+    style Actions fill:#d9b3ff
     style API fill:#ffffb3
 ```
 
