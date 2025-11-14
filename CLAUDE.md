@@ -340,9 +340,49 @@ validateImport(fromPath, toPath, rules, boundaries) {
 - [ ] Show WHAT to do instead
 - [ ] Link to composition root pattern when relevant
 
+#### 30. Diagrams and Visualizations
+- [ ] **ALWAYS use Mermaid diagrams** for architecture visualizations in documentation
+- [ ] **NEVER use ASCII art** for diagrams (hard to read, not accessible, doesn't render properly in many contexts)
+- [ ] Use consistent theming across all mermaid diagrams:
+  ```
+  %%{init: {'theme':'base', 'themeVariables': {
+    'primaryColor':'hsl(210, 100%, 85%)',
+    'primaryBorderColor':'hsl(210, 100%, 70%)',
+    'secondaryColor':'hsl(180, 100%, 85%)',
+    'secondaryBorderColor':'hsl(180, 100%, 70%)',
+    'tertiaryColor':'hsl(150, 100%, 85%)',
+    'tertiaryBorderColor':'hsl(150, 100%, 70%)'
+  }}}%%
+  ```
+- [ ] Common diagram types:
+  - `graph TB` (top to bottom) for layered architectures
+  - `graph LR` (left to right) for data flows
+  - Subgraphs for grouping related components
+  - Use `-->` for solid arrows (dependencies), `-.->` for dashed arrows (optional/indirect)
+- [ ] Example mermaid diagram structure:
+  ```mermaid
+  %%{init: {'theme':'base', 'themeVariables': {...}}}%%
+  graph TB
+      subgraph Layer1["Layer Description"]
+          Node1["Component Name<br/>Description"]
+      end
+      subgraph Layer2["Another Layer"]
+          Node2["Another Component"]
+      end
+      Node1 --> Node2
+      style Layer1 fill:hsl(210, 100%, 85%)
+      style Layer2 fill:hsl(180, 100%, 85%)
+  ```
+- [ ] Benefits of Mermaid over ASCII art:
+  - Renders beautifully in GitHub, VS Code, and documentation sites
+  - Accessible (screen readers can parse the structure)
+  - Easy to modify (just text, version controllable)
+  - Consistent styling across all docs
+  - Can be exported to SVG/PNG if needed
+
 ### Common Anti-Patterns to Avoid
 
-#### 30. DO NOT Re-export Domain from Ports
+#### 31. DO NOT Re-export Domain from Ports
 ```typescript
 // ❌ WRONG
 // ports/user-repository.ts
@@ -353,7 +393,7 @@ export { User } from '../domain/user'  // Anti-pattern!
 import { User } from '../../core/domain/user'  // Direct import OK
 ```
 
-#### 31. DO NOT Put Validation Logic in Presets
+#### 32. DO NOT Put Validation Logic in Presets
 ```typescript
 // ❌ WRONG - preset importing validation
 import { validateBoundary } from '@stricture/core'
@@ -365,7 +405,7 @@ export const hexagonalPreset: ArchPreset = {
 }
 ```
 
-#### 32. DO NOT Duplicate Logic from Core in ESLint Plugin
+#### 33. DO NOT Duplicate Logic from Core in ESLint Plugin
 ```typescript
 // ❌ WRONG - plugin has its own validation
 function checkViolation(from, to) { /* custom logic */ }
@@ -375,7 +415,7 @@ import { validateImport } from '@stricture/core'
 const result = validateImport(from, to, rules, boundaries)
 ```
 
-#### 33. DO NOT Assume Array Order Matters (Post-Specificity)
+#### 34. DO NOT Assume Array Order Matters (Post-Specificity)
 ```typescript
 // ❌ WRONG assumption
 rules: [
@@ -390,7 +430,7 @@ rules: [
 ]
 ```
 
-#### 34. DO NOT Use Generic "adapters" Boundary in Hexagonal
+#### 35. DO NOT Use Generic "adapters" Boundary in Hexagonal
 ```typescript
 // ❌ WRONG - too generic
 { name: 'adapters', pattern: 'src/adapters/**' }
@@ -402,94 +442,94 @@ rules: [
 
 ### Preset Design
 
-#### 35. Presets Must Be Complete
+#### 36. Presets Must Be Complete
 - [ ] With deny-by-default, presets must cover ALL legitimate imports
 - [ ] Missing allowed rule = user gets confusing deny-by-default error
 - [ ] Better to have comprehensive rules than minimal rules
 
-#### 36. Preset Boundaries Should Match Real Projects
+#### 37. Preset Boundaries Should Match Real Projects
 - [ ] Use patterns that work with common project structures
 - [ ] `src/core/domain/**` not `domain/**` (too broad)
 - [ ] Consider variations: `src/{core/,}domain/**` to match multiple styles
 
-#### 37. Rule IDs Should Be Descriptive
+#### 38. Rule IDs Should Be Descriptive
 - [ ] Use kebab-case: `domain-isolation` not `domainIsolation`
 - [ ] Include direction: `driving-to-application` not `driving-rule`
 - [ ] Include purpose: `driven-implements-ports` not `driven-ports`
 
 ### Edge Cases & Special Handling
 
-#### 38. External Type Definitions (@types)
+#### 39. External Type Definitions (@types)
 - [ ] `node_modules/@types/**` are external but often needed
 - [ ] Allow with specific pattern: `{ to: { pattern: 'node_modules/@types/**' }, allowed: true }`
 - [ ] This overrides general external denial via specificity
 
-#### 39. Self-Imports at All Levels
+#### 40. Self-Imports at All Levels
 - [ ] Every layer should be able to import itself
 - [ ] domain → domain, ports → ports, application → application, etc.
 - [ ] Use explicit rules, don't rely on absence of deny rule
 
-#### 40. Multiple Boundaries Can Have Same Tag
+#### 41. Multiple Boundaries Can Have Same Tag
 - [ ] `driving-adapters` and `driven-adapters` both have `adapters` tag
 - [ ] This allows rules like: `from: { tag: 'adapters' }, to: { tag: 'domain' }, allowed: false`
 - [ ] More specific tags (`driving`, `driven`) allow finer control
 
 ### CI/CD
 
-#### 41. GitHub Actions Configuration
+#### 42. GitHub Actions Configuration
 - [ ] Use exact pnpm version from package.json (8.15.0)
 - [ ] Use Node.js 20.x (LTS)
 - [ ] Cache pnpm store and turbo cache
 - [ ] Run: build, test, lint, type-check
 - [ ] Fast-fail on any error
 
-#### 42. Turbo Configuration
+#### 43. Turbo Configuration
 - [ ] Use turbo for parallel builds/tests
 - [ ] Cache builds between runs
 - [ ] Pipeline: install → build → test → lint
 
 ### Version Management
 
-#### 43. Semantic Versioning
+#### 44. Semantic Versioning
 - [ ] Breaking changes (API changes) → Major version
 - [ ] New features (new presets, new rules) → Minor version
 - [ ] Bug fixes, docs → Patch version
 
-#### 44. Changelog
+#### 45. Changelog
 - [ ] Document all preset changes (rules added/removed/modified)
 - [ ] Document breaking changes prominently
 - [ ] Link to migration guides for breaking changes
 
 ### Performance
 
-#### 45. Rule Sorting is Cached
+#### 46. Rule Sorting is Cached
 - [ ] Sort rules by specificity ONCE per validation run
 - [ ] Don't re-calculate specificity for each import
 - [ ] Cache boundary matches where possible
 
-#### 46. Pattern Matching Optimization
+#### 47. Pattern Matching Optimization
 - [ ] Use micromatch efficiently
 - [ ] Normalize paths once, not per rule
 - [ ] Consider caching boundary matches for same file
 
 ### Future Considerations
 
-#### 47. Plugin System (Future)
+#### 48. Plugin System (Future)
 - [ ] Custom rules should use same specificity system
 - [ ] Custom rules integrated into existing rule sorting
 - [ ] Plugin interface should delegate to core validation
 
-#### 48. IDE Integration (Future)
+#### 49. IDE Integration (Future)
 - [ ] Same validation logic as ESLint (reuse core)
 - [ ] Show violations inline in editor
 - [ ] Provide quick-fixes based on rule suggestions
 
-#### 49. Config Schema Validation (Future)
+#### 50. Config Schema Validation (Future)
 - [ ] JSON schema for .stricture/config.json
 - [ ] Validate on load, fail fast with clear messages
 - [ ] Auto-complete in IDEs via JSON schema
 
-#### 50. Multi-Project Support (Future)
+#### 51. Multi-Project Support (Future)
 - [ ] Monorepo with multiple .stricture/config.json files
 - [ ] Per-package configurations
 - [ ] Shared presets across projects

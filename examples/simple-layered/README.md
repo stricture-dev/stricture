@@ -14,29 +14,22 @@ This is a minimal, runnable example of **Layered Architecture** (N-tier). It dem
 
 ## Architecture Diagram
 
-```
-┌─────────────────────────────────────┐
-│  Presentation Layer (Top)           │ ← CLI, HTTP Controllers
-│  src/presentation/                  │
-└──────────────┬──────────────────────┘
-               │ depends on
-               ↓
-┌─────────────────────────────────────┐
-│  Application Layer                  │ ← Use Cases, Services
-│  src/application/                   │
-└──────────────┬──────────────────────┘
-               │ depends on
-               ↓
-┌─────────────────────────────────────┐
-│  Domain Layer                       │ ← Entities, Business Logic
-│  src/domain/                        │
-└──────────────┬──────────────────────┘
-               │ can reference
-               ↓
-┌─────────────────────────────────────┐
-│  Infrastructure Layer (Bottom)      │ ← Data Access, External APIs
-│  src/infrastructure/                │
-└─────────────────────────────────────┘
+```mermaid
+%%{init: {'theme':'base', 'themeVariables': { 'primaryColor':'hsl(210, 100%, 85%)','primaryBorderColor':'hsl(210, 100%, 70%)','secondaryColor':'hsl(180, 100%, 85%)','secondaryBorderColor':'hsl(180, 100%, 70%)','tertiaryColor':'hsl(150, 100%, 85%)','tertiaryBorderColor':'hsl(150, 100%, 70%)','quaternaryColor':'hsl(120, 100%, 85%)','quaternaryBorderColor':'hsl(120, 100%, 70%)'}}}%%
+graph TB
+    P["Presentation Layer (Top)<br/>src/presentation/<br/>CLI, HTTP Controllers"]
+    A["Application Layer<br/>src/application/<br/>Use Cases, Services"]
+    D["Domain Layer<br/>src/domain/<br/>Entities, Business Logic"]
+    I["Infrastructure Layer (Bottom)<br/>src/infrastructure/<br/>Data Access, External APIs"]
+
+    P --> A
+    A --> D
+    D -.-> I
+
+    style P fill:hsl(210, 100%, 85%)
+    style A fill:hsl(180, 100%, 85%)
+    style D fill:hsl(150, 100%, 85%)
+    style I fill:hsl(120, 100%, 85%)
 ```
 
 **Dependency Flow:** TOP → BOTTOM only
