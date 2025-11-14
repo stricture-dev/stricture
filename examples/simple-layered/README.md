@@ -26,10 +26,10 @@ graph TB
     A --> D
     D -.-> I
 
-    style P fill:hsl(210, 100%, 85%)
-    style A fill:hsl(180, 100%, 85%)
-    style D fill:hsl(150, 100%, 85%)
-    style I fill:hsl(120, 100%, 85%)
+    style P fill:#b3d9ff
+    style A fill:#b3ffff
+    style D fill:#b3ffcc
+    style I fill:#b3ffb3
 ```
 
 **Dependency Flow:** TOP → BOTTOM only

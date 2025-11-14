@@ -390,10 +390,10 @@ graph TB
     Server --> ServerUtils
     API --> ServerUtils
 
-    style Client fill:hsl(210, 100%, 85%)
-    style Server fill:hsl(180, 100%, 85%)
-    style ServerUtils fill:hsl(120, 100%, 85%)
-    style API fill:hsl(60, 100%, 85%)
+    style Client fill:#b3d9ff
+    style Server fill:#b3ffff
+    style ServerUtils fill:#b3ffb3
+    style API fill:#ffffb3
 ```
 
 ## Troubleshooting
