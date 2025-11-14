@@ -367,42 +367,33 @@ export function formatCurrency(amount: number) {
 
 ## Architecture Diagram
 
-```
-┌─────────────────────────────────────────────┐
-│           Client Components                  │
-│  (Browser-only, Interactive UI)              │
-│                                              │
-│  ✅ Can import: Client Components           │
-│  ✅ Can call: Server Actions, API Routes    │
-│  ❌ Cannot import: Server Utils, API Routes │
-└──────────────┬──────────────────────────────┘
-               │ imports
-               ▼
-┌─────────────────────────────────────────────┐
-│          Server Components                   │
-│  (Server-only, Async Data Fetching)         │
-│                                              │
-│  ✅ Can import: Server Utils, Client Comps  │
-│  ✅ Can use: Database, Auth, etc.           │
-└──────────────┬──────────────────────────────┘
-               │ imports
-               ▼
-┌─────────────────────────────────────────────┐
-│          Server-Only Utilities               │
-│  (Database, Auth, Email, etc.)              │
-│                                              │
-│  ⚠️  Never exposed to client bundle         │
-└─────────────────────────────────────────────┘
+```mermaid
+%%{init: {'theme':'base', 'themeVariables': { 'primaryColor':'hsl(210, 100%, 85%)','primaryBorderColor':'hsl(210, 100%, 70%)','secondaryColor':'hsl(180, 100%, 85%)','secondaryBorderColor':'hsl(180, 100%, 70%)','tertiaryColor':'hsl(120, 100%, 85%)','tertiaryBorderColor':'hsl(120, 100%, 70%)'}}}%%
+graph TB
+    subgraph Client["Client Components<br/>(Browser-only, Interactive UI)"]
+        CC["✅ Can import: Client Components<br/>✅ Can call: Server Actions<br/>❌ Cannot import: Server Utils"]
+    end
 
-                    │
-                    ▼
-┌─────────────────────────────────────────────┐
-│            API Routes                        │
-│  (RESTful endpoints)                        │
-│                                              │
-│  ✅ Can import: Server Utils                │
-│  ❌ Cannot import: Components                │
-└─────────────────────────────────────────────┘
+    subgraph Server["Server Components<br/>(Server-only, Async Data Fetching)"]
+        SC["✅ Can import: Server Utils, Client Comps<br/>✅ Can use: Database, Auth, etc."]
+    end
+
+    subgraph ServerUtils["Server-Only Utilities<br/>(Database, Auth, Email, etc.)"]
+        SU["⚠️ Never exposed to client bundle"]
+    end
+
+    subgraph API["API Routes<br/>(RESTful endpoints)"]
+        AR["✅ Can import: Server Utils<br/>❌ Cannot import: Components"]
+    end
+
+    Client -.-> Server
+    Server --> ServerUtils
+    API --> ServerUtils
+
+    style Client fill:hsl(210, 100%, 85%)
+    style Server fill:hsl(180, 100%, 85%)
+    style ServerUtils fill:hsl(120, 100%, 85%)
+    style API fill:hsl(60, 100%, 85%)
 ```
 
 ## Troubleshooting
