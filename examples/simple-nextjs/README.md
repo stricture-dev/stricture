@@ -41,6 +41,8 @@ graph TB
     end
 
     AppPages --> CompClient
+    AppPages --> CompServer
+    AppPages --> Actions
     AppPages --> lib
     AppAPI --> lib
     CompServer --> CompClient
@@ -62,7 +64,7 @@ graph TB
     style LibServer fill:#b3ffb3,stroke:#333,stroke-width:1px
     style LibUtils fill:#d9ffb3,stroke:#333,stroke-width:1px
 
-    linkStyle 0,1,2,3,4,5,6,7 stroke:#22c55e,stroke-width:2px
+    linkStyle 0,1,2,3,4,5,6,7,8,9 stroke:#22c55e,stroke-width:2px
 ```
 
 ## File Structure
