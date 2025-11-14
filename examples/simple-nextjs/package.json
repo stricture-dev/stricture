@@ -1,0 +1,43 @@
+{
+  "name": "@stricture-examples/simple-nextjs",
+  "version": "1.0.0",
+  "description": "Minimal Next.js App Router example with Stricture boundary enforcement",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint \"**/*.{ts,tsx}\"",
+    "type-check": "tsc --noEmit"
+  },
+  "keywords": [
+    "nextjs",
+    "app-router",
+    "stricture",
+    "server-components",
+    "client-components",
+    "example"
+  ],
+  "author": "Stricture",
+  "license": "MIT",
+  "dependencies": {
+    "next": "^14.2.0",
+    "react": "^18.3.0",
+    "react-dom": "^18.3.0"
+  },
+  "devDependencies": {
+    "@stricture/core": "workspace:*",
+    "@stricture/eslint-plugin": "workspace:*",
+    "@stricture/nextjs": "workspace:*",
+    "@stricture/typescript-config": "workspace:*",
+    "@types/node": "^20.0.0",
+    "@types/react": "^18.3.0",
+    "@types/react-dom": "^18.3.0",
+    "autoprefixer": "^10.4.0",
+    "eslint": "^8.0.0",
+    "eslint-config-next": "^14.2.0",
+    "postcss": "^8.4.0",
+    "tailwindcss": "^3.4.0",
+    "typescript": "^5.0.0"
+  }
+}
