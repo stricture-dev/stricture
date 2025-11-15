@@ -305,27 +305,84 @@ export default async function ProductsPage() {
 
 ## Stricture Configuration
 
-The `.stricture/config.json` file uses the hexagonal preset with **zero overrides**:
+This example uses `@stricture/hexagonal` preset with **custom boundaries for Next.js integration**.
 
+### Why Custom Configuration?
+
+Next.js App Router requires the `app/` folder at the project root for routing. This doesn't match the hexagonal preset's expected structure (`src/adapters/driving/`). Therefore, we need custom boundaries to adapt the preset to Next.js:
+
+**Standard Hexagonal Architecture:**
+```
+src/adapters/driving/**  ← Driving adapters (entry points)
+src/adapters/driven/**   ← Driven adapters (infrastructure)
+src/core/application/**  ← Use cases
+src/core/ports/**        ← Interfaces
+src/core/domain/**       ← Domain logic
+```
+
+**This Next.js Example:**
+```
+app/**                   ← Driving adapters (Next.js requirement)
+  ├── di-container.ts    ← Composition root (special role)
+  ├── page.tsx           ← Server Components
+  └── api/               ← API routes
+src/adapters/driven/**   ← Driven adapters
+src/core/application/**  ← Use cases
+src/core/ports/**        ← Interfaces
+src/core/domain/**       ← Domain logic
+```
+
+### Configuration Breakdown
+
+**.stricture/config.json:**
 ```json
 {
-  "preset": "@stricture/hexagonal"
+  "preset": "@stricture/hexagonal",
+  "boundaries": [
+    {
+      "name": "composition-root",
+      "pattern": "app/di-container.ts",
+      "tags": ["app", "composition-root"]
+    },
+    {
+      "name": "nextjs-driving-adapters",
+      "pattern": "app/**/!(di-container).{ts,tsx}",
+      "tags": ["app", "driving"]
+    }
+  ],
+  "rules": [
+    // Custom rules for Next.js integration
+    // See .stricture/config.json for full details
+  ]
 }
 ```
 
-This automatically enforces:
+**What This Enforces:**
 
-- ✅ Domain layer is pure (no external imports)
-- ✅ Ports can use domain types
-- ✅ Application uses domain and ports, not adapters
-- ✅ Driving adapters call use cases
-- ✅ Driven adapters implement ports
-- ✅ Adapters are independent from each other
-- ❌ Driving adapters cannot import domain directly
-- ❌ Application cannot import adapters
-- ❌ Domain cannot import anything external
+✅ **From hexagonal preset:**
+- Domain layer is pure (no external imports)
+- Ports can use domain types
+- Application uses domain and ports, not adapters
+- Driven adapters implement ports
+- All layers properly isolated
 
-Run `pnpm lint` to check architecture violations!
+✅ **From custom config:**
+- Composition root (`di-container.ts`) can import everything (wires dependencies)
+- Driving adapters (pages, API routes) call use cases from DI container
+- Driving adapters **cannot** import driven adapters directly
+- Clear separation between wiring (DI) and business logic (pages)
+
+❌ **Violations caught:**
+- Domain importing external dependencies
+- Application importing concrete adapters
+- Pages importing repositories directly (must use DI container)
+- Driving adapters importing domain entities directly
+
+**Run `pnpm lint` to check architecture violations!**
+
+### Why This Pattern?
+
+This demonstrates **architectural adaptation** - applying strict architectural patterns to real-world framework constraints. The core hexagonal principles remain intact, but the folder structure adapts to Next.js requirements.
 
 ## Testing
 

@@ -261,6 +261,151 @@ export async function GET() {
 
 API routes act as HTTP adapters, transforming HTTP requests into use case calls.
 
+## Framework Integration with Stricture
+
+### Adapting Hexagonal Architecture to Next.js
+
+Next.js App Router has specific requirements that don't perfectly align with traditional hexagonal architecture folder structures. This section explains how we adapt the `@stricture/hexagonal` preset to work with Next.js constraints.
+
+### The Challenge
+
+**Hexagonal Preset Expectations:**
+```
+src/adapters/driving/**   ← Entry points (CLI, HTTP, GraphQL)
+src/adapters/driven/**    ← Infrastructure (DB, APIs)
+src/core/application/**   ← Use cases
+src/core/ports/**         ← Interfaces
+src/core/domain/**        ← Pure business logic
+```
+
+**Next.js Requirements:**
+- `app/` folder must be at project root for routing
+- Cannot move to `src/adapters/driving/` without breaking Next.js
+
+### The Solution: Custom Boundaries
+
+We use Stricture's configuration extension to add Next.js-specific boundaries:
+
+```json
+{
+  "preset": "@stricture/hexagonal",
+  "boundaries": [
+    {
+      "name": "composition-root",
+      "pattern": "app/di-container.ts",
+      "tags": ["app", "composition-root"],
+      "mode": "file"
+    },
+    {
+      "name": "nextjs-driving-adapters",
+      "pattern": "app/**/!(di-container).{ts,tsx}",
+      "tags": ["app", "driving"],
+      "mode": "file"
+    }
+  ],
+  "rules": [
+    // Custom rules to integrate app/ with hexagonal layers
+  ]
+}
+```
+
+### Composition Root Pattern
+
+The composition root (`app/di-container.ts`) has a special role:
+
+**Purpose:**
+- Only place that imports concrete implementations (driven adapters)
+- Wires all dependencies together
+- Exports use cases for driving adapters to use
+
+**Stricture Configuration:**
+```json
+{
+  "id": "composition-root-wires-everything",
+  "from": { "tag": "composition-root" },
+  "to": { "tag": "*" },
+  "allowed": true
+}
+```
+
+This allows `di-container.ts` to import everything, while preventing other app files from importing driven adapters:
+
+```json
+{
+  "id": "driving-not-driven",
+  "from": { "tag": "driving" },
+  "to": { "tag": "driven" },
+  "allowed": false,
+  "message": "Import use cases from app/di-container.ts instead"
+}
+```
+
+### Pattern Matching for Separation
+
+The boundary patterns use glob exclusion to separate:
+
+- **Composition root:** `app/di-container.ts` (exact match)
+- **Driving adapters:** `app/**/!(di-container).{ts,tsx}` (everything except di-container)
+
+This ensures:
+1. Only `di-container.ts` can import repositories
+2. Pages/routes must import from `di-container.ts`
+3. Clear architectural boundary enforcement
+
+### Benefits of This Approach
+
+1. **Maintains hexagonal principles:**
+   - Domain isolation
+   - Dependency inversion
+   - Adapter independence
+   - Clear boundaries
+
+2. **Works with Next.js:**
+   - `app/` folder in correct location
+   - Routing works as expected
+   - Framework conventions respected
+
+3. **Educates developers:**
+   - Shows how to adapt patterns to constraints
+   - Demonstrates Stricture's flexibility
+   - Provides reusable pattern for other frameworks
+
+### Alternative Approaches Considered
+
+**Option A: No Stricture Configuration**
+- ❌ Loses architectural enforcement
+- ❌ No protection against violations
+
+**Option B: Move app/ to src/**
+- ❌ Breaks Next.js routing
+- ❌ Requires complex build configuration
+
+**Option C: This solution (custom boundaries)**
+- ✅ Maintains both hexagonal and Next.js requirements
+- ✅ Clear enforcement with helpful error messages
+- ✅ Demonstrates architectural flexibility
+
+### Configuration as Documentation
+
+The Stricture configuration serves as executable documentation:
+
+```json
+{
+  "id": "driving-not-driven",
+  "message": "Driving adapters should not directly import driven adapters...",
+  "examples": {
+    "bad": ["import { MemoryProductRepository } from '@/src/adapters/driven/...'"],
+    "good": ["import { getProductsUseCase } from '@/app/di-container'"]
+  }
+}
+```
+
+When developers violate the architecture, they get:
+- Clear explanation of the problem
+- Example of what they did wrong
+- Example of the correct approach
+- Reference to the composition root pattern
+
 ## Key Architectural Decisions
 
 ### Why In-Memory Repository?
@@ -295,6 +440,6 @@ Without overwhelming with complex business scenarios.
 - [ ] Driving adapters (routes, components) receive use cases via DI
 - [ ] Driven adapters implement port interfaces
 - [ ] Composition root wires all dependencies
-- [ ] Stricture config uses hexagonal preset with no overrides
+- [ ] Stricture config uses hexagonal preset with Next.js adaptations
 - [ ] All tests pass
 - [ ] Example is runnable with `pnpm dev`

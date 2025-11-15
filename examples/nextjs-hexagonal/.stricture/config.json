@@ -2,42 +2,97 @@
   "preset": "@stricture/hexagonal",
   "boundaries": [
     {
-      "name": "nextjs-app",
-      "pattern": "app/**/*.{ts,tsx}",
-      "tags": ["app"],
-      "mode": "file"
+      "name": "composition-root",
+      "pattern": "app/di-container.ts",
+      "tags": ["app", "composition-root"],
+      "mode": "file",
+      "metadata": {
+        "description": "Composition root - wires all dependencies together"
+      }
+    },
+    {
+      "name": "nextjs-driving-adapters",
+      "pattern": "app/**/!(di-container).{ts,tsx}",
+      "tags": ["app", "driving"],
+      "mode": "file",
+      "metadata": {
+        "description": "Next.js driving adapters - pages, layouts, and API routes"
+      }
     }
   ],
   "rules": [
     {
-      "id": "app-to-application",
-      "from": { "tag": "app" },
+      "id": "composition-root-wires-everything",
+      "name": "Composition Root Can Import Everything",
+      "description": "DI container imports driven adapters and use cases to wire dependencies",
+      "severity": "error",
+      "from": { "tag": "composition-root" },
+      "to": { "tag": "*" },
+      "allowed": true
+    },
+    {
+      "id": "driving-to-application",
+      "name": "Driving Adapters Call Use Cases",
+      "description": "Pages and API routes call use cases from application layer",
+      "severity": "error",
+      "from": { "tag": "driving" },
       "to": { "tag": "application" },
       "allowed": true
     },
     {
-      "id": "app-to-ports",
-      "from": { "tag": "app" },
+      "id": "driving-to-composition-root",
+      "name": "Driving Adapters Import from DI Container",
+      "description": "Pages and API routes import use cases from composition root",
+      "severity": "error",
+      "from": { "tag": "driving" },
+      "to": { "tag": "composition-root" },
+      "allowed": true
+    },
+    {
+      "id": "driving-to-ports",
+      "name": "Driving Adapters Can Reference Ports",
+      "description": "For type annotations in function signatures",
+      "severity": "error",
+      "from": { "tag": "driving" },
       "to": { "tag": "ports" },
       "allowed": true
     },
     {
-      "id": "app-self-imports",
-      "from": { "tag": "app" },
-      "to": { "tag": "app" },
+      "id": "driving-self-imports",
+      "name": "Driving Adapters Can Import Each Other",
+      "description": "App files can import shared utilities and other app files",
+      "severity": "error",
+      "from": { "tag": "driving" },
+      "to": { "tag": "driving" },
       "allowed": true
     },
     {
-      "id": "app-to-external",
-      "from": { "tag": "app" },
+      "id": "driving-to-external",
+      "name": "Driving Adapters Can Use Framework",
+      "description": "Next.js, React, and other external packages are allowed",
+      "severity": "error",
+      "from": { "tag": "driving" },
       "to": { "tag": "external" },
       "allowed": true
     },
     {
-      "id": "app-to-driven-for-di",
-      "from": { "tag": "app" },
+      "id": "driving-not-driven",
+      "name": "Driving Adapters Cannot Import Driven Adapters",
+      "description": "Use dependency injection via composition root instead",
+      "severity": "error",
+      "from": { "tag": "driving" },
       "to": { "tag": "driven" },
-      "allowed": true
+      "allowed": false,
+      "message": "Driving adapters should not directly import driven adapters. Import use cases from app/di-container.ts instead.",
+      "examples": {
+        "bad": [
+          "import { MemoryProductRepository } from '@/src/adapters/driven/memory-repository'  // In app/products/page.tsx"
+        ],
+        "good": [
+          "import { getProductsUseCase } from '@/app/di-container'  // Import from composition root",
+          "// Only app/di-container.ts should import MemoryProductRepository"
+        ]
+      }
     }
   ]
 }
