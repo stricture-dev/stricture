@@ -7,7 +7,7 @@ export interface ArchRule {
   id: string // Unique identifier (e.g., 'no-domain-external')
   name: string // Display name (e.g., 'Domain Isolation')
   description: string // Detailed explanation
-  severity: 'error' | 'warn' // How to report violations
+  severity: 'error' | 'warn' | 'off' // How to report violations ('off' skips the rule)
   from: BoundaryPattern // Source boundary
   to: BoundaryPattern // Target boundary
   allowed: boolean // Whether import is permitted

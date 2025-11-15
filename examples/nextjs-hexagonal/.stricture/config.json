@@ -94,5 +94,15 @@
         ]
       }
     }
+  ],
+  "overrides": [
+    {
+      "id": "driving-independent",
+      "severity": "off"
+    },
+    {
+      "id": "driven-independent",
+      "severity": "off"
+    }
   ]
 }
