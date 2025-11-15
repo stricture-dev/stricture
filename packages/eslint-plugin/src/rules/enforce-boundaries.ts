@@ -127,13 +127,22 @@ const enforceBoundariesRule: Rule.RuleModule = {
 
       // Report if invalid
       if (!result.valid) {
+        // Skip rules with severity 'off'
+        if (result.violatedRule?.severity === 'off') {
+          return
+        }
+
         const message = formatErrorMessage(result)
+
+        // Prepend severity indicator for warnings
+        const severityPrefix = result.violatedRule?.severity === 'warn' ? '[WARNING] ' : ''
+        const fullMessage = severityPrefix + message
 
         context.report({
           node,
           messageId: 'boundaryViolation',
           data: {
-            message
+            message: fullMessage
           }
         })
       }

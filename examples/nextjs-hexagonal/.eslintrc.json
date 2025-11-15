@@ -1,5 +1,13 @@
 {
+  "root": true,
   "extends": [
     "next/core-web-vitals"
-  ]
+  ],
+  "plugins": ["@stricture"],
+  "parserOptions": {
+    "project": "./tsconfig.json"
+  },
+  "rules": {
+    "@stricture/enforce-boundaries": "error"
+  }
 }
