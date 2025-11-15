@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common'
-import { User } from './entities/user.entity.js'
-import { CreateUserDto } from './dto/create-user.dto.js'
-import { UserDto } from './dto/user.dto.js'
+import { User } from './entities/user.entity'
+import { CreateUserDto } from './dto/create-user.dto'
+import { UserDto } from './dto/user.dto'
 
 /**
  * UsersService - Business logic layer

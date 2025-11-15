@@ -7,7 +7,7 @@
     "build": "nest build",
     "start": "nest start",
     "start:dev": "nest start --watch",
-    "lint": "eslint src --max-warnings 0",
+    "lint": "eslint \"src/**/*.ts\" --max-warnings 0",
     "test": "echo 'Example tests not yet implemented - skipping'"
   },
   "dependencies": {

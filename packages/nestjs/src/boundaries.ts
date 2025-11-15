@@ -18,6 +18,26 @@ import type { BoundaryDefinition } from '@stricture/core'
  */
 export const boundaries: BoundaryDefinition[] = [
   {
+    name: 'modules',
+    pattern: 'src/**/*.module.ts',
+    mode: 'file',
+    tags: ['nestjs', 'modules', 'infrastructure'],
+    metadata: {
+      description: 'NestJS modules for dependency injection and module organization',
+      layer: -1  // Infrastructure/wiring layer
+    }
+  },
+  {
+    name: 'main',
+    pattern: 'src/main.ts',
+    mode: 'file',
+    tags: ['nestjs', 'main', 'infrastructure'],
+    metadata: {
+      description: 'Application entry point and bootstrap',
+      layer: -1  // Infrastructure layer
+    }
+  },
+  {
     name: 'controllers',
     pattern: 'src/**/*.controller.ts',
     mode: 'file',

@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Body, Param } from '@nestjs/common'
-import { UsersService } from './users.service.js'
-import { CreateUserDto } from './dto/create-user.dto.js'
-import { UserDto } from './dto/user.dto.js'
+import { UsersService } from './users.service'
+import { CreateUserDto } from './dto/create-user.dto'
+import { UserDto } from './dto/user.dto'
 
 /**
  * UsersController - HTTP layer

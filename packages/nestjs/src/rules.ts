@@ -15,6 +15,30 @@ import type { ArchRule } from '@stricture/core'
  */
 export const rules: ArchRule[] = [
   // ========================================
+  // INFRASTRUCTURE - Modules and Main
+  // ========================================
+
+  {
+    id: 'modules-can-import-anything',
+    name: 'Modules Can Import Anything',
+    description: 'Module files wire dependencies and can import from any layer',
+    severity: 'error',
+    from: { tag: 'modules', mode: 'file' },
+    to: { tag: '*', mode: 'file' },
+    allowed: true
+  },
+
+  {
+    id: 'main-can-import-anything',
+    name: 'Main Can Import Anything',
+    description: 'Main entry point can import modules and bootstrap the app',
+    severity: 'error',
+    from: { tag: 'main', mode: 'file' },
+    to: { tag: '*', mode: 'file' },
+    allowed: true
+  },
+
+  // ========================================
   // CRITICAL RESTRICTIONS - DTOs and Controllers
   // ========================================
 
