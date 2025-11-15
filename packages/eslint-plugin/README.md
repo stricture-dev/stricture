@@ -364,16 +364,40 @@ Provide helpful error messages:
 
 ### Severity Levels
 
-Control whether violations are errors or warnings:
+Control whether violations are errors, warnings, or disabled:
 
 ```json
 {
   "rules": [
-    { "id": "strict-rule", "severity": "error" },
-    { "id": "soft-rule", "severity": "warn" }
+    { "id": "strict-rule", "severity": "error" },  // Reports as error
+    { "id": "soft-rule", "severity": "warn" },     // Reports as [WARNING]
+    { "id": "disabled-rule", "severity": "off" }   // Not reported
   ]
 }
 ```
+
+**Severity Behavior:**
+- `"error"` - Violation reported normally
+- `"warn"` - Violation reported with `[WARNING]` prefix
+- `"off"` - Violation not reported (rule is skipped)
+
+**Disabling Preset Rules:**
+
+Use `overrides` to disable specific rules from presets:
+
+```json
+{
+  "preset": "@stricture/hexagonal",
+  "overrides": [
+    {
+      "id": "driving-independent",
+      "severity": "off"
+    }
+  ]
+}
+```
+
+This is useful when a preset rule conflicts with your framework's requirements (e.g., Next.js app structure).
 
 ### Path Alias Resolution
 

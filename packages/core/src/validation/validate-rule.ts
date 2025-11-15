@@ -109,10 +109,10 @@ export function validateRule(rule: unknown): ValidationResult {
   }
 
   // Severity validation
-  const severityError = validateEnum(rule, 'severity', ['error', 'warn'])
+  const severityError = validateEnum(rule, 'severity', ['error', 'warn', 'off'])
   if (severityError) {
     errors.push(
-      createError('severity', `Severity must be 'error' or 'warn'`, 'INVALID_SEVERITY')
+      createError('severity', `Severity must be 'error', 'warn', or 'off'`, 'INVALID_SEVERITY')
     )
   }
 

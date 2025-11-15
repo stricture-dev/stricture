@@ -121,15 +121,15 @@ Defines a single architectural boundary rule.
 
 ```typescript
 interface ArchRule {
-  id: string                    // Unique identifier
-  name: string                  // Human-readable name
-  description: string           // What this rule enforces
-  severity: 'error' | 'warn'    // Violation severity
-  from: BoundaryPattern         // Source boundary
-  to: BoundaryPattern           // Target boundary
-  allowed: boolean              // Whether import is allowed
-  message?: string              // Custom error message
-  examples?: {                  // Code examples
+  id: string                       // Unique identifier
+  name: string                     // Human-readable name
+  description: string              // What this rule enforces
+  severity: 'error' | 'warn' | 'off'  // Violation severity ('off' disables the rule)
+  from: BoundaryPattern            // Source boundary
+  to: BoundaryPattern              // Target boundary
+  allowed: boolean                 // Whether import is allowed
+  message?: string                 // Custom error message
+  examples?: {                     // Code examples
     good: string[]
     bad: string[]
   }
