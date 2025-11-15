@@ -1,0 +1,12 @@
+{
+  "root": true,
+  "parser": "@typescript-eslint/parser",
+  "parserOptions": {
+    "project": "./tsconfig.json",
+    "tsconfigRootDir": "."
+  },
+  "plugins": ["@stricture"],
+  "rules": {
+    "@stricture/enforce-boundaries": "error"
+  }
+}
