@@ -1,0 +1,43 @@
+{
+  "preset": "@stricture/hexagonal",
+  "boundaries": [
+    {
+      "name": "nextjs-app",
+      "pattern": "app/**/*.{ts,tsx}",
+      "tags": ["app"],
+      "mode": "file"
+    }
+  ],
+  "rules": [
+    {
+      "id": "app-to-application",
+      "from": { "tag": "app" },
+      "to": { "tag": "application" },
+      "allowed": true
+    },
+    {
+      "id": "app-to-ports",
+      "from": { "tag": "app" },
+      "to": { "tag": "ports" },
+      "allowed": true
+    },
+    {
+      "id": "app-self-imports",
+      "from": { "tag": "app" },
+      "to": { "tag": "app" },
+      "allowed": true
+    },
+    {
+      "id": "app-to-external",
+      "from": { "tag": "app" },
+      "to": { "tag": "external" },
+      "allowed": true
+    },
+    {
+      "id": "app-to-driven-for-di",
+      "from": { "tag": "app" },
+      "to": { "tag": "driven" },
+      "allowed": true
+    }
+  ]
+}
