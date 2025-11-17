@@ -1,0 +1,90 @@
+{
+  "boundaries": [
+    {
+      "name": "composition-root",
+      "pattern": "index.ts",
+      "mode": "file",
+      "tags": ["composition-root", "app"]
+    },
+    {
+      "name": "user-registration",
+      "pattern": "src/features/user-registration/**",
+      "mode": "file",
+      "tags": ["feature", "user-feature"]
+    },
+    {
+      "name": "user-profile",
+      "pattern": "src/features/user-profile/**",
+      "mode": "file",
+      "tags": ["feature", "user-feature"]
+    },
+    {
+      "name": "order-creation",
+      "pattern": "src/features/order-creation/**",
+      "mode": "file",
+      "tags": ["feature", "order-feature"]
+    },
+    {
+      "name": "order-history",
+      "pattern": "src/features/order-history/**",
+      "mode": "file",
+      "tags": ["feature", "order-feature"]
+    },
+    {
+      "name": "shared",
+      "pattern": "src/shared/**",
+      "mode": "file",
+      "tags": ["shared", "infrastructure"]
+    }
+  ],
+  "rules": [
+    {
+      "id": "composition-root-to-features",
+      "from": { "tag": "composition-root" },
+      "to": { "tag": "feature" },
+      "allowed": true
+    },
+    {
+      "id": "composition-root-to-external",
+      "from": { "tag": "composition-root" },
+      "to": { "tag": "external" },
+      "allowed": true
+    },
+    {
+      "id": "feature-to-shared",
+      "from": { "tag": "feature" },
+      "to": { "tag": "shared" },
+      "allowed": true
+    },
+    {
+      "id": "feature-to-external",
+      "from": { "tag": "feature" },
+      "to": { "tag": "external" },
+      "allowed": true
+    },
+    {
+      "id": "user-feature-self-imports",
+      "from": { "tag": "user-feature" },
+      "to": { "tag": "user-feature" },
+      "allowed": true
+    },
+    {
+      "id": "order-feature-self-imports",
+      "from": { "tag": "order-feature" },
+      "to": { "tag": "order-feature" },
+      "allowed": true
+    },
+    {
+      "id": "shared-to-external",
+      "from": { "tag": "shared" },
+      "to": { "tag": "external" },
+      "allowed": true
+    },
+    {
+      "id": "shared-self-imports",
+      "from": { "tag": "shared" },
+      "to": { "tag": "shared" },
+      "allowed": true
+    }
+  ]
+}
