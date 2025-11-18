@@ -468,6 +468,43 @@ importers:
         specifier: ^5.0.0
         version: 5.9.3
 
+  examples/vertical-slice-express:
+    dependencies:
+      express:
+        specifier: ^4.18.0
+        version: 4.21.2
+    devDependencies:
+      '@stricture/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@stricture/eslint-plugin':
+        specifier: workspace:*
+        version: link:../../packages/eslint-plugin
+      '@types/express':
+        specifier: ^4.17.0
+        version: 4.17.25
+      '@types/node':
+        specifier: ^20.0.0
+        version: 20.19.24
+      '@typescript-eslint/eslint-plugin':
+        specifier: ^6.0.0
+        version: 6.21.0(@typescript-eslint/parser@6.21.0)(eslint@8.57.1)(typescript@5.9.3)
+      '@typescript-eslint/parser':
+        specifier: ^6.0.0
+        version: 6.21.0(eslint@8.57.1)(typescript@5.9.3)
+      eslint:
+        specifier: ^8.0.0
+        version: 8.57.1
+      ts-node:
+        specifier: ^10.9.0
+        version: 10.9.2(@types/node@20.19.24)(typescript@5.9.3)
+      typescript:
+        specifier: ^5.0.0
+        version: 5.9.3
+      vitest:
+        specifier: ^1.2.0
+        version: 1.6.1(@types/node@20.19.24)
+
   packages/clean:
     dependencies:
       '@stricture/core':
