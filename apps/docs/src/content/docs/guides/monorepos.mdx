@@ -1,0 +1,1056 @@
+---
+title: Monorepo Setup
+description: Configure Stricture in monorepo environments with per-package and shared configurations
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+# Monorepo Setup
+
+Learn how to configure Stricture in monorepo environments - from per-package configurations to shared presets and workspace-wide enforcement.
+
+## Overview
+
+Stricture works seamlessly in monorepos with:
+
+- **Per-package configurations** - Each package can have its own `.stricture/config.json`
+- **Shared configurations** - Reuse common rules across packages
+- **Custom workspace presets** - Internal presets for your organization
+- **Workspace dependencies** - Enforce boundaries across packages
+- **Turborepo/pnpm/NX integration** - Works with all major monorepo tools
+
+## Monorepo Structure
+
+A typical monorepo with Stricture:
+
+```
+my-monorepo/
+├── packages/
+│   ├── api/
+│   │   ├── .stricture/
+│   │   │   └── config.json          # API-specific config
+│   │   ├── src/
+│   │   ├── package.json
+│   │   └── tsconfig.json
+│   ├── web/
+│   │   ├── .stricture/
+│   │   │   └── config.json          # Web-specific config
+│   │   ├── src/
+│   │   └── package.json
+│   ├── shared/
+│   │   ├── .stricture/
+│   │   │   └── config.json          # Shared lib config
+│   │   └── src/
+│   └── stricture-config/            # Shared Stricture presets
+│       ├── src/
+│       │   ├── api-preset.ts
+│       │   ├── web-preset.ts
+│       │   └── index.ts
+│       └── package.json
+├── .eslintrc.js                      # Root ESLint config
+├── package.json
+├── pnpm-workspace.yaml
+└── turbo.json
+```
+
+## Per-Package Configurations
+
+Each package can have its own architecture rules.
+
+### Example: API Package (Hexagonal)
+
+```json title="packages/api/.stricture/config.json"
+{
+  "preset": "@stricture/hexagonal"
+}
+```
+
+```
+packages/api/
+└── src/
+    ├── core/
+    │   ├── domain/
+    │   ├── ports/
+    │   └── application/
+    └── adapters/
+        ├── driving/
+        └── driven/
+```
+
+### Example: Web Package (Next.js)
+
+```json title="packages/web/.stricture/config.json"
+{
+  "preset": "@stricture/nextjs"
+}
+```
+
+```
+packages/web/
+└── src/
+    ├── app/
+    ├── components/
+    ├── actions/
+    └── lib/
+```
+
+### Example: Shared Package (Layered)
+
+```json title="packages/shared/.stricture/config.json"
+{
+  "preset": "@stricture/layered",
+  "boundaries": [
+    {
+      "name": "types",
+      "pattern": "src/types/**",
+      "mode": "file",
+      "tags": ["types"]
+    },
+    {
+      "name": "utils",
+      "pattern": "src/utils/**",
+      "mode": "file",
+      "tags": ["utils"]
+    },
+    {
+      "name": "constants",
+      "pattern": "src/constants/**",
+      "mode": "file",
+      "tags": ["constants"]
+    }
+  ],
+  "rules": [
+    {
+      "id": "utils-can-import-types",
+      "from": { "tag": "utils" },
+      "to": { "tag": "types" },
+      "allowed": true
+    },
+    {
+      "id": "constants-isolated",
+      "from": { "tag": "constants" },
+      "to": { "tag": "*" },
+      "allowed": false,
+      "message": "Constants must be pure data with no dependencies"
+    },
+    {
+      "id": "constants-self",
+      "from": { "tag": "constants" },
+      "to": { "tag": "constants" },
+      "allowed": true
+    }
+  ]
+}
+```
+
+## Shared Configurations
+
+Create reusable configs for common patterns.
+
+### Option 1: Shared JSON Config
+
+Create a shared config package:
+
+```json title="packages/stricture-config/base-config.json"
+{
+  "boundaries": [
+    {
+      "name": "core",
+      "pattern": "src/core/**",
+      "mode": "file",
+      "tags": ["core"]
+    },
+    {
+      "name": "infrastructure",
+      "pattern": "src/infrastructure/**",
+      "mode": "file",
+      "tags": ["infrastructure"]
+    }
+  ],
+  "rules": [
+    {
+      "id": "core-isolation",
+      "from": { "tag": "core" },
+      "to": { "tag": "infrastructure" },
+      "allowed": false
+    }
+  ]
+}
+```
+
+Extend in packages:
+
+```json title="packages/api/.stricture/config.json"
+{
+  "extends": "../stricture-config/base-config.json",
+  "boundaries": [
+    {
+      "name": "api",
+      "pattern": "src/api/**",
+      "mode": "file",
+      "tags": ["api"]
+    }
+  ]
+}
+```
+
+:::note[Extends Support]
+The `extends` field is not yet implemented in Stricture v0.1. Use workspace presets (Option 2) for now.
+:::
+
+### Option 2: Workspace Presets (Recommended)
+
+Create internal presets as workspace packages:
+
+```typescript title="packages/stricture-config/src/api-preset.ts"
+import type { ArchPreset } from '@stricture/core'
+
+export const apiPreset: ArchPreset = {
+  id: '@my-company/api-preset',
+  name: 'Company API Architecture',
+  description: 'Standard architecture for our API services',
+  boundaries: [
+    {
+      name: 'domain',
+      pattern: 'src/domain/**',
+      mode: 'file',
+      tags: ['domain'],
+      metadata: { layer: 0 }
+    },
+    {
+      name: 'application',
+      pattern: 'src/application/**',
+      mode: 'file',
+      tags: ['application'],
+      metadata: { layer: 1 }
+    },
+    {
+      name: 'infrastructure',
+      pattern: 'src/infrastructure/**',
+      mode: 'file',
+      tags: ['infrastructure'],
+      metadata: { layer: 2 }
+    },
+    {
+      name: 'api',
+      pattern: 'src/api/**',
+      mode: 'file',
+      tags: ['api'],
+      metadata: { layer: 3 }
+    }
+  ],
+  rules: [
+    {
+      id: 'domain-isolation',
+      name: 'Domain Isolation',
+      description: 'Domain has zero dependencies',
+      severity: 'error',
+      from: { tag: 'domain', mode: 'file' },
+      to: { tag: '*', mode: 'file' },
+      allowed: false,
+      message: 'Domain must be pure business logic with no external dependencies'
+    },
+    {
+      id: 'domain-self',
+      from: { tag: 'domain', mode: 'file' },
+      to: { tag: 'domain', mode: 'file' },
+      allowed: true
+    },
+    {
+      id: 'application-to-domain',
+      from: { tag: 'application', mode: 'file' },
+      to: { tag: 'domain', mode: 'file' },
+      allowed: true
+    },
+    {
+      id: 'infrastructure-to-domain',
+      from: { tag: 'infrastructure', mode: 'file' },
+      to: { tag: 'domain', mode: 'file' },
+      allowed: true
+    },
+    {
+      id: 'api-to-application',
+      from: { tag: 'api', mode: 'file' },
+      to: { tag: 'application', mode: 'file' },
+      allowed: true
+    }
+    // Add more rules...
+  ]
+}
+
+export default apiPreset
+```
+
+```typescript title="packages/stricture-config/src/web-preset.ts"
+import type { ArchPreset } from '@stricture/core'
+
+export const webPreset: ArchPreset = {
+  id: '@my-company/web-preset',
+  name: 'Company Web Architecture',
+  description: 'Standard architecture for our web apps',
+  boundaries: [
+    {
+      name: 'components',
+      pattern: 'src/components/**',
+      mode: 'file',
+      tags: ['ui']
+    },
+    {
+      name: 'services',
+      pattern: 'src/services/**',
+      mode: 'file',
+      tags: ['services']
+    },
+    {
+      name: 'api',
+      pattern: 'src/api/**',
+      mode: 'file',
+      tags: ['api']
+    }
+  ],
+  rules: [
+    {
+      id: 'ui-to-services',
+      from: { tag: 'ui', mode: 'file' },
+      to: { tag: 'services', mode: 'file' },
+      allowed: true
+    },
+    {
+      id: 'services-to-api',
+      from: { tag: 'services', mode: 'file' },
+      to: { tag: 'api', mode: 'file' },
+      allowed: true
+    },
+    {
+      id: 'no-ui-to-api',
+      from: { tag: 'ui', mode: 'file' },
+      to: { tag: 'api', mode: 'file' },
+      allowed: false,
+      message: 'UI components must use services, not call API directly'
+    }
+  ]
+}
+
+export default webPreset
+```
+
+```typescript title="packages/stricture-config/src/index.ts"
+export { apiPreset } from './api-preset'
+export { webPreset } from './web-preset'
+```
+
+```json title="packages/stricture-config/package.json"
+{
+  "name": "@my-company/stricture-config",
+  "version": "1.0.0",
+  "type": "module",
+  "exports": {
+    "./api": {
+      "types": "./dist/api-preset.d.ts",
+      "import": "./dist/api-preset.js"
+    },
+    "./web": {
+      "types": "./dist/web-preset.d.ts",
+      "import": "./dist/web-preset.js"
+    }
+  },
+  "scripts": {
+    "build": "tsup"
+  },
+  "dependencies": {
+    "@stricture/core": "workspace:*"
+  },
+  "devDependencies": {
+    "tsup": "^8.0.0",
+    "typescript": "^5.3.0"
+  }
+}
+```
+
+Use in packages:
+
+```json title="packages/api/.stricture/config.json"
+{
+  "preset": "@my-company/stricture-config/api"
+}
+```
+
+```json title="packages/web/.stricture/config.json"
+{
+  "preset": "@my-company/stricture-config/web"
+}
+```
+
+## Workspace Tools Integration
+
+### pnpm Workspaces
+
+```yaml title="pnpm-workspace.yaml"
+packages:
+  - 'packages/*'
+```
+
+```json title="package.json"
+{
+  "name": "my-monorepo",
+  "private": true,
+  "scripts": {
+    "lint": "pnpm -r run lint",
+    "lint:stricture": "pnpm -r exec eslint . --rule '@stricture/enforce-boundaries: error'"
+  },
+  "devDependencies": {
+    "@stricture/core": "^0.1.0",
+    "@stricture/eslint-plugin": "^0.1.0"
+  }
+}
+```
+
+Install dependencies:
+
+```bash
+# Install in all packages
+pnpm install -D -w @stricture/core @stricture/eslint-plugin
+
+# Install preset in specific package
+pnpm --filter @my-company/api add -D @stricture/hexagonal
+```
+
+Run linting:
+
+```bash
+# Lint all packages
+pnpm lint
+
+# Lint specific package
+pnpm --filter @my-company/api lint
+
+# Lint with Stricture only
+pnpm lint:stricture
+```
+
+### Turborepo
+
+```json title="turbo.json"
+{
+  "$schema": "https://turbo.build/schema.json",
+  "pipeline": {
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**"]
+    },
+    "lint": {
+      "dependsOn": ["^build"],
+      "outputs": []
+    },
+    "test": {
+      "dependsOn": ["^build"],
+      "outputs": []
+    }
+  }
+}
+```
+
+```json title="package.json"
+{
+  "scripts": {
+    "lint": "turbo run lint",
+    "lint:fix": "turbo run lint:fix"
+  }
+}
+```
+
+```json title="packages/api/package.json"
+{
+  "scripts": {
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix"
+  }
+}
+```
+
+Run linting:
+
+```bash
+# Lint all packages (parallel)
+turbo lint
+
+# Lint with cache
+turbo lint --cache-dir=.turbo
+
+# Force lint without cache
+turbo lint --force
+```
+
+### NX Workspaces
+
+```json title="nx.json"
+{
+  "targetDefaults": {
+    "lint": {
+      "cache": true,
+      "inputs": [
+        "default",
+        "{workspaceRoot}/.eslintrc.json",
+        "{workspaceRoot}/.stricture/**"
+      ]
+    }
+  }
+}
+```
+
+```json title="packages/api/project.json"
+{
+  "name": "api",
+  "targets": {
+    "lint": {
+      "executor": "@nx/linter:eslint",
+      "options": {
+        "lintFilePatterns": ["packages/api/**/*.ts"]
+      }
+    }
+  }
+}
+```
+
+Run linting:
+
+```bash
+# Lint specific project
+nx lint api
+
+# Lint all projects
+nx run-many --target=lint --all
+
+# Lint affected projects only
+nx affected --target=lint
+```
+
+### Yarn Workspaces
+
+```json title="package.json"
+{
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "lint": "yarn workspaces foreach run lint",
+    "lint:api": "yarn workspace @my-company/api lint"
+  }
+}
+```
+
+## Cross-Package Dependencies
+
+Enforce boundaries across workspace packages.
+
+### Scenario: Shared Package Access
+
+You have a `shared` package and want to control which packages can import it:
+
+```
+packages/
+├── api/          # Can import shared
+├── web/          # Can import shared
+├── shared/       # Core utilities
+└── admin/        # Should NOT import shared
+```
+
+#### Option 1: Package-Level Rules
+
+```json title="packages/shared/.stricture/config.json"
+{
+  "boundaries": [
+    {
+      "name": "shared",
+      "pattern": "src/**",
+      "mode": "file",
+      "tags": ["shared"]
+    }
+  ],
+  "rules": [
+    {
+      "id": "shared-self",
+      "from": { "tag": "shared" },
+      "to": { "tag": "shared" },
+      "allowed": true
+    },
+    {
+      "id": "shared-no-external",
+      "from": { "tag": "shared" },
+      "to": { "tag": "external" },
+      "allowed": false,
+      "message": "Shared package must have minimal dependencies"
+    }
+  ]
+}
+```
+
+#### Option 2: ESLint Import Rules
+
+Use ESLint import rules for cross-package restrictions:
+
+```js title=".eslintrc.js"
+module.exports = {
+  overrides: [
+    {
+      files: ['packages/admin/**/*.ts'],
+      rules: {
+        'no-restricted-imports': [
+          'error',
+          {
+            patterns: [
+              {
+                group: ['@my-company/shared'],
+                message: 'Admin package should not depend on shared utilities'
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}
+```
+
+### Scenario: Preventing Circular Package Dependencies
+
+```
+packages/
+├── api/          # Depends on: shared
+├── web/          # Depends on: shared, api (calls API)
+└── shared/       # Depends on: nothing
+```
+
+Stricture enforces file-level boundaries. For package-level circular deps, use your package manager:
+
+<Tabs>
+  <TabItem label="pnpm">
+    ```yaml title=".npmrc"
+    # Prevent circular dependencies
+    strict-peer-dependencies=true
+    ```
+
+    pnpm automatically detects circular package dependencies during install.
+  </TabItem>
+  <TabItem label="NX">
+    ```bash
+    # Visualize package dependencies
+    nx graph
+
+    # Check for circular deps
+    nx run-many --target=build --all
+    # Fails if circular deps exist
+    ```
+  </TabItem>
+  <TabItem label="Madge">
+    ```bash
+    # Install madge
+    npm install -g madge
+
+    # Check for circular package deps
+    madge --circular --extensions ts,tsx packages/
+    ```
+  </TabItem>
+</Tabs>
+
+## Root-Level Configuration
+
+You can have a root `.stricture/config.json` that applies to all packages:
+
+```json title=".stricture/config.json"
+{
+  "boundaries": [
+    {
+      "name": "packages",
+      "pattern": "packages/*/src/**",
+      "mode": "file",
+      "tags": ["packages"]
+    },
+    {
+      "name": "tooling",
+      "pattern": "tooling/**",
+      "mode": "file",
+      "tags": ["tooling"]
+    }
+  ],
+  "rules": [
+    {
+      "id": "tooling-independent",
+      "from": { "tag": "tooling" },
+      "to": { "tag": "packages" },
+      "allowed": false,
+      "message": "Tooling scripts should not import package code"
+    }
+  ]
+}
+```
+
+However, **per-package configs are recommended** for clearer boundaries.
+
+## Example: Real Monorepo Setup
+
+Let's set up a complete monorepo with:
+- API (Hexagonal)
+- Web (Next.js)
+- Shared (Utilities)
+- Internal presets
+
+### Step 1: Initialize Monorepo
+
+<Tabs>
+  <TabItem label="pnpm">
+    ```bash
+    mkdir my-monorepo && cd my-monorepo
+    pnpm init
+    echo "packages:\n  - 'packages/*'" > pnpm-workspace.yaml
+    ```
+  </TabItem>
+  <TabItem label="npm">
+    ```bash
+    mkdir my-monorepo && cd my-monorepo
+    npm init -y
+    # Add to package.json: "workspaces": ["packages/*"]
+    ```
+  </TabItem>
+  <TabItem label="yarn">
+    ```bash
+    mkdir my-monorepo && cd my-monorepo
+    yarn init -y
+    # Add to package.json: "workspaces": ["packages/*"]
+    ```
+  </TabItem>
+</Tabs>
+
+### Step 2: Create Packages
+
+```bash
+mkdir -p packages/{api,web,shared,stricture-config}/src
+```
+
+### Step 3: Install Stricture (Root)
+
+```bash
+pnpm add -D -w @stricture/core @stricture/eslint-plugin
+pnpm add -D -w @stricture/hexagonal @stricture/nextjs @stricture/layered
+```
+
+### Step 4: Create Internal Presets
+
+```typescript title="packages/stricture-config/src/index.ts"
+import type { ArchPreset } from '@stricture/core'
+import { hexagonalPreset } from '@stricture/hexagonal'
+import { nextjsPreset } from '@stricture/nextjs'
+
+// Customize hexagonal for our APIs
+export const apiPreset: ArchPreset = {
+  ...hexagonalPreset,
+  id: '@my-company/api-preset',
+  name: 'Company API Preset',
+  rules: [
+    ...hexagonalPreset.rules,
+    {
+      id: 'no-console',
+      name: 'No Console in Domain',
+      description: 'Domain should not use console.log',
+      severity: 'error',
+      from: { tag: 'domain', mode: 'file' },
+      to: { pattern: 'node_modules/console/**', mode: 'file' },
+      allowed: false,
+      message: 'Use a logger service instead of console'
+    }
+  ]
+}
+
+// Customize Next.js for our web apps
+export const webPreset: ArchPreset = {
+  ...nextjsPreset,
+  id: '@my-company/web-preset',
+  name: 'Company Web Preset'
+}
+```
+
+```json title="packages/stricture-config/package.json"
+{
+  "name": "@my-company/stricture-config",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsup src/index.ts --format esm,cjs --dts"
+  },
+  "dependencies": {
+    "@stricture/core": "workspace:*",
+    "@stricture/hexagonal": "workspace:*",
+    "@stricture/nextjs": "workspace:*"
+  }
+}
+```
+
+Build the presets:
+
+```bash
+cd packages/stricture-config
+pnpm build
+```
+
+### Step 5: Configure Each Package
+
+```json title="packages/api/.stricture/config.json"
+{
+  "preset": "@my-company/stricture-config/api"
+}
+```
+
+```json title="packages/api/package.json"
+{
+  "name": "@my-company/api",
+  "scripts": {
+    "lint": "eslint ."
+  },
+  "devDependencies": {
+    "@my-company/stricture-config": "workspace:*"
+  }
+}
+```
+
+```json title="packages/web/.stricture/config.json"
+{
+  "preset": "@my-company/stricture-config/web"
+}
+```
+
+```json title="packages/shared/.stricture/config.json"
+{
+  "preset": "@stricture/layered",
+  "boundaries": [
+    {
+      "name": "utils",
+      "pattern": "src/utils/**",
+      "mode": "file",
+      "tags": ["utils"]
+    },
+    {
+      "name": "types",
+      "pattern": "src/types/**",
+      "mode": "file",
+      "tags": ["types"]
+    }
+  ],
+  "rules": [
+    {
+      "id": "types-isolated",
+      "from": { "tag": "types" },
+      "to": { "tag": "*" },
+      "allowed": false,
+      "message": "Types must be pure with no dependencies"
+    },
+    {
+      "id": "types-self",
+      "from": { "tag": "types" },
+      "to": { "tag": "types" },
+      "allowed": true
+    },
+    {
+      "id": "utils-to-types",
+      "from": { "tag": "utils" },
+      "to": { "tag": "types" },
+      "allowed": true
+    }
+  ]
+}
+```
+
+### Step 6: Root ESLint Config
+
+```js title=".eslintrc.js"
+module.exports = {
+  root: true,
+  plugins: ['@stricture'],
+  rules: {
+    '@stricture/enforce-boundaries': 'error'
+  },
+  overrides: [
+    {
+      files: ['packages/api/**/*.ts'],
+      parserOptions: {
+        project: './packages/api/tsconfig.json'
+      }
+    },
+    {
+      files: ['packages/web/**/*.{ts,tsx}'],
+      parserOptions: {
+        project: './packages/web/tsconfig.json'
+      }
+    }
+  ]
+}
+```
+
+### Step 7: Root Scripts
+
+```json title="package.json"
+{
+  "scripts": {
+    "lint": "pnpm -r run lint",
+    "lint:fix": "pnpm -r run lint:fix",
+    "build": "pnpm -r run build",
+    "test": "pnpm -r run test"
+  }
+}
+```
+
+### Step 8: Verify Setup
+
+```bash
+# Build all packages
+pnpm build
+
+# Lint all packages
+pnpm lint
+
+# Test API package
+cd packages/api
+pnpm lint
+```
+
+## CI Integration
+
+### GitHub Actions
+
+```yaml title=".github/workflows/ci.yml"
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 8
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm build
+
+      - run: pnpm lint
+        name: Lint (includes Stricture)
+
+      - run: pnpm test
+```
+
+### Turborepo + GitHub Actions
+
+```yaml title=".github/workflows/ci.yml"
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v2
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - run: pnpm install
+
+      - name: Lint with Turbo
+        run: pnpm turbo lint
+```
+
+## Best Practices
+
+### Do's
+
+- ✅ **Use workspace presets** for shared rules
+- ✅ **Keep configs simple** per package
+- ✅ **Version presets** independently
+- ✅ **Document architecture** at monorepo level
+- ✅ **Test presets** in dedicated package
+- ✅ **Cache builds** in CI (Turbo/NX)
+
+### Don'ts
+
+- ❌ **Don't duplicate rules** across packages (use presets)
+- ❌ **Don't mix architectures** without reason
+- ❌ **Don't skip linting** in some packages
+- ❌ **Don't ignore workspace boundaries** (use ESLint import rules)
+
+## Troubleshooting
+
+### Config Not Found
+
+**Problem:** ESLint can't find `.stricture/config.json`
+
+**Solution:** Ensure config is in package root, not monorepo root
+
+```bash
+# ✅ Correct
+packages/api/.stricture/config.json
+
+# ❌ Wrong
+.stricture/config.json
+```
+
+### Preset Not Resolving
+
+**Problem:** Workspace preset not found
+
+**Solution:** Build preset package first
+
+```bash
+cd packages/stricture-config
+pnpm build
+cd ../api
+pnpm lint  # Now works
+```
+
+### Cross-Package Imports
+
+**Problem:** Stricture doesn't prevent cross-package imports
+
+**Solution:** Use ESLint `no-restricted-imports` rule
+
+```js
+rules: {
+  'no-restricted-imports': [
+    'error',
+    { patterns: ['@my-company/admin'] }
+  ]
+}
+```
+
+## Next Steps
+
+<CardGrid>
+  <Card title="Custom Presets" icon="puzzle">
+    Create internal presets for your organization.
+    <a href="/guides/custom-presets/">Create presets →</a>
+  </Card>
+  <Card title="Migration Guide" icon="swap">
+    Migrate existing monorepo to Stricture.
+    <a href="/guides/migration/">Migrate →</a>
+  </Card>
+  <Card title="Troubleshooting" icon="warning">
+    Debug common monorepo issues.
+    <a href="/guides/troubleshooting/">Troubleshoot →</a>
+  </Card>
+</CardGrid>

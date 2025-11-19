@@ -1,0 +1,691 @@
+---
+title: "@stricture/eslint-plugin API"
+description: "Complete API reference for @stricture/eslint-plugin - ESLint integration for Stricture architecture enforcement"
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+The `@stricture/eslint-plugin` package provides ESLint integration for Stricture. It's a thin wrapper around `@stricture/core` that extracts import information from ESLint's AST and reports violations.
+
+## Overview
+
+**Package**: `@stricture/eslint-plugin`
+
+**Purpose**: ESLint integration for real-time architecture enforcement in your editor and CI/CD
+
+**Key Features**:
+- Real-time feedback in your editor
+- Integrates with existing ESLint setup
+- Supports both flat config and legacy config
+- Checks static imports, dynamic imports, require(), and re-exports
+- TypeScript path alias support
+
+## Installation
+
+```bash
+npm install -D @stricture/eslint-plugin
+```
+
+```bash
+pnpm add -D @stricture/eslint-plugin
+```
+
+```bash
+yarn add -D @stricture/eslint-plugin
+```
+
+## Rules
+
+### enforce-boundaries
+
+The main (and only) rule in the plugin. Enforces architectural boundaries defined in `.stricture/config.json`.
+
+**Rule Name**: `@stricture/enforce-boundaries`
+
+**Type**: `problem` (catches code errors)
+
+**Recommended**: Yes
+
+**Fixable**: No (architectural violations require manual fixes)
+
+## Configuration
+
+### ESLint Flat Config (ESLint 9+)
+
+```javascript
+// eslint.config.js
+import stricture from '@stricture/eslint-plugin'
+
+export default [
+  {
+    files: ['**/*.ts', '**/*.tsx', '**/*.js', '**/*.jsx'],
+    plugins: {
+      '@stricture': stricture
+    },
+    rules: {
+      '@stricture/enforce-boundaries': 'error'
+    }
+  }
+]
+```
+
+### Legacy Config (ESLint 8 and below)
+
+```javascript
+// .eslintrc.js
+module.exports = {
+  plugins: ['@stricture'],
+  rules: {
+    '@stricture/enforce-boundaries': 'error'
+  }
+}
+```
+
+<Aside type="tip">
+Use `'error'` for CI/CD enforcement, or `'warn'` during migration to allow violations without breaking builds.
+</Aside>
+
+## Rule Options
+
+The `enforce-boundaries` rule accepts an options object:
+
+```typescript
+interface RuleOptions {
+  configPath?: string           // Path to .stricture/config.json (default: '.stricture/config.json')
+  baseUrl?: string              // Base URL for path resolution (default: project root)
+  checkDynamicImports?: boolean // Check dynamic imports (default: true)
+  reportUnusedRules?: boolean   // Warn about unused rules (default: false)
+}
+```
+
+### Option: configPath
+
+Specify a custom path to your Stricture configuration file.
+
+```javascript
+// eslint.config.js
+export default [
+  {
+    rules: {
+      '@stricture/enforce-boundaries': [
+        'error',
+        {
+          configPath: '.stricture/custom-config.json'
+        }
+      ]
+    }
+  }
+]
+```
+
+**Default**: `.stricture/config.json`
+
+### Option: baseUrl
+
+Override the base directory for path resolution.
+
+```javascript
+// eslint.config.js
+export default [
+  {
+    rules: {
+      '@stricture/enforce-boundaries': [
+        'error',
+        {
+          baseUrl: './src'
+        }
+      ]
+    }
+  }
+]
+```
+
+**Default**: Project root (where ESLint is run from)
+
+### Option: checkDynamicImports
+
+Enable or disable checking of dynamic `import()` statements.
+
+```javascript
+// eslint.config.js
+export default [
+  {
+    rules: {
+      '@stricture/enforce-boundaries': [
+        'error',
+        {
+          checkDynamicImports: false  // Don't check import('...')
+        }
+      ]
+    }
+  }
+]
+```
+
+**Default**: `true`
+
+**Why disable?**: Dynamic imports are often used for code splitting and may have different architectural constraints.
+
+### Option: reportUnusedRules
+
+Warn about rules that never match any imports (experimental).
+
+```javascript
+// eslint.config.js
+export default [
+  {
+    rules: {
+      '@stricture/enforce-boundaries': [
+        'error',
+        {
+          reportUnusedRules: true
+        }
+      ]
+    }
+  }
+]
+```
+
+**Default**: `false`
+
+## Checked Import Types
+
+The plugin checks all import forms:
+
+### Static Imports
+
+```typescript
+// ✅ Checked
+import { User } from '../domain/user'
+import * as utils from '@/utils'
+```
+
+### Dynamic Imports
+
+```typescript
+// ✅ Checked (if checkDynamicImports: true)
+const module = await import('../domain/user')
+```
+
+### CommonJS Require
+
+```typescript
+// ✅ Checked
+const { User } = require('../domain/user')
+```
+
+### Re-exports
+
+```typescript
+// ✅ Checked
+export { User } from '../domain/user'
+export * from '../domain/user'
+```
+
+## TypeScript Path Alias Support
+
+The plugin automatically resolves TypeScript path aliases from `tsconfig.json`:
+
+**tsconfig.json**:
+```json
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"],
+      "@domain/*": ["src/core/domain/*"],
+      "@adapters/*": ["src/adapters/*"]
+    }
+  }
+}
+```
+
+**Code**:
+```typescript
+// These imports are resolved correctly
+import { User } from '@domain/user'           // → src/core/domain/user.ts
+import { CLI } from '@adapters/driving/cli'   // → src/adapters/driving/cli.ts
+```
+
+The plugin uses the `tsconfig.json` in your project root by default. You can specify a different location via the `baseUrl` option.
+
+## Error Messages
+
+The plugin provides detailed, actionable error messages:
+
+### Example 1: Domain Importing Adapter
+
+```typescript
+// src/core/domain/user.ts
+import { MemoryRepository } from '../../adapters/driven/memory-repository'  // ❌
+```
+
+**Error**:
+```
+src/core/domain/user.ts
+  1:1  error  Domain layer must be pure - no external dependencies or infrastructure imports.
+
+Why: Domain is the core of your application and must remain independent.
+
+Allowed: Other domain entities only
+Forbidden: Ports, Application, Adapters, External dependencies
+
+Fix: Remove this import or move the logic to the application layer.
+
+  @stricture/enforce-boundaries
+```
+
+### Example 2: Application Importing Concrete Adapter
+
+```typescript
+// src/core/application/create-user.ts
+import { MemoryRepository } from '../../adapters/driven/memory-repository'  // ❌
+```
+
+**Error**:
+```
+src/core/application/create-user.ts
+  1:1  error  Application layer should depend on port interfaces, not concrete adapter implementations.
+
+Why: This maintains dependency inversion and allows you to swap implementations.
+
+Fix: Import from ports instead:
+  import { UserRepository } from '../ports/user-repository'
+
+Then use dependency injection to receive the concrete implementation.
+
+  @stricture/enforce-boundaries
+```
+
+### Example 3: No Rule Defined (Deny-by-Default)
+
+```typescript
+// src/utils/helper.ts
+import { User } from '../domain/user'  // ❌ No rule allows this
+```
+
+**Error**:
+```
+src/utils/helper.ts
+  1:1  error  No architectural rule defined for this import.
+
+From: unknown boundary (src/utils/helper.ts)
+To:   domain (src/domain/user.ts)
+
+Stricture uses deny-by-default policy for safety. Add an explicit rule to allow this import:
+
+{
+  "rules": [{
+    "id": "allow-utils-to-domain",
+    "from": { "pattern": "src/utils/**" },
+    "to": { "tag": "domain" },
+    "allowed": true
+  }]
+}
+
+  @stricture/enforce-boundaries
+```
+
+<Aside type="note">
+Error messages include the violated rule's custom message (if provided) or a helpful default message with architectural guidance.
+</Aside>
+
+## Severity Levels
+
+Control how violations are reported:
+
+### Error (Recommended)
+
+Fail builds and block commits:
+
+```javascript
+rules: {
+  '@stricture/enforce-boundaries': 'error'
+}
+```
+
+### Warn
+
+Show warnings but don't fail builds:
+
+```javascript
+rules: {
+  '@stricture/enforce-boundaries': 'warn'
+}
+```
+
+**Use case**: During migration to gradually enforce boundaries.
+
+### Off
+
+Disable the rule:
+
+```javascript
+rules: {
+  '@stricture/enforce-boundaries': 'off'
+}
+```
+
+## Per-Rule Severity
+
+You can also control severity per rule in `.stricture/config.json`:
+
+```json
+{
+  "rules": [
+    {
+      "id": "domain-isolation",
+      "severity": "error",
+      "from": { "tag": "domain" },
+      "to": { "tag": "*" },
+      "allowed": false
+    },
+    {
+      "id": "experimental-feature",
+      "severity": "warn",
+      "from": { "tag": "adapters" },
+      "to": { "tag": "experimental" },
+      "allowed": false
+    },
+    {
+      "id": "deprecated-rule",
+      "severity": "off",
+      "from": { "tag": "old" },
+      "to": { "tag": "new" },
+      "allowed": false
+    }
+  ]
+}
+```
+
+<Aside type="tip">
+Use `severity: 'off'` in config to disable specific rules without removing them from your configuration.
+</Aside>
+
+## Integration Examples
+
+### With TypeScript
+
+```javascript
+// eslint.config.js
+import eslint from '@eslint/js'
+import tseslint from '@typescript-eslint/eslint-plugin'
+import tsparser from '@typescript-eslint/parser'
+import stricture from '@stricture/eslint-plugin'
+
+export default [
+  eslint.configs.recommended,
+  {
+    files: ['**/*.ts', '**/*.tsx'],
+    languageOptions: {
+      parser: tsparser,
+      parserOptions: {
+        project: './tsconfig.json'
+      }
+    },
+    plugins: {
+      '@typescript-eslint': tseslint,
+      '@stricture': stricture
+    },
+    rules: {
+      ...tseslint.configs.recommended.rules,
+      '@stricture/enforce-boundaries': 'error'
+    }
+  }
+]
+```
+
+### With React
+
+```javascript
+// eslint.config.js
+import reactPlugin from 'eslint-plugin-react'
+import stricture from '@stricture/eslint-plugin'
+
+export default [
+  {
+    files: ['**/*.jsx', '**/*.tsx'],
+    plugins: {
+      react: reactPlugin,
+      '@stricture': stricture
+    },
+    rules: {
+      ...reactPlugin.configs.recommended.rules,
+      '@stricture/enforce-boundaries': 'error'
+    }
+  }
+]
+```
+
+### With Vue
+
+```javascript
+// eslint.config.js
+import vuePlugin from 'eslint-plugin-vue'
+import stricture from '@stricture/eslint-plugin'
+
+export default [
+  ...vuePlugin.configs['flat/recommended'],
+  {
+    plugins: {
+      '@stricture': stricture
+    },
+    rules: {
+      '@stricture/enforce-boundaries': 'error'
+    }
+  }
+]
+```
+
+### Monorepo Setup
+
+For monorepos, you can have different configs per package:
+
+```javascript
+// packages/api/eslint.config.js
+import stricture from '@stricture/eslint-plugin'
+
+export default [
+  {
+    plugins: { '@stricture': stricture },
+    rules: {
+      '@stricture/enforce-boundaries': [
+        'error',
+        {
+          configPath: '.stricture/api-config.json'
+        }
+      ]
+    }
+  }
+]
+```
+
+```javascript
+// packages/web/eslint.config.js
+import stricture from '@stricture/eslint-plugin'
+
+export default [
+  {
+    plugins: { '@stricture': stricture },
+    rules: {
+      '@stricture/enforce-boundaries': [
+        'error',
+        {
+          configPath: '.stricture/web-config.json'
+        }
+      ]
+    }
+  }
+]
+```
+
+## Ignoring Files
+
+Use ESLint's standard ignore patterns:
+
+### Flat Config
+
+```javascript
+// eslint.config.js
+export default [
+  {
+    ignores: [
+      'dist/**',
+      'build/**',
+      'node_modules/**',
+      '**/*.generated.ts',
+      'scripts/**'
+    ]
+  },
+  {
+    plugins: { '@stricture': stricture },
+    rules: {
+      '@stricture/enforce-boundaries': 'error'
+    }
+  }
+]
+```
+
+### Legacy Config
+
+```javascript
+// .eslintrc.js
+module.exports = {
+  plugins: ['@stricture'],
+  rules: {
+    '@stricture/enforce-boundaries': 'error'
+  },
+  ignorePatterns: [
+    'dist/**',
+    'build/**',
+    'node_modules/**',
+    '**/*.generated.ts',
+    'scripts/**'
+  ]
+}
+```
+
+You can also use `.eslintignore`:
+
+```
+# .eslintignore
+dist/
+build/
+node_modules/
+**/*.generated.ts
+scripts/
+```
+
+## CI/CD Integration
+
+### GitHub Actions
+
+```yaml
+# .github/workflows/lint.yml
+name: Lint
+
+on: [push, pull_request]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 20
+      - run: npm install
+      - run: npm run lint  # Runs ESLint with Stricture rules
+```
+
+### GitLab CI
+
+```yaml
+# .gitlab-ci.yml
+lint:
+  image: node:20
+  script:
+    - npm install
+    - npm run lint
+```
+
+### Pre-commit Hook
+
+```json
+// package.json
+{
+  "scripts": {
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged"
+    }
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx}": ["eslint --fix"]
+  }
+}
+```
+
+## Performance
+
+The plugin is designed for performance:
+
+1. **Configuration cached**: `.stricture/config.json` loaded once per ESLint run
+2. **No file I/O during validation**: All validation happens in memory
+3. **Fast pattern matching**: Uses optimized glob matching from micromatch
+4. **Minimal AST traversal**: Only checks import-related nodes
+
+**Typical performance**: < 1ms per file on modern hardware.
+
+## Troubleshooting
+
+### Config Not Loading
+
+**Problem**: ESLint reports "Failed to load .stricture/config.json"
+
+**Solutions**:
+1. Ensure `.stricture/config.json` exists in your project root
+2. Check JSON syntax (no trailing commas, valid JSON)
+3. Run `npx stricture validate` to check config
+4. Specify custom path: `configPath: './path/to/config.json'`
+
+### Path Aliases Not Resolving
+
+**Problem**: Imports using `@/` or other aliases are not resolved correctly
+
+**Solutions**:
+1. Ensure `tsconfig.json` exists with `paths` configuration
+2. Check `baseUrl` in tsconfig matches your setup
+3. Verify ESLint is running from the correct directory
+4. Use `baseUrl` option to override if needed
+
+### No Violations Reported
+
+**Problem**: You have violations but ESLint doesn't report them
+
+**Solutions**:
+1. Check the rule is enabled: `'@stricture/enforce-boundaries': 'error'`
+2. Verify `.stricture/config.json` has rules defined
+3. Check file patterns in boundaries match your files
+4. Run `npx stricture check` to test outside ESLint
+5. Ensure files aren't in `ignorePatterns`
+
+### Too Many Violations
+
+**Problem**: Thousands of violations after enabling Stricture
+
+**Solutions**:
+1. Start with `'warn'` instead of `'error'`
+2. Use `severity: 'off'` for rules you'll fix later
+3. Focus on one layer at a time
+4. Use `ignorePatterns` to exclude legacy code temporarily
+
+## See Also
+
+- [@stricture/core API](/api/core) - Core validation engine
+- [@stricture/cli API](/api/cli) - Command-line interface
+- [Configuration Guide](/configuration/config-file)
+- [ESLint Integration Guide](/getting-started/eslint)

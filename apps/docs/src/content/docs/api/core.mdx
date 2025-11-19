@@ -1,0 +1,570 @@
+---
+title: "@stricture/core API"
+description: "Complete API reference for @stricture/core - the core validation engine for Stricture architecture enforcement"
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+The `@stricture/core` package provides the foundational types, interfaces, and validation logic that all other Stricture packages depend on. It's a pure validation engine with zero dependencies on ESLint or other tools.
+
+## Overview
+
+**Package**: `@stricture/core`
+
+**Purpose**: Core validation engine for architecture boundary enforcement
+
+**Key Features**:
+- Import validation based on architectural rules
+- Path resolution with TypeScript alias support
+- Configuration validation
+- Boundary and rule matching
+- Preset merging and resolution
+
+## Installation
+
+```bash
+npm install @stricture/core
+```
+
+```bash
+pnpm add @stricture/core
+```
+
+```bash
+yarn add @stricture/core
+```
+
+## Validation Functions
+
+### validateImport()
+
+Validates whether an import statement violates architectural rules.
+
+**Signature**:
+```typescript
+function validateImport(
+  fromPath: string,
+  toPath: string,
+  rules: ArchRule[],
+  boundaries: BoundaryDefinition[]
+): ImportValidationResult
+```
+
+**Parameters**:
+- `fromPath` - Absolute path to the source file (e.g., `/project/src/domain/user.ts`)
+- `toPath` - Absolute path to the target file (e.g., `/project/src/adapters/repository.ts`)
+- `rules` - Array of architectural rules to check
+- `boundaries` - Array of boundary definitions
+
+**Returns**: `ImportValidationResult`
+```typescript
+interface ImportValidationResult {
+  valid: boolean                     // Whether the import is allowed
+  violatedRule?: ArchRule            // The rule that was violated (if any)
+  fromBoundary?: string              // Source boundary name
+  toBoundary?: string                // Target boundary name
+  message?: string                   // Human-readable error message
+  suggestion?: string                // Suggested fix
+}
+```
+
+**Algorithm**:
+1. Detect if target is external dependency (contains `node_modules`)
+2. Find source boundary by matching `fromPath` against boundary patterns
+3. Find target boundary (or create virtual 'external' boundary)
+4. Sort rules by specificity (highest first)
+5. Check each rule in order - first matching rule wins
+6. If no rule matches → DENY by default with helpful message
+
+**Example**:
+```typescript
+import { validateImport } from '@stricture/core'
+
+const result = validateImport(
+  '/project/src/domain/user.ts',
+  '/project/src/adapters/repository.ts',
+  [
+    {
+      id: 'domain-isolation',
+      name: 'Domain Isolation',
+      description: 'Domain cannot import from other layers',
+      severity: 'error',
+      from: { tag: 'domain' },
+      to: { tag: '*' },
+      allowed: false
+    }
+  ],
+  [
+    {
+      name: 'domain',
+      pattern: 'src/domain/**',
+      mode: 'file',
+      tags: ['domain']
+    },
+    {
+      name: 'adapters',
+      pattern: 'src/adapters/**',
+      mode: 'file',
+      tags: ['adapters']
+    }
+  ]
+)
+
+if (!result.valid) {
+  console.error(`Violation: ${result.message}`)
+  // Violation: 'domain' cannot import from 'adapters'
+}
+```
+
+<Aside type="tip">
+The `validateImport()` function uses a **deny-by-default** policy. If no rule explicitly allows an import, it will be denied with a helpful error message suggesting how to allow it.
+</Aside>
+
+### resolveImportPath()
+
+Resolves an import specifier to an absolute file path.
+
+**Signature**:
+```typescript
+function resolveImportPath(
+  fromPath: string,
+  importSpecifier: string,
+  baseDir: string,
+  tsconfigPaths?: Record<string, string[]>
+): string
+```
+
+**Parameters**:
+- `fromPath` - Absolute path to the file containing the import
+- `importSpecifier` - The import statement (e.g., `'../domain/user'`, `'@/core/user'`, `'lodash'`)
+- `baseDir` - Project root directory for resolving paths
+- `tsconfigPaths` - Optional TypeScript path aliases from tsconfig.json
+
+**Returns**: Absolute path to the imported file
+
+**Handles**:
+- Relative imports: `'../domain/user'` → resolves relative to `fromPath`
+- Path aliases: `'@/core/domain'` → resolves via `tsconfigPaths`
+- Node modules: `'lodash'` → returns `'node_modules/lodash'` (marked as external)
+- Extensions: Automatically adds `.ts`, `.tsx`, `.js` if missing
+
+**Example**:
+```typescript
+import { resolveImportPath } from '@stricture/core'
+
+// Relative import
+const path1 = resolveImportPath(
+  '/project/src/application/use-case.ts',
+  '../domain/user',
+  '/project',
+  {}
+)
+// Result: '/project/src/domain/user.ts'
+
+// Path alias
+const path2 = resolveImportPath(
+  '/project/src/adapters/cli.ts',
+  '@/domain/user',
+  '/project',
+  { '@/*': ['src/*'] }
+)
+// Result: '/project/src/domain/user.ts'
+
+// External dependency
+const path3 = resolveImportPath(
+  '/project/src/domain/user.ts',
+  'lodash',
+  '/project',
+  {}
+)
+// Result: 'node_modules/lodash'
+```
+
+### validateConfig()
+
+Validates a Stricture configuration object.
+
+**Signature**:
+```typescript
+function validateConfig(config: StrictureConfig): ValidationResult
+```
+
+**Parameters**:
+- `config` - Configuration object to validate
+
+**Returns**: `ValidationResult`
+```typescript
+interface ValidationResult {
+  valid: boolean
+  errors: ValidationError[]
+}
+
+interface ValidationError {
+  path: string        // JSON path to error (e.g., 'rules[0].from')
+  message: string     // Error description
+  code: string        // Error code (e.g., 'MISSING_REQUIRED_FIELD')
+}
+```
+
+**Example**:
+```typescript
+import { validateConfig } from '@stricture/core'
+
+const result = validateConfig({
+  preset: '@stricture/hexagonal',
+  boundaries: [...],
+  rules: [...]
+})
+
+if (!result.valid) {
+  result.errors.forEach(error => {
+    console.error(`${error.path}: ${error.message}`)
+  })
+}
+```
+
+### validateRule()
+
+Validates a single architectural rule.
+
+**Signature**:
+```typescript
+function validateRule(rule: ArchRule): ValidationResult
+```
+
+**Parameters**:
+- `rule` - Rule to validate
+
+**Returns**: `ValidationResult` with any validation errors
+
+### validateBoundary()
+
+Validates a boundary definition.
+
+**Signature**:
+```typescript
+function validateBoundary(boundary: BoundaryDefinition): ValidationResult
+```
+
+**Parameters**:
+- `boundary` - Boundary to validate
+
+**Returns**: `ValidationResult` with any validation errors
+
+## Matching Functions
+
+### matchesPattern()
+
+Checks if a file path matches a glob pattern.
+
+**Signature**:
+```typescript
+function matchesPattern(
+  filePath: string,
+  pattern: BoundaryPattern,
+  boundaries?: BoundaryDefinition[]
+): boolean
+```
+
+**Parameters**:
+- `filePath` - Absolute file path to test
+- `pattern` - Pattern with glob and/or tag
+- `boundaries` - Optional boundary definitions for tag resolution
+
+**Returns**: `true` if path matches pattern
+
+**Example**:
+```typescript
+import { matchesPattern } from '@stricture/core'
+
+const matches = matchesPattern(
+  '/project/src/domain/user.ts',
+  { pattern: 'src/domain/**', mode: 'file' }
+)
+// Result: true
+```
+
+## Merging Functions
+
+### resolveConfig()
+
+Resolves a configuration by merging in extended presets.
+
+**Signature**:
+```typescript
+function resolveConfig(
+  config: StrictureConfig,
+  presets: Map<string, ArchPreset>
+): StrictureConfig
+```
+
+**Parameters**:
+- `config` - User configuration
+- `presets` - Available presets
+
+**Returns**: Fully resolved configuration with all presets merged
+
+**Algorithm**:
+1. Start with base preset
+2. Merge extended presets (if any)
+3. Apply project-specific boundaries and rules
+4. Apply overrides
+
+**Example**:
+```typescript
+import { resolveConfig } from '@stricture/core'
+
+const resolved = resolveConfig(
+  {
+    preset: '@stricture/hexagonal',
+    extends: ['@stricture/testing'],
+    boundaries: [/* custom boundaries */],
+    rules: [/* custom rules */],
+    overrides: [{ id: 'domain-isolation', severity: 'warn' }]
+  },
+  new Map([
+    ['@stricture/hexagonal', hexagonalPreset],
+    ['@stricture/testing', testingPreset]
+  ])
+)
+```
+
+### mergeBoundaries()
+
+Merges two arrays of boundaries, with later boundaries overriding earlier ones by name.
+
+**Signature**:
+```typescript
+function mergeBoundaries(
+  base: BoundaryDefinition[],
+  overrides: BoundaryDefinition[]
+): BoundaryDefinition[]
+```
+
+### mergeRules()
+
+Merges two arrays of rules, with later rules overriding earlier ones by ID.
+
+**Signature**:
+```typescript
+function mergeRules(
+  base: ArchRule[],
+  overrides: ArchRule[]
+): ArchRule[]
+```
+
+## Types
+
+### StrictureConfig
+
+Project configuration schema (stored in `.stricture/config.json`).
+
+```typescript
+interface StrictureConfig {
+  version?: string                    // Config version (default: '1')
+  preset: string                      // Base preset (e.g., '@stricture/hexagonal')
+  extends?: string[]                  // Additional presets to merge
+  boundaries: BoundaryDefinition[]    // Boundary definitions
+  rules: ArchRule[]                   // Architectural rules
+  overrides?: Partial<ArchRule>[]     // Override specific rules
+  ignorePatterns?: string[]           // Global ignore patterns
+  metadata?: Record<string, unknown>  // Custom metadata
+}
+```
+
+### BoundaryDefinition
+
+Defines a named boundary in the architecture.
+
+```typescript
+interface BoundaryDefinition {
+  name: string              // Boundary name (e.g., 'domain', 'adapters')
+  pattern: string           // Glob pattern for files (e.g., 'src/domain/**')
+  mode: 'file' | 'folder'  // Match individual files or whole folders
+  tags?: string[]           // Tags for this boundary
+  exclude?: string[]        // Patterns to exclude
+  metadata?: {
+    description?: string
+    layer?: number          // For layered architectures
+    [key: string]: unknown
+  }
+}
+```
+
+### BoundaryPattern
+
+Defines how to match files against boundaries in rules.
+
+```typescript
+interface BoundaryPattern {
+  pattern?: string          // Glob pattern (e.g., 'src/domain/**/*.ts')
+  tag?: string              // Tag reference (e.g., 'domain')
+  mode: 'file' | 'folder'  // Match individual files or whole folders
+  exclude?: string[]        // Exclusion patterns
+}
+```
+
+<Aside type="note">
+In rules, you can match by either `pattern` (direct glob) or `tag` (reference to boundary tags). Pattern-based rules are more specific than tag-based rules in the specificity calculation.
+</Aside>
+
+### ArchRule
+
+Represents a single architectural boundary enforcement rule.
+
+```typescript
+interface ArchRule {
+  id: string                // Unique identifier (e.g., 'no-domain-external')
+  name: string              // Display name (e.g., 'Domain Isolation')
+  description: string       // Detailed explanation
+  severity: 'error' | 'warn' | 'off'  // How to report violations
+  from: BoundaryPattern     // Source boundary
+  to: BoundaryPattern       // Target boundary
+  allowed: boolean          // Whether import is permitted
+  message?: string          // Custom error message
+  examples?: {
+    good: string[]          // Valid import examples
+    bad: string[]           // Invalid import examples
+  }
+  metadata?: Record<string, unknown>
+}
+```
+
+### ArchPreset
+
+A reusable collection of boundaries and rules.
+
+```typescript
+interface ArchPreset {
+  name: string                      // Preset name
+  description: string               // What this preset enforces
+  boundaries: BoundaryDefinition[]  // Boundary definitions
+  rules: ArchRule[]                 // Architectural rules
+  metadata?: Record<string, unknown>
+}
+```
+
+### ImportValidationResult
+
+Result of import validation.
+
+```typescript
+interface ImportValidationResult {
+  valid: boolean                  // Whether the import is allowed
+  violatedRule?: ArchRule         // The rule that was violated (if any)
+  fromBoundary?: string           // Source boundary name
+  toBoundary?: string             // Target boundary name
+  message?: string                // Human-readable error message
+  suggestion?: string             // Suggested fix
+}
+```
+
+### ValidationResult
+
+Result of configuration/rule validation operations.
+
+```typescript
+interface ValidationResult {
+  valid: boolean
+  errors: ValidationError[]
+}
+
+interface ValidationError {
+  path: string        // JSON path to error (e.g., 'rules[0].from')
+  message: string     // Error description
+  code: string        // Error code (e.g., 'MISSING_REQUIRED_FIELD')
+}
+```
+
+## Rule Specificity System
+
+Stricture uses a **specificity system** to determine which rule applies when multiple rules match an import. Higher specificity = higher priority.
+
+**Scoring**:
+- Specific node_modules pattern (not `**`): **10000 points**
+- Regular pattern: **1000 points**
+- Specific tag: **100 points**
+- Wildcard (`*` or `**`): **1 point**
+
+Total specificity = `from` score + `to` score
+
+**Example**:
+```typescript
+// Rule 1: from domain to external (tag + tag) = 100 + 100 = 200
+{
+  from: { tag: 'domain' },
+  to: { tag: 'external' },
+  allowed: false
+}
+
+// Rule 2: from domain to @types (tag + pattern) = 100 + 10000 = 10100
+{
+  from: { tag: 'domain' },
+  to: { pattern: 'node_modules/@types/**' },
+  allowed: true
+}
+```
+
+Rule 2 has higher specificity (10100 vs 200), so it wins. This allows domain to import type definitions from `@types` even though the general rule forbids external imports.
+
+<Aside type="tip">
+Array order doesn't matter! Specificity determines precedence automatically.
+</Aside>
+
+## External Dependencies
+
+External dependencies are detected automatically:
+- If `toPath` contains `'node_modules'` → external
+- A virtual boundary with `name: 'external'` is created
+- Use `{ tag: 'external' }` in rules to target external dependencies
+
+**Example**:
+```typescript
+// Allow application layer to import external dependencies
+{
+  id: 'application-external',
+  from: { tag: 'application' },
+  to: { tag: 'external' },
+  allowed: true
+}
+
+// Deny domain layer from importing external dependencies
+{
+  id: 'domain-isolation',
+  from: { tag: 'domain' },
+  to: { tag: '*' },  // Matches any boundary, including 'external'
+  allowed: false
+}
+```
+
+## Deny-By-Default Policy
+
+If no rule matches an import, it is **denied by default** with a helpful error message:
+
+```
+No architectural rule defined for this import.
+
+From: domain (/project/src/domain/user.ts)
+To:   adapters (/project/src/adapters/repository.ts)
+
+Stricture uses deny-by-default policy for safety. Add an explicit rule to allow this import:
+
+{
+  "rules": [{
+    "id": "allow-domain-to-adapters",
+    "from": { "tag": "domain" },
+    "to": { "tag": "adapters" },
+    "allowed": true
+  }]
+}
+```
+
+<Aside type="caution">
+This is a **safety feature**. Better to require explicit rules than accidentally allow unintended dependencies.
+</Aside>
+
+## See Also
+
+- [Configuration Guide](/configuration/config-file)
+- [Creating Custom Presets](/guides/custom-presets)
+- [Rule Specificity](/guides/rule-specificity)

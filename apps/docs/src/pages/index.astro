@@ -1,0 +1,223 @@
+---
+import { Card, CardGrid } from '@astrojs/starlight/components';
+import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
+---
+
+<StarlightPage frontmatter={{ title: 'Stricture' }}>
+  <div class="hero">
+    <h1 class="hero-title">
+      Architecture Boundaries for <span class="text-accent">TypeScript</span>
+    </h1>
+    <p class="hero-tagline">
+      Enforce clean architecture patterns with ESLint. Keep your codebase maintainable as it scales.
+    </p>
+    <div class="hero-actions">
+      <a href="/docs/getting-started/quick-start/" class="button primary">Get Started</a>
+      <a href="/docs/presets/" class="button secondary">Explore Presets</a>
+    </div>
+  </div>
+
+  <section class="features">
+    <h2>Why Stricture?</h2>
+    <CardGrid>
+      <Card title="🏗️ Architecture Enforcement" icon="seti:config">
+        Enforce hexagonal, layered, clean, or modular architecture patterns automatically.
+      </Card>
+      <Card title="⚡ Zero Config" icon="rocket">
+        Use presets for instant setup. No complex configuration required.
+      </Card>
+      <Card title="🔍 Clear Violations" icon="warning">
+        Get helpful error messages that explain WHY imports are forbidden and HOW to fix them.
+      </Card>
+      <Card title="🎯 Deny by Default" icon="shield">
+        Strict by default. Only explicitly allowed dependencies are permitted.
+      </Card>
+      <Card title="🔧 Customizable" icon="setting">
+        Create custom presets or extend existing ones for your team's needs.
+      </Card>
+      <Card title="📦 Monorepo Ready" icon="boxes">
+        Works seamlessly in monorepos with per-package configurations.
+      </Card>
+    </CardGrid>
+  </section>
+
+  <section class="quick-example">
+    <h2>Quick Example</h2>
+    <p>Enforce hexagonal architecture in 3 lines:</p>
+    <pre><code class="language-json">{`{
+  "preset": "@stricture/hexagonal"
+}`}</code></pre>
+    <p class="example-note">
+      Save this in <code>.stricture/config.json</code> and Stricture will prevent:
+    </p>
+    <ul>
+      <li>Domain importing from infrastructure</li>
+      <li>Adapters bypassing the application layer</li>
+      <li>Circular dependencies between layers</li>
+    </ul>
+  </section>
+
+  <section class="presets-overview">
+    <h2>Choose Your Architecture</h2>
+    <CardGrid>
+      <Card title="Hexagonal" icon="hexagon">
+        <p>Ports & Adapters pattern with clear domain isolation.</p>
+        <a href="/docs/presets/hexagonal/">Learn more →</a>
+      </Card>
+      <Card title="Layered" icon="layers">
+        <p>Traditional N-tier architecture with unidirectional dependencies.</p>
+        <a href="/docs/presets/layered/">Learn more →</a>
+      </Card>
+      <Card title="Clean" icon="circle">
+        <p>Uncle Bob's Clean Architecture with concentric layers.</p>
+        <a href="/docs/presets/clean/">Learn more →</a>
+      </Card>
+      <Card title="Modular" icon="module">
+        <p>Feature-based modules with encapsulated public APIs.</p>
+        <a href="/docs/presets/modular/">Learn more →</a>
+      </Card>
+    </CardGrid>
+  </section>
+
+  <section class="cta">
+    <h2>Ready to enforce clean architecture?</h2>
+    <div class="cta-buttons">
+      <a href="/docs/getting-started/installation/" class="button primary large">
+        Install Stricture
+      </a>
+      <a href="https://github.com/stricture-dev/stricture" class="button secondary large">
+        View on GitHub
+      </a>
+    </div>
+  </section>
+</StarlightPage>
+
+<style>
+  .hero {
+    text-align: center;
+    padding: 4rem 2rem;
+    max-width: 800px;
+    margin: 0 auto;
+  }
+
+  .hero-title {
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    font-weight: 800;
+    line-height: 1.2;
+    margin-bottom: 1rem;
+  }
+
+  .text-accent {
+    color: var(--sl-color-accent);
+  }
+
+  .hero-tagline {
+    font-size: clamp(1.125rem, 2vw, 1.5rem);
+    color: var(--sl-color-gray-2);
+    margin-bottom: 2rem;
+  }
+
+  .hero-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .button {
+    display: inline-block;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.2s;
+  }
+
+  .button.primary {
+    background: var(--sl-color-accent);
+    color: white;
+  }
+
+  .button.primary:hover {
+    background: var(--sl-color-accent-high);
+    transform: translateY(-2px);
+  }
+
+  .button.secondary {
+    background: var(--sl-color-bg-sidebar);
+    color: var(--sl-color-text);
+    border: 1px solid var(--sl-color-gray-5);
+  }
+
+  .button.secondary:hover {
+    border-color: var(--sl-color-accent);
+  }
+
+  .button.large {
+    padding: 1rem 2rem;
+    font-size: 1.125rem;
+  }
+
+  section {
+    max-width: 1200px;
+    margin: 4rem auto;
+    padding: 0 2rem;
+  }
+
+  section h2 {
+    text-align: center;
+    font-size: clamp(1.75rem, 3vw, 2.5rem);
+    margin-bottom: 2rem;
+  }
+
+  .quick-example {
+    background: var(--sl-color-bg-sidebar);
+    padding: 2rem;
+    border-radius: 1rem;
+    border: 1px solid var(--sl-color-gray-5);
+  }
+
+  .example-note {
+    margin-top: 1rem;
+    font-style: italic;
+    color: var(--sl-color-gray-2);
+  }
+
+  .quick-example ul {
+    margin-top: 0.5rem;
+    padding-left: 1.5rem;
+  }
+
+  .cta {
+    text-align: center;
+    padding: 4rem 2rem;
+    background: linear-gradient(135deg, var(--sl-color-bg-sidebar) 0%, var(--sl-color-bg) 100%);
+    border-radius: 1rem;
+  }
+
+  .cta-buttons {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 2rem;
+  }
+
+  .presets-overview :global(.card) {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+
+  .presets-overview a {
+    margin-top: auto;
+    padding-top: 1rem;
+    font-weight: 600;
+    color: var(--sl-color-accent);
+    text-decoration: none;
+  }
+
+  .presets-overview a:hover {
+    text-decoration: underline;
+  }
+</style>
