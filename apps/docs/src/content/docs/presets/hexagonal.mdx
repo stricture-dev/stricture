@@ -1,0 +1,534 @@
+---
+title: Hexagonal Architecture Preset
+description: Enforce hexagonal architecture (ports and adapters) pattern with domain isolation
+---
+
+The Hexagonal Architecture preset enforces the ports and adapters pattern, ensuring your domain logic remains pure and isolated from infrastructure concerns.
+
+## What is Hexagonal Architecture?
+
+Hexagonal Architecture (also called Ports and Adapters) is an architectural pattern that:
+
+- **Isolates domain logic** from external dependencies
+- **Defines ports** (interfaces) for external interactions
+- **Implements adapters** that fulfill ports
+- **Separates driving adapters** (entry points) from **driven adapters** (implementations)
+
+The core principle: **Domain logic has zero dependencies on infrastructure.**
+
+## When to Use This Preset
+
+Use the Hexagonal preset when you have:
+
+- **Complex business rules** that need isolation
+- **Domain-Driven Design** approach
+- **Multiple entry points** (CLI, HTTP, GraphQL) calling the same logic
+- **Swappable infrastructure** (e.g., switching databases)
+- **Long-term maintainability** as a priority
+
+## Architecture Diagram
+
+```mermaid
+%%{init: {'theme':'base', 'themeVariables': {
+  'primaryColor':'#b3d9ff',
+  'primaryBorderColor':'#1976d2',
+  'secondaryColor':'#b3ffcc',
+  'secondaryBorderColor':'#2e7d32',
+  'tertiaryColor':'#ffffb3',
+  'tertiaryBorderColor':'#f57c00'
+}}}%%
+graph TB
+    subgraph DrivingAdapters["📁 Driving Adapters<br/><i>Entry Points</i>"]
+        CLI["CLI Handler"]
+        HTTP["HTTP Controller"]
+        GraphQL["GraphQL Resolver"]
+    end
+
+    subgraph Application["📁 Application<br/><i>Use Cases</i>"]
+        UseCase1["CreateUser"]
+        UseCase2["GetUser"]
+    end
+
+    subgraph Domain["📁 Domain<br/><i>Pure Business Logic</i>"]
+        Entity["User Entity"]
+        ValueObj["Email (Value Object)"]
+    end
+
+    subgraph Ports["📁 Ports<br/><i>Interfaces</i>"]
+        IUserRepo["IUserRepository"]
+        IEmailSvc["IEmailService"]
+    end
+
+    subgraph DrivenAdapters["📁 Driven Adapters<br/><i>Implementations</i>"]
+        PostgresRepo["PostgresRepository"]
+        SendGridEmail["SendGridAdapter"]
+    end
+
+    %% Allowed dependencies (green arrows)
+    CLI --> UseCase1
+    HTTP --> UseCase1
+    GraphQL --> UseCase2
+    CLI --> Ports
+    HTTP --> Ports
+
+    UseCase1 --> Domain
+    UseCase2 --> Domain
+    UseCase1 --> Ports
+    UseCase2 --> Ports
+
+    Ports --> Domain
+
+    PostgresRepo --> Ports
+    SendGridEmail --> Ports
+    PostgresRepo --> Domain
+    SendGridEmail --> Domain
+
+    Entity --> Entity
+    Entity --> ValueObj
+
+    style DrivingAdapters fill:#ffe6cc,stroke:#d79b00,stroke-width:2px
+    style Application fill:#b3d9ff,stroke:#1976d2,stroke-width:2px
+    style Domain fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px
+    style Ports fill:#e1bee7,stroke:#8e24aa,stroke-width:2px
+    style DrivenAdapters fill:#ffccbc,stroke:#e64a19,stroke-width:2px
+
+    linkStyle default stroke:#22c55e,stroke-width:2px
+```
+
+## Directory Structure
+
+```
+src/
+├── core/
+│   ├── domain/              # Pure business logic
+│   │   ├── user.ts
+│   │   ├── order.ts
+│   │   └── value-objects/
+│   │       └── email.ts
+│   ├── ports/               # Interface definitions
+│   │   ├── user-repository.ts
+│   │   └── email-service.ts
+│   └── application/         # Use cases
+│       ├── create-user.ts
+│       └── get-user.ts
+└── adapters/
+    ├── driving/             # Entry points (Primary)
+    │   ├── cli/
+    │   │   └── cli-handler.ts
+    │   ├── http/
+    │   │   └── user-controller.ts
+    │   └── graphql/
+    │       └── user-resolver.ts
+    └── driven/              # Implementations (Secondary)
+        ├── postgres/
+        │   └── user-repository.ts
+        └── email/
+            └── sendgrid-adapter.ts
+```
+
+## Boundaries Defined
+
+The preset defines five key boundaries:
+
+### 1. Domain
+- **Pattern:** `src/core/domain/**`
+- **Tags:** `core`, `domain`
+- **Purpose:** Pure business logic - entities, value objects, domain services
+- **Layer:** 0 (innermost)
+
+### 2. Ports
+- **Pattern:** `src/core/ports/**`
+- **Tags:** `core`, `ports`
+- **Purpose:** Interface definitions for external interactions
+- **Layer:** 1
+
+### 3. Application
+- **Pattern:** `src/core/application/**`
+- **Tags:** `core`, `application`
+- **Purpose:** Use cases that orchestrate domain and ports
+- **Layer:** 2
+
+### 4. Driving Adapters
+- **Pattern:** `src/adapters/driving/**`
+- **Tags:** `adapters`, `driving`
+- **Purpose:** Primary adapters - entry points that call the application
+- **Layer:** 3 (outermost)
+
+### 5. Driven Adapters
+- **Pattern:** `src/adapters/driven/**`
+- **Tags:** `adapters`, `driven`
+- **Purpose:** Secondary adapters - implementations of ports
+- **Layer:** 3 (outermost)
+
+## Key Rules Enforced
+
+### Domain Isolation
+
+**The most critical rule:** Domain has zero outward dependencies.
+
+```typescript
+// ❌ BAD - Domain importing infrastructure
+// src/core/domain/user.ts
+import { Database } from '../../adapters/database'
+import axios from 'axios'
+
+// ✅ GOOD - Pure domain logic
+// src/core/domain/user.ts
+export class User {
+  constructor(
+    public readonly id: string,
+    public readonly email: Email
+  ) {}
+
+  isValid(): boolean {
+    return this.email.isValid()
+  }
+}
+```
+
+### Driving Adapters Call Use Cases
+
+Driving adapters invoke application use cases, never domain directly.
+
+```typescript
+// ❌ BAD - CLI calling domain directly
+// src/adapters/driving/cli/handler.ts
+import { User } from '../../../core/domain/user'
+const user = new User(id, email) // Wrong!
+
+// ✅ GOOD - CLI calling use case
+// src/adapters/driving/cli/handler.ts
+import { CreateUserUseCase } from '../../../core/application/create-user'
+
+export class CLIHandler {
+  constructor(private createUser: CreateUserUseCase) {}
+
+  async handle(email: string) {
+    return await this.createUser.execute(email)
+  }
+}
+```
+
+### Driven Adapters Implement Ports
+
+Driven adapters implement port interfaces and can access domain types.
+
+```typescript
+// ✅ GOOD - Repository implementing port
+// src/adapters/driven/postgres/user-repository.ts
+import { IUserRepository } from '../../../core/ports/user-repository'
+import { User } from '../../../core/domain/user'
+
+export class PostgresUserRepository implements IUserRepository {
+  async save(user: User): Promise<void> {
+    await this.db.insert('users', {
+      id: user.id,
+      email: user.email.value
+    })
+  }
+}
+```
+
+:::note[Driven Adapters CAN Import Domain]
+This is correct! Driven adapters implement ports that use domain types. They need direct access to domain entities.
+:::
+
+### Adapters Are Independent
+
+Driving adapters don't know about driven adapters (and vice versa). Dependency injection happens in the composition root.
+
+```typescript
+// ❌ BAD - Driving adapter importing driven adapter
+// src/adapters/driving/http/controller.ts
+import { PostgresRepository } from '../../driven/postgres/repository'
+
+// ✅ GOOD - Composition root wires dependencies
+// src/index.ts
+const userRepo = new PostgresUserRepository(db)
+const createUser = new CreateUserUseCase(userRepo)
+const httpController = new UserController(createUser)
+const cliHandler = new CLIHandler(createUser)
+```
+
+## Example Configuration
+
+```json
+{
+  "preset": "@stricture/hexagonal"
+}
+```
+
+That's it! No additional configuration needed for standard hexagonal structure.
+
+## Real Code Example
+
+### Domain Layer (Pure)
+
+```typescript
+// src/core/domain/user.ts
+import { Email } from './value-objects/email'
+
+export class User {
+  constructor(
+    public readonly id: string,
+    public readonly email: Email,
+    public readonly name: string
+  ) {}
+
+  changeName(newName: string): User {
+    if (!newName || newName.trim().length === 0) {
+      throw new Error('Name cannot be empty')
+    }
+    return new User(this.id, this.email, newName)
+  }
+}
+```
+
+### Ports Layer (Interfaces)
+
+```typescript
+// src/core/ports/user-repository.ts
+import { User } from '../domain/user'
+
+export interface IUserRepository {
+  save(user: User): Promise<void>
+  findById(id: string): Promise<User | null>
+  findByEmail(email: string): Promise<User | null>
+}
+```
+
+### Application Layer (Use Cases)
+
+```typescript
+// src/core/application/create-user.ts
+import { User } from '../domain/user'
+import { Email } from '../domain/value-objects/email'
+import { IUserRepository } from '../ports/user-repository'
+import { IEmailService } from '../ports/email-service'
+
+export class CreateUserUseCase {
+  constructor(
+    private userRepo: IUserRepository,
+    private emailService: IEmailService
+  ) {}
+
+  async execute(emailStr: string, name: string): Promise<User> {
+    const email = new Email(emailStr)
+    const existing = await this.userRepo.findByEmail(email.value)
+
+    if (existing) {
+      throw new Error('User already exists')
+    }
+
+    const user = new User(
+      crypto.randomUUID(),
+      email,
+      name
+    )
+
+    await this.userRepo.save(user)
+    await this.emailService.sendWelcome(user.email)
+
+    return user
+  }
+}
+```
+
+### Driving Adapter (Entry Point)
+
+```typescript
+// src/adapters/driving/http/user-controller.ts
+import { CreateUserUseCase } from '../../../core/application/create-user'
+
+export class UserController {
+  constructor(private createUser: CreateUserUseCase) {}
+
+  async post(req: Request, res: Response) {
+    try {
+      const { email, name } = req.body
+      const user = await this.createUser.execute(email, name)
+
+      res.status(201).json({
+        id: user.id,
+        email: user.email.value,
+        name: user.name
+      })
+    } catch (error) {
+      res.status(400).json({ error: error.message })
+    }
+  }
+}
+```
+
+### Driven Adapter (Implementation)
+
+```typescript
+// src/adapters/driven/postgres/user-repository.ts
+import { IUserRepository } from '../../../core/ports/user-repository'
+import { User } from '../../../core/domain/user'
+import { Email } from '../../../core/domain/value-objects/email'
+import { Pool } from 'pg'
+
+export class PostgresUserRepository implements IUserRepository {
+  constructor(private pool: Pool) {}
+
+  async save(user: User): Promise<void> {
+    await this.pool.query(
+      'INSERT INTO users (id, email, name) VALUES ($1, $2, $3)',
+      [user.id, user.email.value, user.name]
+    )
+  }
+
+  async findById(id: string): Promise<User | null> {
+    const result = await this.pool.query(
+      'SELECT * FROM users WHERE id = $1',
+      [id]
+    )
+
+    if (result.rows.length === 0) return null
+
+    const row = result.rows[0]
+    return new User(
+      row.id,
+      new Email(row.email),
+      row.name
+    )
+  }
+
+  async findByEmail(emailStr: string): Promise<User | null> {
+    const result = await this.pool.query(
+      'SELECT * FROM users WHERE email = $1',
+      [emailStr]
+    )
+
+    if (result.rows.length === 0) return null
+
+    const row = result.rows[0]
+    return new User(
+      row.id,
+      new Email(row.email),
+      row.name
+    )
+  }
+}
+```
+
+### Composition Root
+
+```typescript
+// src/index.ts
+import { Pool } from 'pg'
+import { PostgresUserRepository } from './adapters/driven/postgres/user-repository'
+import { SendGridEmailService } from './adapters/driven/email/sendgrid-service'
+import { CreateUserUseCase } from './core/application/create-user'
+import { UserController } from './adapters/driving/http/user-controller'
+import { CLIHandler } from './adapters/driving/cli/handler'
+
+// Wire up dependencies
+const pool = new Pool({ connectionString: process.env.DATABASE_URL })
+const userRepo = new PostgresUserRepository(pool)
+const emailService = new SendGridEmailService(process.env.SENDGRID_KEY!)
+
+const createUser = new CreateUserUseCase(userRepo, emailService)
+
+// Create driving adapters with injected use cases
+const httpController = new UserController(createUser)
+const cliHandler = new CLIHandler(createUser)
+
+// Export for HTTP framework
+export { httpController, cliHandler }
+```
+
+## Common Violations and Fixes
+
+### Violation: Domain importing ports
+
+```typescript
+// ❌ BAD
+// src/core/domain/user.ts
+import { IUserRepository } from '../ports/user-repository'
+
+export class User {
+  async save() {
+    await this.repo.save(this) // Domain calling ports!
+  }
+}
+```
+
+**Fix:** Move side effects to application layer
+
+```typescript
+// ✅ GOOD
+// src/core/domain/user.ts
+export class User {
+  // Pure domain logic only
+  changeName(name: string): User {
+    return new User(this.id, this.email, name)
+  }
+}
+
+// src/core/application/change-user-name.ts
+export class ChangeUserNameUseCase {
+  constructor(private repo: IUserRepository) {}
+
+  async execute(userId: string, name: string): Promise<User> {
+    const user = await this.repo.findById(userId)
+    const updated = user.changeName(name)
+    await this.repo.save(updated) // Application orchestrates
+    return updated
+  }
+}
+```
+
+### Violation: Driving adapter importing driven adapter
+
+```typescript
+// ❌ BAD
+// src/adapters/driving/http/controller.ts
+import { PostgresRepository } from '../../driven/postgres/repository'
+
+export class UserController {
+  private repo = new PostgresRepository() // Tight coupling!
+}
+```
+
+**Fix:** Use composition root
+
+```typescript
+// ✅ GOOD
+// src/adapters/driving/http/controller.ts
+import { CreateUserUseCase } from '../../../core/application/create-user'
+
+export class UserController {
+  constructor(private createUser: CreateUserUseCase) {}
+}
+
+// src/index.ts (composition root)
+const repo = new PostgresRepository(pool)
+const useCase = new CreateUserUseCase(repo)
+const controller = new UserController(useCase)
+```
+
+## Benefits
+
+- **Testability:** Easy to test with port mocks
+- **Flexibility:** Swap adapters without touching domain
+- **Maintainability:** Domain logic is isolated and clear
+- **Team productivity:** Teams can work on adapters independently
+
+## Trade-offs
+
+- **More files:** More layers mean more files
+- **Learning curve:** Team needs to understand the pattern
+- **Indirection:** More abstractions to navigate
+
+## Related Patterns
+
+- [Clean Architecture](/presets/clean) - Similar isolation with concentric circles
+- [Layered Architecture](/presets/layered) - Simpler alternative with fewer layers
+
+## Next Steps
+
+- Check out the [hexagonal example](/examples#hexagonal)
+- Learn about [customizing presets](/configuration#extending-presets)
+- Explore [Domain-Driven Design patterns](/guides/ddd)

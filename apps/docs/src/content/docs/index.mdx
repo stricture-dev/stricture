@@ -1,0 +1,151 @@
+---
+title: Welcome to Stricture
+description: Architecture boundary enforcement for TypeScript projects
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+# Welcome to Stricture
+
+**Stricture** is an ESLint plugin that enforces architectural boundaries in TypeScript projects. It helps teams maintain clean architecture patterns as codebases scale.
+
+## Why Stricture?
+
+<CardGrid>
+  <Card title="Enforce Architecture" icon="puzzle">
+    Prevent violations of hexagonal, layered, clean, or modular architecture patterns automatically.
+  </Card>
+  <Card title="Deny by Default" icon="approve-check">
+    Strict by default. Only explicitly allowed dependencies are permitted between layers.
+  </Card>
+  <Card title="Clear Violations" icon="information">
+    Get helpful error messages explaining WHY imports are forbidden and HOW to fix them.
+  </Card>
+  <Card title="Zero Config Presets" icon="setting">
+    Use architecture presets for instant setup. No complex configuration required.
+  </Card>
+</CardGrid>
+
+## Quick Start
+
+Install Stricture in your project:
+
+```bash
+npm install --save-dev @stricture/core @stricture/eslint-plugin @stricture/hexagonal
+```
+
+Create `.stricture/config.json`:
+
+```json
+{
+  "preset": "@stricture/hexagonal"
+}
+```
+
+Add to your ESLint config:
+
+```js
+module.exports = {
+  plugins: ['@stricture'],
+  rules: {
+    '@stricture/enforce-boundaries': 'error'
+  }
+};
+```
+
+That's it! Stricture will now enforce hexagonal architecture boundaries in your codebase.
+
+## How It Works
+
+Stricture validates imports between architectural layers:
+
+1. **Define boundaries** - Specify layers like domain, application, infrastructure
+2. **Set rules** - Define which layers can import from which
+3. **Get violations** - ESLint reports forbidden imports with helpful messages
+
+### Example Violation
+
+```typescript
+// ❌ FORBIDDEN: Domain cannot import from infrastructure
+// src/domain/user.ts
+import { Database } from '../infrastructure/database';  // ❌ ESLint error
+```
+
+```
+@stricture/enforce-boundaries: Import from 'infrastructure' to 'domain' is not allowed.
+
+Domain layer must remain pure and cannot depend on infrastructure.
+
+To fix this:
+- Move database logic to a repository in the infrastructure layer
+- Define a port interface in the domain layer
+- Inject the repository through the application layer
+```
+
+## Architecture Presets
+
+Stricture includes presets for common architecture patterns:
+
+<CardGrid>
+  <Card title="Hexagonal" icon="hexagon">
+    Ports & Adapters with clear domain isolation.
+    <a href="/docs/presets/hexagonal/">View preset →</a>
+  </Card>
+  <Card title="Layered" icon="layers">
+    Traditional N-tier with unidirectional dependencies.
+    <a href="/docs/presets/layered/">View preset →</a>
+  </Card>
+  <Card title="Clean" icon="circle">
+    Uncle Bob's Clean Architecture with concentric layers.
+    <a href="/docs/presets/clean/">View preset →</a>
+  </Card>
+  <Card title="Modular" icon="module">
+    Feature modules with encapsulated public APIs.
+    <a href="/docs/presets/modular/">View preset →</a>
+  </Card>
+</CardGrid>
+
+## Framework-Specific Presets
+
+<CardGrid>
+  <Card title="Next.js" icon="external">
+    Server/client component boundaries and App Router patterns.
+    <a href="/docs/presets/nextjs/">View preset →</a>
+  </Card>
+  <Card title="NestJS" icon="seti:nest">
+    Module encapsulation and dependency injection patterns.
+    <a href="/docs/presets/nestjs/">View preset →</a>
+  </Card>
+</CardGrid>
+
+## Key Features
+
+- ✅ **Deny by default** - Only explicitly allowed imports are permitted
+- ✅ **Rule specificity** - More specific rules override general ones
+- ✅ **Pattern matching** - Use glob patterns for flexible boundary definitions
+- ✅ **Helpful errors** - Clear messages with fix suggestions
+- ✅ **External dependencies** - Control which layers can import npm packages
+- ✅ **Monorepo support** - Per-package configurations
+- ✅ **Custom presets** - Create and share your own architecture patterns
+- ✅ **CLI tools** - Interactive setup, validation, and scaffolding
+
+## Next Steps
+
+<CardGrid>
+  <Card title="Installation" icon="rocket">
+    Get Stricture set up in your project.
+    <a href="/docs/getting-started/installation/">Install →</a>
+  </Card>
+  <Card title="Quick Start" icon="star">
+    Create your first config in 5 minutes.
+    <a href="/docs/getting-started/quick-start/">Start →</a>
+  </Card>
+  <Card title="Core Concepts" icon="open-book">
+    Learn about boundaries, rules, and presets.
+    <a href="/docs/getting-started/concepts/">Learn →</a>
+  </Card>
+  <Card title="Explore Presets" icon="puzzle">
+    Find the right architecture for your project.
+    <a href="/docs/presets/">Browse →</a>
+  </Card>
+</CardGrid>

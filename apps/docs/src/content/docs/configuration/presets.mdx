@@ -1,0 +1,803 @@
+---
+title: Presets
+description: Complete guide to using and extending Stricture presets
+---
+
+import { Tabs, TabItem, Card, CardGrid, Aside } from '@astrojs/starlight/components';
+
+**Presets** are pre-configured packages of boundaries and rules for common architecture patterns. They provide instant architecture enforcement without manual configuration.
+
+## What is a Preset?
+
+A preset packages:
+- **Boundary definitions** - Layers and modules
+- **Rule definitions** - Allowed and forbidden dependencies
+- **Architecture documentation** - Best practices and examples
+- **Diagrams** - Visual representation of the architecture
+
+Instead of defining 20+ boundaries and 50+ rules manually, use a preset:
+
+```json title=".stricture/config.json"
+{
+  "preset": "@stricture/hexagonal"
+}
+```
+
+This single line gives you complete hexagonal architecture enforcement!
+
+## Available Official Presets
+
+### Architecture Patterns
+
+<CardGrid>
+  <Card title="@stricture/hexagonal" icon="hexagon">
+    **Ports & Adapters** - Isolate domain logic from infrastructure
+
+    Best for: DDD, microservices, complex business rules
+
+    [Learn more →](/presets/hexagonal/)
+  </Card>
+  <Card title="@stricture/layered" icon="layers">
+    **N-Tier Architecture** - Traditional layered approach
+
+    Best for: Enterprise apps, CRUD applications
+
+    [Learn more →](/presets/layered/)
+  </Card>
+  <Card title="@stricture/clean" icon="circle">
+    **Clean Architecture** - Concentric dependency circles
+
+    Best for: Testability, framework independence
+
+    [Learn more →](/presets/clean/)
+  </Card>
+  <Card title="@stricture/modular" icon="puzzle">
+    **Feature Modules** - Vertical slice architecture
+
+    Best for: Large apps, team independence
+
+    [Learn more →](/presets/modular/)
+  </Card>
+</CardGrid>
+
+### Framework-Specific
+
+<CardGrid>
+  <Card title="@stricture/nextjs" icon="external">
+    **Next.js App Router** - Server/client boundaries
+
+    Best for: Next.js 13+ applications
+
+    [Learn more →](/presets/nextjs/)
+  </Card>
+  <Card title="@stricture/nestjs" icon="external">
+    **NestJS Modules** - Module boundaries and DI
+
+    Best for: NestJS applications
+
+    [Learn more →](/presets/nestjs/)
+  </Card>
+</CardGrid>
+
+## Using Presets
+
+### Basic Usage
+
+Install the preset:
+
+```bash
+pnpm add -D @stricture/hexagonal
+```
+
+Reference it in your config:
+
+```json title=".stricture/config.json"
+{
+  "preset": "@stricture/hexagonal"
+}
+```
+
+That's it! The preset defines all boundaries and rules.
+
+### Preset Requirements
+
+Most presets expect a specific directory structure:
+
+<Tabs>
+<TabItem label="Hexagonal">
+```
+src/
+├── core/
+│   ├── domain/         # Pure business logic
+│   ├── ports/          # Interfaces
+│   └── application/    # Use cases
+└── adapters/
+    ├── driving/        # Entry points
+    └── driven/         # Implementations
+```
+</TabItem>
+
+<TabItem label="Layered">
+```
+src/
+├── presentation/       # Controllers, views
+├── business/          # Business logic
+├── data/              # Data access
+└── infrastructure/    # Cross-cutting
+```
+</TabItem>
+
+<TabItem label="Clean">
+```
+src/
+├── entities/          # Enterprise rules
+├── use-cases/         # Application logic
+├── interface-adapters/ # Controllers, gateways
+└── frameworks/        # External frameworks
+```
+</TabItem>
+
+<TabItem label="Next.js">
+```
+app/                   # App Router
+├── (pages)/          # Server components
+│   └── page.tsx
+├── api/              # API routes
+└── components/       # Client components
+```
+</TabItem>
+</Tabs>
+
+Check each preset's documentation for exact requirements.
+
+## Extending Presets
+
+You can customize presets by adding boundaries, rules, or overrides.
+
+### Adding Boundaries
+
+Add custom boundaries while keeping preset's boundaries:
+
+```json title=".stricture/config.json"
+{
+  "preset": "@stricture/hexagonal",
+  "boundaries": [
+    {
+      "name": "shared",
+      "pattern": "src/shared/**",
+      "mode": "file",
+      "tags": ["shared"],
+      "metadata": {
+        "description": "Shared utilities accessible from all layers"
+      }
+    },
+    {
+      "name": "test-utils",
+      "pattern": "src/test-utils/**",
+      "mode": "file",
+      "tags": ["test"]
+    }
+  ],
+  "rules": [
+    {
+      "id": "all-to-shared",
+      "name": "All Can Use Shared",
+      "description": "Shared utilities are accessible everywhere",
+      "severity": "error",
+      "from": { "pattern": "**", "mode": "file" },
+      "to": { "tag": "shared", "mode": "file" },
+      "allowed": true
+    }
+  ]
+}
+```
+
+**Result:** Your boundaries **merge** with preset's boundaries. You now have preset's boundaries + your custom ones.
+
+### Adding Rules
+
+Add new rules to preset's rules:
+
+```json title=".stricture/config.json"
+{
+  "preset": "@stricture/hexagonal",
+  "rules": [
+    {
+      "id": "no-legacy-imports",
+      "name": "No Legacy Code",
+      "description": "New code cannot import legacy modules",
+      "severity": "error",
+      "from": { "pattern": "src/**", "exclude": ["src/legacy/**"], "mode": "file" },
+      "to": { "pattern": "src/legacy/**", "mode": "file" },
+      "allowed": false,
+      "message": "Don't depend on legacy code. Refactor or duplicate needed logic."
+    },
+    {
+      "id": "enforce-barrel-exports",
+      "name": "Use Barrel Exports",
+      "description": "Import from index files, not internal files",
+      "severity": "warn",
+      "from": { "tag": "driving", "mode": "file" },
+      "to": { "pattern": "src/core/**/!(index).ts", "mode": "file" },
+      "allowed": false,
+      "message": "Import from barrel exports (index.ts) for better encapsulation"
+    }
+  ]
+}
+```
+
+**Result:** Your rules **merge** with preset's rules.
+
+### Overriding Rules
+
+Modify specific preset rules without redefining everything:
+
+```json title=".stricture/config.json"
+{
+  "preset": "@stricture/hexagonal",
+  "overrides": [
+    {
+      "id": "domain-isolation",
+      "severity": "warn"  // Change from error to warning
+    },
+    {
+      "id": "driving-independent",
+      "severity": "off"  // Disable this rule completely
+    },
+    {
+      "id": "application-not-adapters",
+      "message": "CUSTOM: Application uses ports, not adapters. See wiki.company.com/di"
+    }
+  ]
+}
+```
+
+**Overridable properties:**
+- `severity` - Change error level
+- `message` - Custom error message
+- `allowed` - Flip allow/deny (use carefully!)
+- `examples` - Custom code examples
+
+<Aside type="caution" title="Override Carefully">
+Overriding `allowed` changes architectural guarantees. Only do this if you understand the implications.
+</Aside>
+
+## Multiple Presets (Extends)
+
+Compose multiple presets for complex scenarios:
+
+```json title=".stricture/config.json"
+{
+  "preset": "@stricture/hexagonal",
+  "extends": [
+    "@company/shared-rules",
+    "@company/security-policies",
+    "@company/api-standards"
+  ]
+}
+```
+
+**Merge order:**
+1. Base preset (`preset`)
+2. Extended presets (`extends` array, left to right)
+3. Your custom boundaries
+4. Your custom rules
+5. Overrides (applied last)
+
+### Use Cases for Multiple Presets
+
+**Organizational Standards:**
+```json
+{
+  "preset": "@stricture/hexagonal",
+  "extends": ["@mycompany/code-standards"]
+}
+```
+
+**Security Policies:**
+```json
+{
+  "preset": "@stricture/layered",
+  "extends": ["@security/no-eval", "@security/secure-imports"]
+}
+```
+
+**Framework + Architecture:**
+```json
+{
+  "preset": "@stricture/nextjs",
+  "extends": ["@stricture/hexagonal"]
+}
+```
+
+**Shared Team Rules:**
+```json
+{
+  "preset": "@stricture/clean",
+  "extends": ["@team/backend-standards", "@team/api-patterns"]
+}
+```
+
+## Creating Custom Presets
+
+Create reusable presets for your organization.
+
+### Preset Structure
+
+```typescript
+// @mycompany/architecture-preset/src/index.ts
+import type { ArchPreset } from '@stricture/core'
+
+export const preset: ArchPreset = {
+  id: '@mycompany/architecture-preset',
+  name: 'My Company Architecture',
+  description: 'Standard architecture pattern for My Company applications',
+
+  boundaries: [
+    {
+      name: 'api-layer',
+      pattern: 'src/api/**',
+      mode: 'file',
+      tags: ['api', 'presentation']
+    },
+    {
+      name: 'business-logic',
+      pattern: 'src/business/**',
+      mode: 'file',
+      tags: ['business']
+    },
+    {
+      name: 'data-access',
+      pattern: 'src/data/**',
+      mode: 'file',
+      tags: ['data']
+    }
+  ],
+
+  rules: [
+    {
+      id: 'api-to-business',
+      name: 'API Calls Business',
+      description: 'API layer uses business layer',
+      severity: 'error',
+      from: { tag: 'api', mode: 'file' },
+      to: { tag: 'business', mode: 'file' },
+      allowed: true
+    },
+    {
+      id: 'business-to-data',
+      name: 'Business Uses Data',
+      description: 'Business layer uses data layer',
+      severity: 'error',
+      from: { tag: 'business', mode: 'file' },
+      to: { tag: 'data', mode: 'file' },
+      allowed: true
+    },
+    {
+      id: 'no-upward-deps',
+      name: 'No Upward Dependencies',
+      description: 'Lower layers cannot depend on higher layers',
+      severity: 'error',
+      from: { tag: 'data', mode: 'file' },
+      to: { tag: 'business', mode: 'file' },
+      allowed: false,
+      message: 'Data layer cannot depend on business layer - this violates layered architecture'
+    }
+  ],
+
+  metadata: {
+    version: '1.0.0',
+    author: 'Architecture Team',
+    url: 'https://wiki.mycompany.com/architecture'
+  }
+}
+
+export default preset
+```
+
+### Package.json
+
+```json
+{
+  "name": "@mycompany/architecture-preset",
+  "version": "1.0.0",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc",
+    "prepublish": "pnpm build"
+  },
+  "peerDependencies": {
+    "@stricture/core": "^1.0.0"
+  },
+  "devDependencies": {
+    "@stricture/core": "^1.0.0",
+    "typescript": "^5.0.0"
+  }
+}
+```
+
+### Publishing
+
+```bash
+# Build
+pnpm build
+
+# Publish to npm
+npm publish --access public
+
+# Or publish to private registry
+npm publish --registry https://npm.mycompany.com
+```
+
+### Using Custom Preset
+
+```bash
+pnpm add -D @mycompany/architecture-preset
+```
+
+```json title=".stricture/config.json"
+{
+  "preset": "@mycompany/architecture-preset"
+}
+```
+
+## Preset Best Practices
+
+### Start with Official Presets
+
+<Aside type="tip" title="Use Official Presets First">
+Official presets encode proven architecture patterns. Start with one, customize if needed.
+</Aside>
+
+```json
+// ✅ GOOD - Use proven pattern
+{
+  "preset": "@stricture/hexagonal"
+}
+
+// ❌ AVOID - Building from scratch
+{
+  "boundaries": [ /* 30 custom boundaries */ ],
+  "rules": [ /* 100 custom rules */ ]
+}
+```
+
+### Document Your Customizations
+
+```json
+{
+  "preset": "@stricture/hexagonal",
+  "boundaries": [
+    {
+      "name": "legacy",
+      "pattern": "src/legacy/**",
+      "tags": ["legacy"],
+      "metadata": {
+        "description": "TEMPORARY: Legacy code being migrated",
+        "deadline": "2024-Q3",
+        "ticket": "ARCH-789"
+      }
+    }
+  ],
+  "rules": [
+    {
+      "id": "isolate-legacy",
+      "description": "Prevent new dependencies on legacy code",
+      "severity": "error",
+      "from": { "pattern": "src/**", "exclude": ["src/legacy/**"] },
+      "to": { "tag": "legacy" },
+      "allowed": false,
+      "message": "Don't depend on legacy code - it's being replaced"
+    }
+  ]
+}
+```
+
+### Version Your Custom Presets
+
+```json
+{
+  "preset": "@mycompany/architecture-preset",
+  "metadata": {
+    "presetVersion": "2.1.0",
+    "migrationGuide": "https://wiki.company.com/architecture/v2-migration"
+  }
+}
+```
+
+Follow semantic versioning for preset packages.
+
+### Test Your Presets
+
+Create example projects that use your preset:
+
+```
+@mycompany/architecture-preset/
+├── src/
+│   └── index.ts            # Preset definition
+├── examples/
+│   ├── basic/              # Basic usage
+│   │   └── .stricture/config.json
+│   └── advanced/           # Advanced usage
+│       └── .stricture/config.json
+├── tests/
+│   └── preset.test.ts      # Preset validation tests
+└── README.md
+```
+
+## Common Preset Scenarios
+
+### Gradual Adoption
+
+Start loose, tighten over time:
+
+```json title=".stricture/config.json"
+{
+  "preset": "@stricture/hexagonal",
+  "overrides": [
+    // Phase 1: Warnings only
+    {
+      "id": "domain-isolation",
+      "severity": "warn"
+    },
+    {
+      "id": "application-not-adapters",
+      "severity": "warn"
+    }
+  ],
+  "ignorePatterns": [
+    "src/legacy/**"  // Exclude legacy code
+  ]
+}
+```
+
+**Later (Phase 2):**
+```json
+{
+  "preset": "@stricture/hexagonal",
+  "overrides": [
+    // Upgrade to errors
+    {
+      "id": "domain-isolation",
+      "severity": "error"
+    }
+  ]
+}
+```
+
+### Monorepo with Multiple Presets
+
+Different packages use different presets:
+
+```
+packages/
+├── backend/
+│   └── .stricture/
+│       └── config.json      # Uses @stricture/hexagonal
+├── frontend/
+│   └── .stricture/
+│       └── config.json      # Uses @stricture/nextjs
+└── shared/
+    └── .stricture/
+        └── config.json      # Uses @stricture/modular
+```
+
+### Team-Specific Rules
+
+Add team standards to base preset:
+
+```json title=".stricture/config.json"
+{
+  "preset": "@stricture/hexagonal",
+  "extends": [
+    "@mycompany/backend-standards"  // Shared team rules
+  ],
+  "rules": [
+    // Project-specific rules
+    {
+      "id": "feature-flags-isolation",
+      "description": "Feature flags isolated to configuration layer",
+      "severity": "error",
+      "from": { "tag": "domain" },
+      "to": { "pattern": "src/config/feature-flags/**" },
+      "allowed": false,
+      "message": "Domain cannot access feature flags directly. Use configuration ports."
+    }
+  ]
+}
+```
+
+### Migration Between Presets
+
+Migrate from one architecture to another:
+
+```json title=".stricture/config.json (During Migration)"
+{
+  "preset": "@stricture/hexagonal",  // Target architecture
+  "boundaries": [
+    {
+      "name": "legacy-layered",
+      "pattern": "src/old/**",
+      "tags": ["legacy"]
+    }
+  ],
+  "rules": [
+    {
+      "id": "legacy-isolation",
+      "description": "Isolate legacy code during migration",
+      "severity": "error",
+      "from": { "tag": "legacy" },
+      "to": { "tag": "core" },
+      "allowed": false,
+      "message": "Migrate legacy code to hexagonal structure first"
+    },
+    {
+      "id": "new-not-legacy",
+      "severity": "error",
+      "from": { "tag": "core" },
+      "to": { "tag": "legacy" },
+      "allowed": false,
+      "message": "Don't depend on legacy code - refactor it first"
+    }
+  ],
+  "metadata": {
+    "migration": {
+      "from": "layered",
+      "to": "hexagonal",
+      "status": "in-progress",
+      "completion": "45%"
+    }
+  }
+}
+```
+
+## Preset Comparison
+
+### When to Use Each Preset
+
+| Preset | Best For | Complexity | Learning Curve |
+|--------|----------|------------|----------------|
+| **Hexagonal** | DDD, microservices, complex business logic | High | Medium |
+| **Layered** | Traditional apps, CRUD, enterprise | Low | Low |
+| **Clean** | Framework independence, testability | High | High |
+| **Modular** | Large apps, feature teams, vertical slices | Medium | Medium |
+| **Next.js** | Next.js App Router, server/client split | Medium | Low |
+| **NestJS** | NestJS applications, module boundaries | Medium | Low |
+
+### Preset Feature Matrix
+
+| Feature | Hexagonal | Layered | Clean | Modular |
+|---------|-----------|---------|-------|---------|
+| Domain isolation | ✅ | ❌ | ✅ | ❌ |
+| Ports & Adapters | ✅ | ❌ | ✅ | ❌ |
+| Layer enforcement | ✅ | ✅ | ✅ | ❌ |
+| Module independence | ❌ | ❌ | ❌ | ✅ |
+| Framework agnostic | ✅ | ✅ | ✅ | ✅ |
+| DDD support | ✅ | ⚠️ | ✅ | ⚠️ |
+
+## Troubleshooting
+
+### Preset Not Found
+
+**Error:** `Could not resolve preset '@stricture/hexagonal'`
+
+**Solution:**
+```bash
+pnpm add -D @stricture/hexagonal
+```
+
+Ensure the preset package is installed in your project.
+
+### Preset Structure Mismatch
+
+**Error:** Multiple violations from preset rules
+
+**Solution:** Check your directory structure matches preset expectations. Read preset documentation for required structure.
+
+**Example - Hexagonal expects:**
+```
+src/core/domain/**
+src/core/ports/**
+src/core/application/**
+src/adapters/driving/**
+src/adapters/driven/**
+```
+
+**If you have:**
+```
+src/domain/**      ❌ Missing 'core' folder
+src/adapters/**    ❌ Missing 'driving'/'driven' split
+```
+
+**Fix:** Reorganize files or customize boundaries.
+
+### Override Not Working
+
+**Problem:** Override seems ignored
+
+**Debug:**
+1. Check rule `id` matches exactly (case-sensitive)
+2. Verify override is in `overrides` array, not `rules`
+3. Check if you're overriding the right property
+
+```json
+// ❌ WRONG - putting override in rules
+{
+  "preset": "@stricture/hexagonal",
+  "rules": [
+    {
+      "id": "domain-isolation",
+      "severity": "warn"  // Won't work here!
+    }
+  ]
+}
+
+// ✅ CORRECT - using overrides
+{
+  "preset": "@stricture/hexagonal",
+  "overrides": [
+    {
+      "id": "domain-isolation",
+      "severity": "warn"  // Works!
+    }
+  ]
+}
+```
+
+### Conflicting Presets
+
+**Problem:** Multiple presets have conflicting rules
+
+**Solution:** Later presets override earlier ones. Adjust order:
+
+```json
+{
+  "preset": "@stricture/hexagonal",
+  "extends": [
+    "@company/general-rules",    // Applied first
+    "@company/specific-rules"    // Overrides general rules
+  ]
+}
+```
+
+Or use overrides to resolve conflicts:
+
+```json
+{
+  "preset": "@stricture/hexagonal",
+  "extends": ["@company/conflicting-preset"],
+  "overrides": [
+    {
+      "id": "conflicting-rule",
+      "severity": "off"  // Disable problematic rule
+    }
+  ]
+}
+```
+
+## Next Steps
+
+<CardGrid>
+  <Card title="Configuration File" icon="setting">
+    Master the complete configuration file format.
+
+    [Read guide →](/configuration/config-file/)
+  </Card>
+  <Card title="Explore Presets" icon="open-book">
+    Browse detailed preset documentation.
+
+    [View presets →](/presets/)
+  </Card>
+  <Card title="Custom Rules" icon="pencil">
+    Learn to write custom architecture rules.
+
+    [Write rules →](/configuration/rules/)
+  </Card>
+  <Card title="Examples" icon="rocket">
+    See presets in action with real examples.
+
+    [View examples →](/examples/)
+  </Card>
+</CardGrid>

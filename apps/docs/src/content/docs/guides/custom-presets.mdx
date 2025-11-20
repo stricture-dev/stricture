@@ -1,0 +1,895 @@
+---
+title: Creating Custom Presets
+description: Build and share your own architecture presets for Stricture
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+# Creating Custom Presets
+
+Learn how to create your own architecture presets for Stricture - from defining boundaries and rules to publishing and sharing them with your team.
+
+## When to Create a Custom Preset
+
+Consider creating a custom preset when:
+
+- **Your architecture pattern is reusable** - You want to enforce it across multiple projects
+- **You have company-wide standards** - Internal architecture patterns your organization follows
+- **Existing presets don't fit** - Your architecture needs unique boundary definitions
+- **You're experimenting** - Testing new architectural patterns before adopting them
+- **You want to share** - Contributing back to the community with new patterns
+
+### Examples of Custom Presets
+
+- **Feature-based architecture** - Vertical slices with self-contained features
+- **CQRS pattern** - Separate command and query boundaries
+- **Event-driven systems** - Event handlers, publishers, subscribers
+- **Microservices patterns** - Service boundaries within a monorepo
+- **Domain-Driven Design** - Bounded contexts and aggregates
+
+## Preset Structure
+
+A Stricture preset is an npm package with this structure:
+
+```
+my-preset/
+├── src/
+│   ├── boundaries.ts      # Boundary definitions
+│   ├── rules.ts           # Architectural rules
+│   ├── types.ts           # TypeScript types (optional)
+│   ├── diagram.ts         # Mermaid diagram (optional)
+│   ├── scaffolding.ts     # CLI scaffolding (optional)
+│   └── index.ts           # Main export
+├── tests/
+│   └── preset.test.ts     # Tests for your preset
+├── package.json
+├── tsconfig.json
+├── README.md
+└── LICENSE
+```
+
+## Step-by-Step: Creating a Feature Flags Preset
+
+Let's create a real preset that enforces feature flag architecture patterns.
+
+### Architecture Overview
+
+Our feature flags architecture has these boundaries:
+
+- **Flags** - Flag definitions and types
+- **Providers** - Flag evaluation logic (LaunchDarkly, environment variables)
+- **Consumers** - Application code that uses flags
+- **Admin** - Management UI for flags
+
+Rules:
+- Flags are pure data - no dependencies
+- Providers implement flag evaluation
+- Consumers can only import flags (not providers directly)
+- Admin can access everything for management
+
+### Step 1: Initialize the Project
+
+Create a new npm package:
+
+<Tabs>
+  <TabItem label="npm">
+    ```bash
+    mkdir stricture-feature-flags
+    cd stricture-feature-flags
+    npm init -y
+    npm install -D @stricture/core typescript tsup vitest
+    ```
+  </TabItem>
+  <TabItem label="pnpm">
+    ```bash
+    mkdir stricture-feature-flags
+    cd stricture-feature-flags
+    pnpm init
+    pnpm add -D @stricture/core typescript tsup vitest
+    ```
+  </TabItem>
+  <TabItem label="yarn">
+    ```bash
+    mkdir stricture-feature-flags
+    cd stricture-feature-flags
+    yarn init -y
+    yarn add -D @stricture/core typescript tsup vitest
+    ```
+  </TabItem>
+</Tabs>
+
+Update `package.json`:
+
+```json title="package.json"
+{
+  "name": "@my-company/stricture-feature-flags",
+  "version": "1.0.0",
+  "description": "Feature flags architecture preset for Stricture",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@stricture/core": "^0.1.0"
+  },
+  "keywords": ["stricture", "preset", "feature-flags", "architecture"]
+}
+```
+
+Create `tsconfig.json`:
+
+```json title="tsconfig.json"
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "declaration": true,
+    "outDir": "./dist"
+  },
+  "include": ["src/**/*"]
+}
+```
+
+Create `tsup.config.ts`:
+
+```typescript title="tsup.config.ts"
+import { defineConfig } from 'tsup'
+
+export default defineConfig({
+  entry: ['src/index.ts'],
+  format: ['esm', 'cjs'],
+  dts: true,
+  clean: true,
+  splitting: false,
+  sourcemap: true
+})
+```
+
+### Step 2: Define Boundaries
+
+Create `src/boundaries.ts`:
+
+```typescript title="src/boundaries.ts"
+import type { BoundaryDefinition } from '@stricture/core'
+
+/**
+ * Feature flags architecture boundary definitions
+ */
+export const boundaries: BoundaryDefinition[] = [
+  {
+    name: 'flags',
+    pattern: 'src/flags/**',
+    mode: 'file',
+    tags: ['flags'],
+    metadata: {
+      description: 'Flag definitions and types - pure data',
+      layer: 0
+    }
+  },
+  {
+    name: 'providers',
+    pattern: 'src/providers/**',
+    mode: 'file',
+    tags: ['providers'],
+    metadata: {
+      description: 'Flag evaluation providers (LaunchDarkly, env vars, etc.)',
+      layer: 1
+    }
+  },
+  {
+    name: 'consumers',
+    pattern: 'src/{features,pages,components}/**',
+    mode: 'file',
+    tags: ['consumers'],
+    metadata: {
+      description: 'Application code that uses feature flags',
+      layer: 2
+    }
+  },
+  {
+    name: 'admin',
+    pattern: 'src/admin/**',
+    mode: 'file',
+    tags: ['admin'],
+    metadata: {
+      description: 'Flag management UI and tools',
+      layer: 3
+    }
+  }
+]
+```
+
+:::tip[Pattern Flexibility]
+Use `{features,pages,components}/**` to match multiple directories. This makes your preset work with different project structures.
+:::
+
+### Step 3: Define Rules
+
+Create `src/rules.ts`:
+
+```typescript title="src/rules.ts"
+import type { ArchRule } from '@stricture/core'
+
+/**
+ * Feature flags architecture rules
+ */
+export const rules: ArchRule[] = [
+  // Flag isolation - flags are pure data
+  {
+    id: 'flags-isolation',
+    name: 'Flags Are Pure Data',
+    description: 'Flag definitions cannot import anything',
+    severity: 'error',
+    from: { tag: 'flags', mode: 'file' },
+    to: { tag: '*', mode: 'file' },
+    allowed: false,
+    message: 'Flag definitions must be pure data with no dependencies',
+    examples: {
+      bad: [
+        "import { evaluate } from '../providers/launchdarkly'",
+        "import axios from 'axios'"
+      ],
+      good: [
+        "export const MY_FLAG = 'my-feature' as const",
+        "export type MyFlag = { enabled: boolean }"
+      ]
+    }
+  },
+
+  // Allow flags to import other flags
+  {
+    id: 'flags-self-imports',
+    name: 'Flags Can Import Flags',
+    description: 'Flag files can reference other flag definitions',
+    severity: 'error',
+    from: { tag: 'flags', mode: 'file' },
+    to: { tag: 'flags', mode: 'file' },
+    allowed: true
+  },
+
+  // Providers implement evaluation logic
+  {
+    id: 'providers-to-flags',
+    name: 'Providers Use Flag Definitions',
+    description: 'Providers read flag definitions',
+    severity: 'error',
+    from: { tag: 'providers', mode: 'file' },
+    to: { tag: 'flags', mode: 'file' },
+    allowed: true
+  },
+  {
+    id: 'providers-self-imports',
+    name: 'Providers Can Import Providers',
+    description: 'Providers can share utilities',
+    severity: 'error',
+    from: { tag: 'providers', mode: 'file' },
+    to: { tag: 'providers', mode: 'file' },
+    allowed: true
+  },
+  {
+    id: 'providers-external',
+    name: 'Providers Can Use External SDKs',
+    description: 'Providers can use LaunchDarkly, Split, etc.',
+    severity: 'error',
+    from: { tag: 'providers', mode: 'file' },
+    to: { tag: 'external', mode: 'file' },
+    allowed: true
+  },
+
+  // Consumers use flags but not providers directly
+  {
+    id: 'consumers-to-flags',
+    name: 'Consumers Import Flags',
+    description: 'Application code imports flag definitions',
+    severity: 'error',
+    from: { tag: 'consumers', mode: 'file' },
+    to: { tag: 'flags', mode: 'file' },
+    allowed: true
+  },
+  {
+    id: 'consumers-not-providers',
+    name: 'Consumers Cannot Import Providers',
+    description: 'Use a facade/hook instead of importing providers directly',
+    severity: 'error',
+    from: { tag: 'consumers', mode: 'file' },
+    to: { tag: 'providers', mode: 'file' },
+    allowed: false,
+    message: 'Consumers should use a flag facade/hook, not import providers directly',
+    examples: {
+      bad: [
+        "import { LaunchDarklyProvider } from '../providers/launchdarkly'"
+      ],
+      good: [
+        "import { useFlag } from '../hooks/use-flag'",
+        "const isEnabled = useFlag(MY_FLAG)"
+      ]
+    }
+  },
+  {
+    id: 'consumers-self-imports',
+    name: 'Consumers Can Import Consumers',
+    description: 'Application code can import other application code',
+    severity: 'error',
+    from: { tag: 'consumers', mode: 'file' },
+    to: { tag: 'consumers', mode: 'file' },
+    allowed: true
+  },
+  {
+    id: 'consumers-external',
+    name: 'Consumers Can Use External Libraries',
+    description: 'Application code can use normal dependencies',
+    severity: 'error',
+    from: { tag: 'consumers', mode: 'file' },
+    to: { tag: 'external', mode: 'file' },
+    allowed: true
+  },
+
+  // Admin has full access for management
+  {
+    id: 'admin-to-flags',
+    name: 'Admin Can Access Flags',
+    description: 'Admin UI needs flag definitions',
+    severity: 'error',
+    from: { tag: 'admin', mode: 'file' },
+    to: { tag: 'flags', mode: 'file' },
+    allowed: true
+  },
+  {
+    id: 'admin-to-providers',
+    name: 'Admin Can Access Providers',
+    description: 'Admin UI can manage provider configuration',
+    severity: 'error',
+    from: { tag: 'admin', mode: 'file' },
+    to: { tag: 'providers', mode: 'file' },
+    allowed: true
+  },
+  {
+    id: 'admin-self-imports',
+    name: 'Admin Can Import Admin',
+    description: 'Admin components can reference each other',
+    severity: 'error',
+    from: { tag: 'admin', mode: 'file' },
+    to: { tag: 'admin', mode: 'file' },
+    allowed: true
+  },
+  {
+    id: 'admin-external',
+    name: 'Admin Can Use External Libraries',
+    description: 'Admin UI can use frameworks and libraries',
+    severity: 'error',
+    from: { tag: 'admin', mode: 'file' },
+    to: { tag: 'external', mode: 'file' },
+    allowed: true
+  }
+]
+```
+
+:::note[Rule Order Doesn't Matter]
+Stricture automatically sorts rules by specificity. Write them in any order - more specific rules always win.
+:::
+
+### Step 4: Create Main Export
+
+Create `src/index.ts`:
+
+```typescript title="src/index.ts"
+import type { ArchPreset } from '@stricture/core'
+import { boundaries } from './boundaries'
+import { rules } from './rules'
+
+/**
+ * Feature Flags Architecture Preset
+ *
+ * Enforces clean separation between:
+ * - Flags: Pure flag definitions
+ * - Providers: Flag evaluation logic
+ * - Consumers: Application code using flags
+ * - Admin: Management UI
+ */
+export const featureFlagsPreset: ArchPreset = {
+  id: '@my-company/stricture-feature-flags',
+  name: 'Feature Flags Architecture',
+  description: 'Enforces clean feature flag patterns with provider abstraction',
+  boundaries,
+  rules
+}
+
+export default featureFlagsPreset
+
+// Re-export for advanced usage
+export { boundaries } from './boundaries'
+export { rules } from './rules'
+```
+
+### Step 5: Add Tests
+
+Create `tests/preset.test.ts`:
+
+```typescript title="tests/preset.test.ts"
+import { describe, it, expect } from 'vitest'
+import { featureFlagsPreset } from '../src'
+
+describe('Feature Flags Preset', () => {
+  it('exports a valid preset', () => {
+    expect(featureFlagsPreset).toBeDefined()
+    expect(featureFlagsPreset.id).toBe('@my-company/stricture-feature-flags')
+    expect(featureFlagsPreset.boundaries).toHaveLength(4)
+    expect(featureFlagsPreset.rules.length).toBeGreaterThan(0)
+  })
+
+  it('defines all required boundaries', () => {
+    const boundaryNames = featureFlagsPreset.boundaries.map(b => b.name)
+    expect(boundaryNames).toContain('flags')
+    expect(boundaryNames).toContain('providers')
+    expect(boundaryNames).toContain('consumers')
+    expect(boundaryNames).toContain('admin')
+  })
+
+  it('has rules for flag isolation', () => {
+    const flagIsolationRule = featureFlagsPreset.rules.find(
+      r => r.id === 'flags-isolation'
+    )
+    expect(flagIsolationRule).toBeDefined()
+    expect(flagIsolationRule?.allowed).toBe(false)
+  })
+
+  it('prevents consumers from importing providers', () => {
+    const rule = featureFlagsPreset.rules.find(
+      r => r.id === 'consumers-not-providers'
+    )
+    expect(rule).toBeDefined()
+    expect(rule?.allowed).toBe(false)
+    expect(rule?.message).toContain('facade')
+  })
+})
+```
+
+Run tests:
+
+```bash
+npm test
+```
+
+### Step 6: Build the Package
+
+```bash
+npm run build
+```
+
+This creates:
+- `dist/index.js` - ESM build
+- `dist/index.cjs` - CommonJS build
+- `dist/index.d.ts` - TypeScript definitions
+
+## Publishing Your Preset
+
+### Option 1: Publish to npm
+
+For public or scoped npm packages:
+
+```bash
+# Login to npm
+npm login
+
+# Publish (first time)
+npm publish --access public
+
+# Or for scoped packages
+npm publish
+```
+
+### Option 2: Share Internally in Monorepo
+
+For internal company presets, keep it in your monorepo:
+
+```
+my-monorepo/
+├── packages/
+│   ├── stricture-presets/
+│   │   └── feature-flags/
+│   │       ├── src/
+│   │       └── package.json         # @my-company/stricture-feature-flags
+│   ├── api/
+│   │   └── .stricture/
+│   │       └── config.json          # Uses: "@my-company/stricture-feature-flags"
+│   └── web/
+│       └── .stricture/
+│           └── config.json
+└── package.json
+```
+
+In workspace `package.json`:
+
+```json
+{
+  "name": "@my-company/stricture-feature-flags",
+  "version": "1.0.0",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts"
+}
+```
+
+Other packages reference it as a workspace dependency:
+
+```json title="packages/api/package.json"
+{
+  "devDependencies": {
+    "@my-company/stricture-feature-flags": "workspace:*"
+  }
+}
+```
+
+### Option 3: Private npm Registry
+
+For company-wide distribution via private registry:
+
+```json title="package.json"
+{
+  "publishConfig": {
+    "registry": "https://npm.mycompany.com"
+  }
+}
+```
+
+```bash
+npm publish
+```
+
+## Using Your Custom Preset
+
+After publishing/installing, use it like any other preset:
+
+```json title=".stricture/config.json"
+{
+  "preset": "@my-company/stricture-feature-flags"
+}
+```
+
+Or with customization:
+
+```json title=".stricture/config.json"
+{
+  "preset": "@my-company/stricture-feature-flags",
+  "boundaries": [
+    {
+      "name": "experiments",
+      "pattern": "src/experiments/**",
+      "mode": "file",
+      "tags": ["consumers"]
+    }
+  ],
+  "rules": [
+    {
+      "id": "experiments-to-flags",
+      "from": { "tag": "experiments" },
+      "to": { "tag": "flags" },
+      "allowed": true
+    }
+  ]
+}
+```
+
+## Adding Documentation
+
+Create a comprehensive README:
+
+```markdown title="README.md"
+# Feature Flags Architecture Preset
+
+Stricture preset for enforcing clean feature flag patterns.
+
+## Installation
+
+\`\`\`bash
+npm install -D @my-company/stricture-feature-flags
+\`\`\`
+
+## Usage
+
+\`\`\`json
+{
+  "preset": "@my-company/stricture-feature-flags"
+}
+\`\`\`
+
+## Architecture
+
+[Diagram and explanation of your architecture]
+
+## Boundaries
+
+- **flags/** - Pure flag definitions
+- **providers/** - Flag evaluation logic
+- **consumers/** - Application code using flags
+- **admin/** - Management UI
+
+## Rules
+
+[List key rules and rationale]
+
+## Examples
+
+[Code examples of correct usage]
+```
+
+## Advanced Features
+
+### Adding Mermaid Diagrams
+
+Create `src/diagram.ts`:
+
+```typescript title="src/diagram.ts"
+export const diagram = `
+%%{init: {'theme':'base', 'themeVariables': {
+  'primaryColor':'#b3d9ff',
+  'primaryBorderColor':'#1976d2',
+  'secondaryColor':'#b3ffcc',
+  'secondaryBorderColor':'#2e7d32'
+}}}%%
+graph TB
+    subgraph Consumers["📁 Consumers<br/><i>App Code</i>"]
+        Features["Features"]
+        Pages["Pages"]
+    end
+
+    subgraph Core["Core"]
+        Flags["📁 Flags<br/><i>Definitions</i>"]
+        Providers["📁 Providers<br/><i>Evaluation</i>"]
+    end
+
+    subgraph Admin["📁 Admin<br/><i>Management UI</i>"]
+        UI["Admin UI"]
+    end
+
+    Features --> Flags
+    Pages --> Flags
+    Providers --> Flags
+    UI --> Flags
+    UI --> Providers
+
+    style Consumers fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
+    style Core fill:#f1f8e9,stroke:#2e7d32,stroke-width:2px
+    style Admin fill:#fff3e0,stroke:#f57c00,stroke-width:2px
+    linkStyle default stroke:#22c55e,stroke-width:2px
+`
+```
+
+Export from `index.ts`:
+
+```typescript
+import { diagram } from './diagram'
+
+export const featureFlagsPreset: ArchPreset = {
+  // ...
+  diagram
+}
+```
+
+### Adding CLI Scaffolding
+
+Create `src/scaffolding.ts`:
+
+```typescript title="src/scaffolding.ts"
+export const scaffolding = {
+  directories: [
+    { path: 'src/flags', description: 'Flag definitions' },
+    { path: 'src/providers', description: 'Flag evaluation providers' },
+    { path: 'src/features', description: 'Application features' },
+    { path: 'src/admin', description: 'Management UI' }
+  ],
+  files: [
+    {
+      path: 'src/flags/index.ts',
+      content: `// Feature flag definitions
+export const MY_FEATURE = 'my-feature' as const
+
+export type FeatureFlags = {
+  [MY_FEATURE]: boolean
+}
+`
+    },
+    {
+      path: 'src/providers/provider.ts',
+      content: `import type { FeatureFlags } from '../flags'
+
+export interface FlagProvider {
+  evaluate<K extends keyof FeatureFlags>(flag: K): Promise<FeatureFlags[K]>
+}
+`
+    }
+  ]
+}
+```
+
+Users can scaffold with:
+
+```bash
+npx stricture scaffold
+```
+
+## Testing Your Preset
+
+### Integration Tests
+
+Test your preset with real violations:
+
+```typescript title="tests/integration.test.ts"
+import { describe, it, expect } from 'vitest'
+import { validateImport } from '@stricture/core'
+import { featureFlagsPreset } from '../src'
+
+describe('Feature Flags Preset - Integration', () => {
+  it('prevents consumers from importing providers', () => {
+    const result = validateImport(
+      '/project/src/features/checkout.ts',
+      '/project/src/providers/launchdarkly.ts',
+      featureFlagsPreset.rules,
+      featureFlagsPreset.boundaries
+    )
+
+    expect(result.allowed).toBe(false)
+    expect(result.message).toContain('facade')
+  })
+
+  it('allows consumers to import flags', () => {
+    const result = validateImport(
+      '/project/src/features/checkout.ts',
+      '/project/src/flags/index.ts',
+      featureFlagsPreset.rules,
+      featureFlagsPreset.boundaries
+    )
+
+    expect(result.allowed).toBe(true)
+  })
+
+  it('prevents flags from importing anything', () => {
+    const result = validateImport(
+      '/project/src/flags/index.ts',
+      '/project/node_modules/axios/index.js',
+      featureFlagsPreset.rules,
+      featureFlagsPreset.boundaries
+    )
+
+    expect(result.allowed).toBe(false)
+    expect(result.message).toContain('pure data')
+  })
+})
+```
+
+### Manual Testing
+
+Create a test project:
+
+```bash
+mkdir test-project
+cd test-project
+npm init -y
+npm install -D @stricture/core @stricture/eslint-plugin
+npm install -D ../stricture-feature-flags  # Local link
+```
+
+Create `.stricture/config.json`:
+
+```json
+{
+  "preset": "@my-company/stricture-feature-flags"
+}
+```
+
+Add some test files with violations and verify ESLint catches them.
+
+## Best Practices
+
+### Do's
+
+- ✅ **Write comprehensive rules** - Cover all legitimate imports with `allowed: true` rules
+- ✅ **Provide helpful error messages** - Explain WHY and HOW to fix violations
+- ✅ **Include examples** - Show good and bad patterns in rule definitions
+- ✅ **Test thoroughly** - Write integration tests for common scenarios
+- ✅ **Document well** - Clear README with architecture diagram
+- ✅ **Use flexible patterns** - `{features,modules}/**` to work with different structures
+- ✅ **Version semantically** - Follow semver for breaking changes
+
+### Don'ts
+
+- ❌ **Don't put validation logic in presets** - Presets are pure data
+- ❌ **Don't import from core validation** - Only import types
+- ❌ **Don't rely on rule order** - Specificity determines precedence
+- ❌ **Don't use generic boundaries** - Be specific (e.g., `driving` vs `driven`, not just `adapters`)
+- ❌ **Don't over-restrict** - Allow necessary imports, rely on deny-by-default for unexpected ones
+
+## Versioning and Maintenance
+
+### Semantic Versioning
+
+- **Major (2.0.0)** - Breaking changes to boundaries or rules
+  - Removing boundaries
+  - Changing patterns that affect existing projects
+  - Removing rules that allowed imports
+- **Minor (1.1.0)** - New features, non-breaking additions
+  - Adding new boundaries
+  - Adding new rules
+  - Improving error messages
+- **Patch (1.0.1)** - Bug fixes, documentation
+  - Fixing incorrect rules
+  - Documentation improvements
+
+### Changelog
+
+Maintain a `CHANGELOG.md`:
+
+```markdown
+# Changelog
+
+## [1.1.0] - 2024-01-15
+
+### Added
+- New `experiments` boundary for A/B testing code
+- Rule allowing experiments to access providers
+
+### Changed
+- Improved error message for consumers-not-providers rule
+
+## [1.0.0] - 2024-01-01
+
+Initial release
+```
+
+## Sharing and Contributing
+
+### Contributing to Stricture
+
+If your preset could benefit the community:
+
+1. Open an issue on [Stricture GitHub](https://github.com/stricture-dev/stricture)
+2. Discuss the architecture pattern
+3. Submit a PR with your preset in `packages/`
+
+### Publishing a Blog Post
+
+Share your preset with the community:
+
+- Write about the architecture pattern
+- Explain why this pattern works
+- Share real-world examples
+- Link to your preset package
+
+## Next Steps
+
+<CardGrid>
+  <Card title="Monorepo Setup" icon="module">
+    Learn how to share presets across a monorepo.
+    <a href="/guides/monorepos/">Monorepo guide →</a>
+  </Card>
+  <Card title="Troubleshooting" icon="warning">
+    Debug common issues with custom presets.
+    <a href="/guides/troubleshooting/">Troubleshoot →</a>
+  </Card>
+  <Card title="Core Concepts" icon="open-book">
+    Deep dive into boundaries, rules, and specificity.
+    <a href="/getting-started/concepts/">Learn concepts →</a>
+  </Card>
+  <Card title="Explore Presets" icon="puzzle">
+    Study existing presets for inspiration.
+    <a href="/presets/">Browse presets →</a>
+  </Card>
+</CardGrid>

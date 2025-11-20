@@ -1,0 +1,709 @@
+---
+title: Configuration File
+description: Complete reference for .stricture/config.json configuration file
+---
+
+import { Tabs, TabItem, Card, CardGrid, Aside } from '@astrojs/starlight/components';
+
+The `.stricture/config.json` file is where you define your architecture rules. This file controls how Stricture enforces boundaries in your codebase.
+
+## File Location
+
+Place your configuration at the root of your project:
+
+```
+my-project/
+├── .stricture/
+│   └── config.json        # Your Stricture configuration
+├── src/
+├── package.json
+└── ...
+```
+
+Stricture automatically discovers this file when running ESLint.
+
+## Configuration Schema
+
+Here's the complete configuration schema with all available options:
+
+```typescript
+interface StrictureConfig {
+  version?: string                    // Config version (default: '1')
+  preset: string                      // Base preset to use
+  extends?: string[]                  // Additional presets to merge
+  boundaries: BoundaryDefinition[]    // Boundary definitions
+  rules: ArchRule[]                   // Architecture rules
+  overrides?: Partial<ArchRule>[]     // Override preset rules
+  ignorePatterns?: string[]           // Global ignore patterns
+  metadata?: Record<string, unknown>  // Custom metadata
+}
+```
+
+## Basic Configurations
+
+### Preset-Only Configuration
+
+The simplest configuration uses a preset with no customizations:
+
+<Tabs>
+<TabItem label="Hexagonal">
+```json title=".stricture/config.json"
+{
+  "preset": "@stricture/hexagonal"
+}
+```
+</TabItem>
+<TabItem label="Layered">
+```json title=".stricture/config.json"
+{
+  "preset": "@stricture/layered"
+}
+```
+</TabItem>
+<TabItem label="Clean">
+```json title=".stricture/config.json"
+{
+  "preset": "@stricture/clean"
+}
+```
+</TabItem>
+<TabItem label="Next.js">
+```json title=".stricture/config.json"
+{
+  "preset": "@stricture/nextjs"
+}
+```
+</TabItem>
+</Tabs>
+
+<Aside type="tip" title="Start Simple">
+Use a preset as-is first. Add customizations only when you need them. Most projects work perfectly with preset defaults.
+</Aside>
+
+### Preset with Additional Boundaries
+
+Add custom boundaries while keeping preset rules:
+
+```json title=".stricture/config.json"
+{
+  "preset": "@stricture/hexagonal",
+  "boundaries": [
+    {
+      "name": "shared",
+      "pattern": "src/shared/**",
+      "mode": "file",
+      "tags": ["shared"],
+      "metadata": {
+        "description": "Shared utilities accessible from all layers"
+      }
+    }
+  ],
+  "rules": [
+    {
+      "id": "all-to-shared",
+      "name": "All Layers Can Use Shared",
+      "description": "Shared utilities are accessible everywhere",
+      "severity": "error",
+      "from": { "pattern": "**" },
+      "to": { "tag": "shared" },
+      "allowed": true
+    }
+  ]
+}
+```
+
+Your custom boundaries and rules are **merged** with the preset's definitions.
+
+### Preset with Overrides
+
+Override specific preset rules:
+
+```json title=".stricture/config.json"
+{
+  "preset": "@stricture/hexagonal",
+  "overrides": [
+    {
+      "id": "domain-isolation",
+      "severity": "warn"  // Change from error to warning
+    },
+    {
+      "id": "driving-independent",
+      "severity": "off"  // Disable this rule
+    }
+  ]
+}
+```
+
+<Aside type="caution">
+Overriding rules changes the architectural guarantees. Document why you're making exceptions.
+</Aside>
+
+## Advanced Configurations
+
+### Custom Configuration (No Preset)
+
+Build your architecture from scratch:
+
+```json title=".stricture/config.json"
+{
+  "boundaries": [
+    {
+      "name": "controllers",
+      "pattern": "src/controllers/**",
+      "mode": "file",
+      "tags": ["presentation"]
+    },
+    {
+      "name": "services",
+      "pattern": "src/services/**",
+      "mode": "file",
+      "tags": ["business"]
+    },
+    {
+      "name": "repositories",
+      "pattern": "src/repositories/**",
+      "mode": "file",
+      "tags": ["data"]
+    }
+  ],
+  "rules": [
+    {
+      "id": "controllers-to-services",
+      "name": "Controllers Call Services",
+      "description": "Presentation layer uses business layer",
+      "severity": "error",
+      "from": { "tag": "presentation" },
+      "to": { "tag": "business" },
+      "allowed": true
+    },
+    {
+      "id": "services-to-repositories",
+      "name": "Services Use Repositories",
+      "description": "Business layer uses data layer",
+      "severity": "error",
+      "from": { "tag": "business" },
+      "to": { "tag": "data" },
+      "allowed": true
+    },
+    {
+      "id": "no-upward-deps",
+      "name": "No Upward Dependencies",
+      "description": "Lower layers cannot depend on higher layers",
+      "severity": "error",
+      "from": { "tag": "data" },
+      "to": { "tag": "business" },
+      "allowed": false,
+      "message": "Data layer cannot import from business layer"
+    }
+  ]
+}
+```
+
+### Multiple Presets (Extends)
+
+Compose multiple presets:
+
+```json title=".stricture/config.json"
+{
+  "preset": "@stricture/hexagonal",
+  "extends": [
+    "@company/shared-rules",
+    "@company/security-rules"
+  ]
+}
+```
+
+Presets are merged in order:
+1. Base preset (`preset`)
+2. Extended presets (`extends` array, in order)
+3. Your custom boundaries and rules
+4. Overrides
+
+### Ignore Patterns
+
+Exclude files from architecture validation:
+
+```json title=".stricture/config.json"
+{
+  "preset": "@stricture/hexagonal",
+  "ignorePatterns": [
+    "**/*.test.ts",
+    "**/*.spec.ts",
+    "**/mocks/**",
+    "**/test-utils/**",
+    "**/__tests__/**"
+  ]
+}
+```
+
+Common patterns to ignore:
+- Test files
+- Mock implementations
+- Build output
+- Configuration files
+- Migration scripts
+
+## Configuration Properties
+
+### `version`
+
+**Type:** `string` (optional)
+**Default:** `"1"`
+
+Configuration schema version. Reserved for future breaking changes.
+
+```json
+{
+  "version": "1",
+  "preset": "@stricture/hexagonal"
+}
+```
+
+### `preset`
+
+**Type:** `string`
+**Required**
+
+The base architecture preset to use. See [available presets](/presets/).
+
+```json
+{
+  "preset": "@stricture/hexagonal"
+}
+```
+
+Available official presets:
+- `@stricture/hexagonal` - Ports & Adapters
+- `@stricture/layered` - N-Tier Architecture
+- `@stricture/clean` - Clean Architecture
+- `@stricture/modular` - Feature Modules
+- `@stricture/nextjs` - Next.js App Router
+- `@stricture/nestjs` - NestJS Modules
+
+### `extends`
+
+**Type:** `string[]` (optional)
+
+Additional presets to merge. Useful for:
+- Organizational shared rules
+- Security policies
+- Team standards
+- Framework conventions
+
+```json
+{
+  "preset": "@stricture/hexagonal",
+  "extends": [
+    "@mycompany/architecture-standards",
+    "@mycompany/security-rules"
+  ]
+}
+```
+
+### `boundaries`
+
+**Type:** `BoundaryDefinition[]`
+
+Define architectural boundaries. See [Boundaries Reference](/configuration/boundaries/).
+
+```json
+{
+  "boundaries": [
+    {
+      "name": "domain",
+      "pattern": "src/domain/**",
+      "mode": "file",
+      "tags": ["domain"]
+    }
+  ]
+}
+```
+
+### `rules`
+
+**Type:** `ArchRule[]`
+
+Define architecture enforcement rules. See [Rules Reference](/configuration/rules/).
+
+```json
+{
+  "rules": [
+    {
+      "id": "domain-isolation",
+      "name": "Domain Isolation",
+      "description": "Domain must be pure",
+      "severity": "error",
+      "from": { "tag": "domain" },
+      "to": { "tag": "*" },
+      "allowed": false
+    }
+  ]
+}
+```
+
+### `overrides`
+
+**Type:** `Partial<ArchRule>[]` (optional)
+
+Override specific rules from presets. Only include properties you want to change:
+
+```json
+{
+  "preset": "@stricture/hexagonal",
+  "overrides": [
+    {
+      "id": "domain-isolation",
+      "severity": "warn",
+      "message": "Custom warning message"
+    }
+  ]
+}
+```
+
+Common override scenarios:
+- Change severity (`error` → `warn` → `off`)
+- Customize error messages
+- Disable specific rules temporarily
+
+### `ignorePatterns`
+
+**Type:** `string[]` (optional)
+
+Glob patterns for files to exclude from validation:
+
+```json
+{
+  "ignorePatterns": [
+    "**/*.test.ts",
+    "**/*.spec.ts",
+    "**/generated/**",
+    "**/__mocks__/**"
+  ]
+}
+```
+
+### `metadata`
+
+**Type:** `Record<string, unknown>` (optional)
+
+Custom metadata for documentation or tooling:
+
+```json
+{
+  "preset": "@stricture/hexagonal",
+  "metadata": {
+    "author": "Architecture Team",
+    "lastReview": "2024-01-15",
+    "documentation": "https://wiki.company.com/architecture",
+    "contacts": ["arch-team@company.com"]
+  }
+}
+```
+
+## TypeScript Configuration
+
+For type-safety and IntelliSense, you can use TypeScript instead of JSON:
+
+```typescript title=".stricture/config.ts"
+import type { StrictureConfig } from '@stricture/core'
+
+export default {
+  preset: '@stricture/hexagonal',
+  boundaries: [
+    {
+      name: 'shared',
+      pattern: 'src/shared/**',
+      mode: 'file',
+      tags: ['shared']
+    }
+  ],
+  rules: [
+    {
+      id: 'all-to-shared',
+      name: 'All Can Use Shared',
+      description: 'Shared utilities accessible everywhere',
+      severity: 'error',
+      from: { pattern: '**' },
+      to: { tag: 'shared' },
+      allowed: true
+    }
+  ]
+} satisfies StrictureConfig
+```
+
+<Aside type="note">
+TypeScript config support requires `@stricture/core` version 1.2.0 or higher.
+</Aside>
+
+## Configuration Validation
+
+Stricture validates your configuration on load. Common validation errors:
+
+### Missing Required Fields
+
+```json
+{
+  "boundaries": [
+    {
+      "name": "domain"
+      // ❌ Missing: pattern, mode
+    }
+  ]
+}
+```
+
+**Error:** `BoundaryDefinition must have 'pattern' and 'mode' properties`
+
+### Invalid Severity
+
+```json
+{
+  "rules": [
+    {
+      "severity": "critical"  // ❌ Invalid value
+    }
+  ]
+}
+```
+
+**Error:** `Severity must be 'error', 'warn', or 'off'`
+
+### Invalid Pattern
+
+```json
+{
+  "boundaries": [
+    {
+      "name": "domain",
+      "pattern": "src/domain/[invalid",  // ❌ Malformed glob
+      "mode": "file"
+    }
+  ]
+}
+```
+
+**Error:** `Invalid glob pattern: unclosed bracket`
+
+## Configuration Examples
+
+### Monorepo Configuration
+
+```json title=".stricture/config.json"
+{
+  "preset": "@stricture/hexagonal",
+  "boundaries": [
+    {
+      "name": "shared-kernel",
+      "pattern": "packages/shared/**",
+      "mode": "file",
+      "tags": ["shared"]
+    },
+    {
+      "name": "package-a-domain",
+      "pattern": "packages/package-a/src/domain/**",
+      "mode": "file",
+      "tags": ["domain", "package-a"]
+    },
+    {
+      "name": "package-b-domain",
+      "pattern": "packages/package-b/src/domain/**",
+      "mode": "file",
+      "tags": ["domain", "package-b"]
+    }
+  ],
+  "rules": [
+    {
+      "id": "all-to-shared-kernel",
+      "from": { "pattern": "**" },
+      "to": { "tag": "shared" },
+      "allowed": true
+    },
+    {
+      "id": "packages-isolated",
+      "name": "Packages Are Isolated",
+      "description": "package-a cannot import package-b",
+      "severity": "error",
+      "from": { "tag": "package-a" },
+      "to": { "tag": "package-b" },
+      "allowed": false,
+      "message": "Packages must be independent. Use shared-kernel for common code."
+    }
+  ]
+}
+```
+
+### Framework-Specific Configuration
+
+```json title=".stricture/config.json"
+{
+  "preset": "@stricture/nextjs",
+  "boundaries": [
+    {
+      "name": "server-components",
+      "pattern": "app/**/page.tsx",
+      "mode": "file",
+      "tags": ["server", "react"]
+    },
+    {
+      "name": "client-components",
+      "pattern": "app/**/*.client.tsx",
+      "mode": "file",
+      "tags": ["client", "react"]
+    },
+    {
+      "name": "server-actions",
+      "pattern": "app/**/actions.ts",
+      "mode": "file",
+      "tags": ["server", "actions"]
+    }
+  ],
+  "rules": [
+    {
+      "id": "server-components-no-client-only",
+      "name": "Server Components Cannot Use Client-Only Code",
+      "severity": "error",
+      "from": { "tag": "server" },
+      "to": { "pattern": "node_modules/{react-dom/client,zustand}/**" },
+      "allowed": false,
+      "message": "Server Components cannot use client-only packages. Mark component with 'use client' directive."
+    }
+  ]
+}
+```
+
+## Best Practices
+
+### Start with a Preset
+
+<Card title="Use Official Presets" icon="star">
+Official presets encode best practices. Start with one that matches your architecture.
+</Card>
+
+### Keep Configuration Simple
+
+```json
+// ✅ GOOD - Simple and clear
+{
+  "preset": "@stricture/hexagonal"
+}
+
+// ❌ AVOID - Over-engineered
+{
+  "preset": "@stricture/hexagonal",
+  "boundaries": [ /* 20+ custom boundaries */ ],
+  "rules": [ /* 50+ custom rules */ ]
+}
+```
+
+### Document Custom Rules
+
+```json
+{
+  "rules": [
+    {
+      "id": "legacy-isolation",
+      "name": "Legacy Code Isolated",
+      "description": "TEMPORARY: Legacy code in src/legacy/ cannot be imported by new code. Will be removed in Q3 2024.",
+      "severity": "error",
+      "from": { "pattern": "src/**", "exclude": ["src/legacy/**"] },
+      "to": { "pattern": "src/legacy/**" },
+      "allowed": false,
+      "message": "Don't depend on legacy code. Refactor or duplicate needed logic."
+    }
+  ]
+}
+```
+
+### Version Control
+
+Commit `.stricture/config.json` to version control:
+
+```gitignore
+# ✅ Include Stricture config
+.stricture/config.json
+
+# ❌ Don't ignore it
+```
+
+### Gradual Adoption
+
+When adding to existing codebase:
+
+```json
+{
+  "preset": "@stricture/hexagonal",
+  "overrides": [
+    // Start with warnings
+    {
+      "id": "domain-isolation",
+      "severity": "warn"
+    }
+  ],
+  "ignorePatterns": [
+    // Exclude legacy code
+    "src/legacy/**"
+  ]
+}
+```
+
+Gradually tighten rules as you refactor.
+
+## Troubleshooting
+
+### Configuration Not Found
+
+**Error:** `Could not find .stricture/config.json`
+
+**Solution:** Create `.stricture/config.json` at project root (where `package.json` is).
+
+### Preset Not Found
+
+**Error:** `Could not resolve preset '@stricture/hexagonal'`
+
+**Solution:** Install the preset package:
+
+```bash
+pnpm add -D @stricture/hexagonal
+```
+
+### Rules Not Applying
+
+**Problem:** ESLint not reporting violations
+
+**Checklist:**
+1. Is ESLint configured? (`.eslintrc.js` with `@stricture` plugin)
+2. Is the file matched by boundaries?
+3. Are rules sorted by specificity correctly?
+4. Is the file in `ignorePatterns`?
+
+Run with debug logging:
+
+```bash
+DEBUG=stricture:* eslint src/
+```
+
+### Conflicting Rules
+
+**Problem:** Rules seem to contradict each other
+
+**Solution:** Check rule specificity. More specific rules override general ones. See [Rules Reference](/configuration/rules/#rule-specificity).
+
+## Next Steps
+
+<CardGrid>
+  <Card title="Boundaries Reference" icon="puzzle">
+    Learn how to define architectural boundaries.
+
+    [Read guide →](/configuration/boundaries/)
+  </Card>
+  <Card title="Rules Reference" icon="star">
+    Master architecture enforcement rules.
+
+    [Read guide →](/configuration/rules/)
+  </Card>
+  <Card title="Presets Reference" icon="open-book">
+    Explore and extend presets.
+
+    [Read guide →](/configuration/presets/)
+  </Card>
+</CardGrid>

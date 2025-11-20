@@ -1,0 +1,1233 @@
+---
+title: Troubleshooting
+description: Common issues and solutions when using Stricture
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+# Troubleshooting
+
+Solutions to common issues when using Stricture. Each issue includes symptoms, cause, and step-by-step solutions.
+
+## Quick Diagnosis
+
+<CardGrid>
+  <Card title="Not Running" icon="error">
+    ESLint runs but no Stricture violations appear
+  </Card>
+  <Card title="Config Issues" icon="setting">
+    Config file not found or invalid
+  </Card>
+  <Card title="Pattern Problems" icon="puzzle">
+    Rules not matching expected files
+  </Card>
+  <Card title="Performance" icon="rocket">
+    Linting is very slow with Stricture
+  </Card>
+</CardGrid>
+
+## ESLint Not Running Stricture Rule
+
+### Symptom
+
+ESLint runs successfully but never reports Stricture violations, even when violations exist.
+
+```bash
+$ npx eslint .
+✨ Done in 1.23s  # No errors, but violations should exist
+```
+
+### Diagnosis
+
+Check if the rule is enabled:
+
+```bash
+# Check ESLint config
+npx eslint --print-config src/index.ts | grep stricture
+```
+
+If you see nothing, the rule isn't enabled.
+
+### Causes & Solutions
+
+#### Cause 1: Rule Not Enabled
+
+**Solution:** Add rule to ESLint config
+
+<Tabs>
+  <TabItem label="Flat Config">
+    ```js title="eslint.config.js"
+    import stricture from '@stricture/eslint-plugin';
+
+    export default [
+      {
+        plugins: {
+          '@stricture': stricture
+        },
+        rules: {
+          '@stricture/enforce-boundaries': 'error'  // ← Add this
+        }
+      }
+    ];
+    ```
+  </TabItem>
+  <TabItem label="Legacy Config">
+    ```js title=".eslintrc.js"
+    module.exports = {
+      plugins: ['@stricture'],
+      rules: {
+        '@stricture/enforce-boundaries': 'error'  // ← Add this
+      }
+    };
+    ```
+  </TabItem>
+</Tabs>
+
+#### Cause 2: Plugin Not Installed
+
+**Solution:** Install the plugin
+
+```bash
+npm install -D @stricture/eslint-plugin
+
+# Verify installation
+npm list @stricture/eslint-plugin
+```
+
+#### Cause 3: Wrong File Extensions
+
+ESLint might not be checking TypeScript files.
+
+**Solution:** Ensure ESLint processes `.ts` and `.tsx` files
+
+```bash
+# ✅ Correct
+npx eslint . --ext .ts,.tsx
+
+# ❌ Wrong (only .js)
+npx eslint .
+```
+
+Or in ESLint config:
+
+```js title="eslint.config.js"
+export default [
+  {
+    files: ['**/*.ts', '**/*.tsx'],  // ← Specify file patterns
+    // ...
+  }
+];
+```
+
+#### Cause 4: Files Not Included
+
+Check if files are excluded:
+
+```js title=".eslintignore"
+# Make sure these don't exclude your source files
+node_modules/
+dist/
+# src/  ← Should NOT be here!
+```
+
+### Verification
+
+After fixing, verify the rule runs:
+
+```bash
+# Should show violations
+npx eslint src/ --rule '@stricture/enforce-boundaries: error'
+
+# Debug mode
+npx eslint src/ --debug 2>&1 | grep stricture
+```
+
+---
+
+## Config File Not Found
+
+### Symptom
+
+```
+Error: No Stricture config found at .stricture/config.json
+  at loadConfig (node_modules/@stricture/eslint-plugin/dist/load-config.js:23)
+```
+
+### Diagnosis
+
+Check config file location:
+
+```bash
+ls -la .stricture/config.json
+```
+
+### Causes & Solutions
+
+#### Cause 1: Config in Wrong Location
+
+The config must be in your **project root** (where `package.json` is).
+
+**Solution:** Move config to project root
+
+```bash
+# ❌ Wrong locations
+src/.stricture/config.json
+packages/.stricture/config.json
+
+# ✅ Correct location
+.stricture/config.json  # Same level as package.json
+```
+
+For monorepos, each package needs its own config:
+
+```bash
+# Monorepo structure
+packages/api/.stricture/config.json     # ✅ API package root
+packages/web/.stricture/config.json     # ✅ Web package root
+.stricture/config.json                  # ❌ Not used
+```
+
+#### Cause 2: Directory Not Created
+
+**Solution:** Create the directory
+
+```bash
+mkdir -p .stricture
+echo '{"preset":"@stricture/hexagonal"}' > .stricture/config.json
+```
+
+#### Cause 3: File Permissions
+
+**Solution:** Fix file permissions
+
+```bash
+# Check permissions
+ls -la .stricture/config.json
+
+# Fix if needed
+chmod 644 .stricture/config.json
+```
+
+#### Cause 4: Case Sensitivity
+
+On case-sensitive filesystems (Linux), the folder name must be exactly `.stricture`:
+
+```bash
+# ❌ Wrong
+.Stricture/config.json
+.STRICTURE/config.json
+
+# ✅ Correct
+.stricture/config.json
+```
+
+### Verification
+
+```bash
+# Should show config contents
+cat .stricture/config.json
+
+# Test config loads
+npx eslint src/index.ts --rule '@stricture/enforce-boundaries: error'
+```
+
+---
+
+## Invalid Config JSON
+
+### Symptom
+
+```
+Error: Invalid Stricture configuration
+  SyntaxError: Unexpected token } in JSON at position 45
+```
+
+### Diagnosis
+
+Validate JSON syntax:
+
+```bash
+# Use jq to validate
+cat .stricture/config.json | jq .
+
+# Or use Node
+node -e "console.log(JSON.parse(require('fs').readFileSync('.stricture/config.json')))"
+```
+
+### Common JSON Errors
+
+#### Error 1: Trailing Comma
+
+```json
+// ❌ Wrong
+{
+  "preset": "@stricture/hexagonal",  // ← Trailing comma
+}
+
+// ✅ Correct
+{
+  "preset": "@stricture/hexagonal"
+}
+```
+
+#### Error 2: Comments in JSON
+
+```json
+// ❌ Wrong - JSON doesn't support comments
+{
+  // This is my config
+  "preset": "@stricture/hexagonal"
+}
+
+// ✅ Correct - No comments
+{
+  "preset": "@stricture/hexagonal"
+}
+```
+
+#### Error 3: Unquoted Keys
+
+```json
+// ❌ Wrong
+{
+  preset: "@stricture/hexagonal"
+}
+
+// ✅ Correct
+{
+  "preset": "@stricture/hexagonal"
+}
+```
+
+#### Error 4: Single Quotes
+
+```json
+// ❌ Wrong
+{
+  'preset': '@stricture/hexagonal'
+}
+
+// ✅ Correct
+{
+  "preset": "@stricture/hexagonal"
+}
+```
+
+### Solution
+
+Use a JSON validator:
+
+```bash
+# Install jsonlint
+npm install -g jsonlint
+
+# Validate
+jsonlint .stricture/config.json
+```
+
+Or use an IDE with JSON validation (VS Code, WebStorm).
+
+---
+
+## Preset Not Found
+
+### Symptom
+
+```
+Error: Preset '@stricture/hexagonal' not found
+  at loadPreset (node_modules/@stricture/eslint-plugin/dist/load-config.js:45)
+```
+
+### Diagnosis
+
+Check if preset is installed:
+
+```bash
+npm list @stricture/hexagonal
+```
+
+### Causes & Solutions
+
+#### Cause 1: Preset Not Installed
+
+**Solution:** Install the preset package
+
+```bash
+npm install -D @stricture/hexagonal
+
+# Verify
+npm list @stricture/hexagonal
+```
+
+#### Cause 2: Wrong Preset Name
+
+**Solution:** Check available presets
+
+```bash
+# Official presets
+npm search @stricture
+
+# Install correct one
+npm install -D @stricture/layered
+```
+
+Update config:
+
+```json title=".stricture/config.json"
+{
+  "preset": "@stricture/layered"  // ← Correct name
+}
+```
+
+#### Cause 3: Workspace Dependency Not Built
+
+In monorepos, workspace presets must be built first.
+
+**Solution:** Build preset package
+
+```bash
+cd packages/stricture-config
+npm run build
+
+cd ../api
+npm run lint  # Now works
+```
+
+#### Cause 4: Node Modules Not Installed
+
+**Solution:** Install dependencies
+
+```bash
+# Clean install
+rm -rf node_modules package-lock.json
+npm install
+
+# Or with pnpm
+pnpm install --force
+```
+
+### Verification
+
+```bash
+# Check preset exports
+node -e "console.log(require('@stricture/hexagonal'))"
+
+# Should show preset object
+```
+
+---
+
+## Rules Not Matching Files
+
+### Symptom
+
+You expect violations but none are reported, even though imports violate your rules.
+
+```typescript
+// src/domain/user.ts
+import { Database } from '../infrastructure/database'  // Should violate!
+// But no error appears
+```
+
+### Diagnosis
+
+Add debug logging:
+
+```bash
+# Check which boundaries match your file
+npx eslint src/domain/user.ts --debug 2>&1 | grep -i boundary
+```
+
+### Causes & Solutions
+
+#### Cause 1: Pattern Doesn't Match
+
+Your boundary pattern might not match the file path.
+
+**Diagnosis:**
+
+```json title=".stricture/config.json"
+{
+  "boundaries": [
+    {
+      "name": "domain",
+      "pattern": "domain/**",  // ← Missing src/
+      "tags": ["domain"]
+    }
+  ]
+}
+```
+
+**Solution:** Fix pattern to match actual structure
+
+```json
+{
+  "boundaries": [
+    {
+      "name": "domain",
+      "pattern": "src/domain/**",  // ✅ Include src/
+      "tags": ["domain"]
+    }
+  ]
+}
+```
+
+Test patterns:
+
+```bash
+# Install globby for testing
+npm install -g globby-cli
+
+# Test pattern
+globby 'src/domain/**' --cwd .
+```
+
+#### Cause 2: Mode Mismatch
+
+Using `folder` mode when you need `file` mode (or vice versa).
+
+```json
+// ❌ Wrong - folder mode doesn't match individual files
+{
+  "name": "domain",
+  "pattern": "src/domain/**",
+  "mode": "folder"  // ← Wrong mode
+}
+
+// ✅ Correct - file mode matches individual files
+{
+  "name": "domain",
+  "pattern": "src/domain/**",
+  "mode": "file"
+}
+```
+
+**Rule of thumb:** Use `"mode": "file"` for most cases.
+
+#### Cause 3: No Rule Defined
+
+You defined boundaries but no rules.
+
+**Solution:** Add rules that use those boundaries
+
+```json
+{
+  "boundaries": [ /* ... */ ],
+  "rules": [
+    {
+      "id": "domain-isolation",
+      "from": { "tag": "domain" },
+      "to": { "tag": "*" },
+      "allowed": false,
+      "message": "Domain must be isolated"
+    }
+  ]
+}
+```
+
+#### Cause 4: Rule Too Specific
+
+Your rule doesn't match the actual import.
+
+```json
+// ❌ Wrong - too specific
+{
+  "from": { "pattern": "src/domain/user.ts" },  // Only matches user.ts
+  "to": { "tag": "infrastructure" }
+}
+
+// ✅ Correct - uses tag
+{
+  "from": { "tag": "domain" },  // Matches all domain files
+  "to": { "tag": "infrastructure" }
+}
+```
+
+#### Cause 5: Specificity Override
+
+A more specific rule is overriding your expected rule.
+
+**Diagnosis:** Check rule specificity
+
+```json
+{
+  "rules": [
+    // This is more specific (pattern-based, score: 10000+)
+    {
+      "id": "allow-specific",
+      "from": { "pattern": "src/domain/user.ts" },
+      "to": { "tag": "infrastructure" },
+      "allowed": true  // ← This wins!
+    },
+    // This is less specific (tag-based, score: 101)
+    {
+      "id": "domain-isolation",
+      "from": { "tag": "domain" },
+      "to": { "tag": "*" },
+      "allowed": false  // ← This loses
+    }
+  ]
+}
+```
+
+**Solution:** Remove or adjust the more specific rule.
+
+### Verification
+
+Create a test file that should violate:
+
+```typescript title="src/domain/test-violation.ts"
+// This import should be caught
+import { Database } from '../infrastructure/database'
+```
+
+```bash
+npx eslint src/domain/test-violation.ts
+```
+
+If no error, your rules need adjustment.
+
+---
+
+## Pattern Not Working as Expected
+
+### Symptom
+
+Your glob pattern doesn't match the files you expect.
+
+### Common Pattern Issues
+
+#### Issue 1: Glob Syntax Errors
+
+```json
+// ❌ Wrong - regex syntax in glob
+{
+  "pattern": "src/domain/.*\\.ts"
+}
+
+// ✅ Correct - glob syntax
+{
+  "pattern": "src/domain/**/*.ts"
+}
+```
+
+#### Issue 2: Missing Globstar
+
+```json
+// ❌ Wrong - only matches immediate children
+{
+  "pattern": "src/domain/*"
+}
+
+// ✅ Correct - matches all descendants
+{
+  "pattern": "src/domain/**"
+}
+```
+
+#### Issue 3: File Extension Issues
+
+```json
+// ❌ Wrong - missing .ts files
+{
+  "pattern": "src/domain/**/*.tsx"  // Only .tsx
+}
+
+// ✅ Correct - both extensions
+{
+  "pattern": "src/domain/**/*.{ts,tsx}"
+}
+```
+
+#### Issue 4: Absolute vs Relative Paths
+
+Patterns are relative to project root (where `.stricture/config.json` is).
+
+```json
+// ❌ Wrong - absolute path
+{
+  "pattern": "/Users/me/project/src/domain/**"
+}
+
+// ✅ Correct - relative to project root
+{
+  "pattern": "src/domain/**"
+}
+```
+
+### Testing Patterns
+
+Use globby to test:
+
+```bash
+npm install -g globby-cli
+
+# Test your pattern
+globby 'src/{domain,application}/**/*.{ts,tsx}' --cwd .
+```
+
+Or in Node:
+
+```javascript
+const { globbySync } = require('globby');
+const matches = globbySync('src/domain/**', { cwd: process.cwd() });
+console.log(matches);
+```
+
+---
+
+## TypeScript Path Aliases Not Resolving
+
+### Symptom
+
+Stricture doesn't recognize TypeScript path aliases:
+
+```typescript
+// This import should violate but doesn't
+import { User } from '@/domain/user'  // Using alias
+```
+
+### Diagnosis
+
+Check if `tsconfig.json` is found:
+
+```bash
+# Should show paths configuration
+cat tsconfig.json | grep -A 5 paths
+```
+
+### Causes & Solutions
+
+#### Cause 1: tsconfig.json Not in Project Root
+
+**Solution:** Ensure `tsconfig.json` is in the same directory as `.stricture/config.json`
+
+```
+project/
+├── .stricture/config.json
+├── tsconfig.json          # ✅ Same level
+├── src/
+│   └── tsconfig.json      # ❌ Not used
+```
+
+#### Cause 2: Incorrect Path Configuration
+
+**Solution:** Verify `baseUrl` and `paths`
+
+```json title="tsconfig.json"
+{
+  "compilerOptions": {
+    "baseUrl": ".",              // ← Must be set
+    "paths": {
+      "@/domain/*": ["src/domain/*"],    // ✅ Relative to baseUrl
+      "@/infrastructure/*": ["src/infrastructure/*"]
+    }
+  }
+}
+```
+
+#### Cause 3: Multiple tsconfig Files
+
+**Solution:** Specify which tsconfig to use
+
+```json title=".stricture/config.json"
+{
+  "preset": "@stricture/hexagonal",
+  "tsconfig": "./tsconfig.app.json"  // ← Custom tsconfig
+}
+```
+
+:::note[TSConfig Support]
+Custom `tsconfig` option is not yet implemented in v0.1. Stricture currently only reads `tsconfig.json` from project root.
+:::
+
+### Verification
+
+Test alias resolution:
+
+```typescript title="test-alias.ts"
+import { User } from '@/domain/user'
+import { Database } from '@/infrastructure/database'  // Should violate
+```
+
+```bash
+npx eslint test-alias.ts
+# Should show violation
+```
+
+---
+
+## Performance Issues
+
+### Symptom
+
+ESLint is very slow with Stricture enabled.
+
+```bash
+$ time npx eslint .
+✨ Done in 45.67s  # Very slow!
+```
+
+### Diagnosis
+
+Profile ESLint:
+
+```bash
+TIMING=1 npx eslint .
+```
+
+Look for `@stricture/enforce-boundaries` in timing output.
+
+### Causes & Solutions
+
+#### Cause 1: Too Many Files
+
+**Solution:** Exclude unnecessary files
+
+```js title=".eslintignore"
+# Exclude build artifacts
+dist/
+build/
+.next/
+
+# Exclude dependencies
+node_modules/
+
+# Exclude test fixtures
+**/__fixtures__/
+**/__mocks__/
+```
+
+#### Cause 2: Complex Patterns
+
+**Solution:** Simplify boundary patterns
+
+```json
+// ❌ Slow - many patterns
+{
+  "boundaries": [
+    { "pattern": "src/**/*.ts" },
+    { "pattern": "src/**/*.tsx" },
+    { "pattern": "src/**/*.js" },
+    { "pattern": "src/**/*.jsx" }
+  ]
+}
+
+// ✅ Fast - combined pattern
+{
+  "boundaries": [
+    { "pattern": "src/**/*.{ts,tsx,js,jsx}" }
+  ]
+}
+```
+
+#### Cause 3: No Caching
+
+**Solution:** Enable ESLint caching
+
+```bash
+# Enable cache
+npx eslint . --cache
+
+# Or in package.json
+{
+  "scripts": {
+    "lint": "eslint . --cache --cache-location .eslintcache"
+  }
+}
+```
+
+Add to `.gitignore`:
+
+```
+.eslintcache
+```
+
+#### Cause 4: Running on Too Many Files
+
+**Solution:** Use ESLint file patterns
+
+```bash
+# ❌ Slow - checks everything
+npx eslint .
+
+# ✅ Fast - only source files
+npx eslint src/
+
+# ✅ Faster - specific extensions
+npx eslint 'src/**/*.{ts,tsx}'
+```
+
+#### Cause 5: No Parallel Processing
+
+**Solution:** Use ESLint parallel processing (ESLint 9+)
+
+```bash
+# ESLint 9+
+npx eslint . --max-warnings 0
+
+# Or use tools like turbo/nx for monorepos
+turbo lint  # Parallel across packages
+```
+
+### Optimization Checklist
+
+- [ ] Enable ESLint cache (`--cache`)
+- [ ] Exclude unnecessary files (`.eslintignore`)
+- [ ] Use specific file patterns in `lint` script
+- [ ] Simplify boundary patterns
+- [ ] Use turbo/nx for monorepos
+- [ ] Upgrade to ESLint 9+ for performance improvements
+
+---
+
+## False Positives
+
+### Symptom
+
+Stricture reports violations for imports that should be allowed.
+
+### Diagnosis
+
+```bash
+# Check which rule is triggered
+npx eslint src/problematic-file.ts --format json | jq '.[] | .messages'
+```
+
+### Causes & Solutions
+
+#### Cause 1: Missing Allowed Rule
+
+**Solution:** Add explicit allow rule
+
+```json
+{
+  "rules": [
+    {
+      "id": "application-to-domain",
+      "from": { "tag": "application" },
+      "to": { "tag": "domain" },
+      "allowed": true  // ← Add this
+    }
+  ]
+}
+```
+
+Remember: Stricture is **deny-by-default**. You must explicitly allow legitimate imports.
+
+#### Cause 2: Boundary Misconfiguration
+
+A file might be matching the wrong boundary.
+
+**Diagnosis:**
+
+```typescript
+// src/shared/utils.ts
+// Is this "shared" or "domain"?
+```
+
+**Solution:** Be more specific with patterns
+
+```json
+{
+  "boundaries": [
+    {
+      "name": "domain",
+      "pattern": "src/core/domain/**",  // ← More specific
+      "tags": ["domain"]
+    },
+    {
+      "name": "shared",
+      "pattern": "src/shared/**",
+      "tags": ["shared"]
+    }
+  ]
+}
+```
+
+#### Cause 3: Test Files
+
+Test files often need to import anything.
+
+**Solution:** Exclude test files or create test boundary
+
+```json
+{
+  "boundaries": [
+    {
+      "name": "domain",
+      "pattern": "src/domain/**",
+      "exclude": ["**/*.test.ts", "**/*.spec.ts"],  // ← Exclude tests
+      "tags": ["domain"]
+    }
+  ]
+}
+```
+
+Or create a separate test boundary:
+
+```json
+{
+  "boundaries": [
+    {
+      "name": "tests",
+      "pattern": "**/*.{test,spec}.{ts,tsx}",
+      "tags": ["tests"]
+    }
+  ],
+  "rules": [
+    {
+      "id": "tests-can-import-anything",
+      "from": { "tag": "tests" },
+      "to": { "tag": "*" },
+      "allowed": true
+    }
+  ]
+}
+```
+
+### Verification
+
+After fixing, the false positive should disappear:
+
+```bash
+npx eslint src/problematic-file.ts
+# Should pass now
+```
+
+---
+
+## Error Messages Not Helpful
+
+### Symptom
+
+Violation errors don't explain how to fix the issue.
+
+```
+src/domain/user.ts
+  5:1  error  Import not allowed  @stricture/enforce-boundaries
+```
+
+### Solution
+
+Add custom messages to your rules:
+
+```json
+{
+  "rules": [
+    {
+      "id": "domain-isolation",
+      "from": { "tag": "domain" },
+      "to": { "tag": "*" },
+      "allowed": false,
+      "message": "Domain layer must be pure - no external dependencies. Move this logic to the application layer or define a port interface.",
+      "examples": {
+        "bad": [
+          "import { Database } from '../infrastructure/database'"
+        ],
+        "good": [
+          "// Define a port in core/ports/",
+          "export interface UserRepository { save(user: User): Promise<void> }",
+          "// Use the port in application layer"
+        ]
+      }
+    }
+  ]
+}
+```
+
+Now errors show helpful guidance:
+
+```
+src/domain/user.ts
+  5:1  error  Domain layer must be pure - no external dependencies.
+             Move this logic to the application layer or define a port interface.
+
+             Bad example:
+             import { Database } from '../infrastructure/database'
+
+             Good example:
+             // Define a port in core/ports/
+             export interface UserRepository { save(user: User): Promise<void> }
+
+             @stricture/enforce-boundaries
+```
+
+---
+
+## Violations in node_modules
+
+### Symptom
+
+Stricture reports violations in `node_modules/` files.
+
+```
+node_modules/some-library/index.js
+  10:1  error  Import not allowed  @stricture/enforce-boundaries
+```
+
+### Solution
+
+Exclude `node_modules` from ESLint:
+
+```js title=".eslintignore"
+node_modules/
+```
+
+Or in ESLint config:
+
+```js title="eslint.config.js"
+export default [
+  {
+    ignores: ['node_modules/**', 'dist/**']
+  },
+  // ... rest of config
+];
+```
+
+---
+
+## Monorepo: Config Not Found in Package
+
+### Symptom
+
+In a monorepo, package-specific config isn't found.
+
+```
+Error: No Stricture config found at packages/api/.stricture/config.json
+```
+
+### Solution
+
+Each package needs its own config:
+
+```bash
+# Create config for each package
+mkdir -p packages/api/.stricture
+echo '{"preset":"@stricture/hexagonal"}' > packages/api/.stricture/config.json
+
+mkdir -p packages/web/.stricture
+echo '{"preset":"@stricture/nextjs"}' > packages/web/.stricture/config.json
+```
+
+See the [Monorepo Guide](/guides/monorepos/) for detailed setup.
+
+---
+
+## Circular Dependency Not Detected
+
+### Symptom
+
+You have circular imports but Stricture doesn't report them.
+
+```typescript
+// user.ts
+import { Order } from './order'
+
+// order.ts
+import { User } from './user'  // Circular!
+```
+
+### Explanation
+
+Stricture enforces **architectural boundaries**, not circular dependencies directly. Circular imports are often prevented as a side effect of proper architecture.
+
+### Solution
+
+Use ESLint's `import/no-cycle` rule for explicit circular dependency detection:
+
+```bash
+npm install -D eslint-plugin-import
+```
+
+```js title="eslint.config.js"
+import importPlugin from 'eslint-plugin-import';
+
+export default [
+  {
+    plugins: {
+      import: importPlugin
+    },
+    rules: {
+      'import/no-cycle': 'error'  // Detect circular deps
+    }
+  }
+];
+```
+
+---
+
+## Getting More Help
+
+### Debug Mode
+
+Run ESLint with debug output:
+
+```bash
+DEBUG=eslint:* npx eslint src/ 2>&1 | grep stricture
+```
+
+### Check Versions
+
+Ensure compatible versions:
+
+```bash
+npm list @stricture/core @stricture/eslint-plugin eslint
+```
+
+**Compatible versions:**
+- ESLint: 8.x or 9.x
+- Node: 18.x or later
+- TypeScript: 4.5 or later
+
+### Minimal Reproduction
+
+Create a minimal reproduction:
+
+```bash
+mkdir stricture-debug
+cd stricture-debug
+npm init -y
+npm install -D @stricture/core @stricture/eslint-plugin eslint typescript
+
+# Create minimal config and test file
+# Report issue with this minimal reproduction
+```
+
+### Community Support
+
+- **GitHub Issues:** [github.com/stricture-dev/stricture/issues](https://github.com/stricture-dev/stricture/issues)
+- **Discussions:** [github.com/stricture-dev/stricture/discussions](https://github.com/stricture-dev/stricture/discussions)
+- **Documentation:** [stricture.dev](https://stricture.dev)
+
+### Report a Bug
+
+Include in your bug report:
+
+1. **Versions:** Output of `npm list @stricture/core @stricture/eslint-plugin eslint`
+2. **Config:** Your `.stricture/config.json`
+3. **Code:** Minimal file that reproduces issue
+4. **Output:** Actual vs expected behavior
+5. **Environment:** OS, Node version, package manager
+
+## Next Steps
+
+<CardGrid>
+  <Card title="Core Concepts" icon="open-book">
+    Understand how Stricture works to debug better.
+    <a href="/getting-started/concepts/">Learn concepts →</a>
+  </Card>
+  <Card title="Migration Guide" icon="swap">
+    Common issues during migration.
+    <a href="/guides/migration/">Migration tips →</a>
+  </Card>
+  <Card title="Monorepo Setup" icon="module">
+    Specific monorepo troubleshooting.
+    <a href="/guides/monorepos/">Monorepo guide →</a>
+  </Card>
+  <Card title="Custom Presets" icon="puzzle">
+    Debug custom preset issues.
+    <a href="/guides/custom-presets/">Preset guide →</a>
+  </Card>
+</CardGrid>

@@ -1,0 +1,450 @@
+---
+title: Quick Start
+description: Get Stricture running in your project in under 5 minutes
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
+# Quick Start
+
+Get Stricture enforcing architecture boundaries in your TypeScript project in under 5 minutes.
+
+## Goal
+
+By the end of this guide, you'll have:
+- ✅ Stricture installed and configured
+- ✅ A working hexagonal architecture preset
+- ✅ ESLint reporting architecture violations
+- ✅ Your first architectural boundary enforced
+
+## Step 1: Install Packages
+
+Install Stricture core, ESLint plugin, and the hexagonal preset:
+
+<Tabs>
+  <TabItem label="npm">
+    ```bash
+    npm install --save-dev @stricture/core @stricture/eslint-plugin @stricture/hexagonal
+    ```
+  </TabItem>
+  <TabItem label="pnpm">
+    ```bash
+    pnpm add -D @stricture/core @stricture/eslint-plugin @stricture/hexagonal
+    ```
+  </TabItem>
+  <TabItem label="yarn">
+    ```bash
+    yarn add -D @stricture/core @stricture/eslint-plugin @stricture/hexagonal
+    ```
+  </TabItem>
+</Tabs>
+
+:::tip[Different Architecture?]
+Using a different pattern? Install a different preset:
+- Layered: `@stricture/layered`
+- Clean Architecture: `@stricture/clean`
+- Next.js: `@stricture/nextjs`
+
+See all [available presets](/presets/).
+:::
+
+## Step 2: Create Configuration
+
+Create `.stricture/config.json` in your project root:
+
+```bash
+mkdir -p .stricture
+```
+
+Add this minimal configuration:
+
+```json title=".stricture/config.json"
+{
+  "preset": "@stricture/hexagonal"
+}
+```
+
+That's it! The preset provides complete boundary and rule definitions.
+
+:::note[What does this preset do?]
+The hexagonal preset enforces:
+- Pure domain layer (no external dependencies)
+- Ports as interface contracts
+- Application layer orchestrates domain + ports
+- Adapters implement ports without coupling
+
+Learn more in [Core Concepts](/getting-started/concepts/).
+:::
+
+## Step 3: Add ESLint Rule
+
+Add Stricture to your ESLint configuration:
+
+<Tabs>
+  <TabItem label="Flat Config (ESLint 9+)">
+    ```js title="eslint.config.js" ins={2,6-13}
+    // eslint.config.js
+    import stricture from '@stricture/eslint-plugin';
+
+    export default [
+      // ... your existing config
+      {
+        plugins: {
+          '@stricture': stricture
+        },
+        rules: {
+          '@stricture/enforce-boundaries': 'error'
+        }
+      }
+    ];
+    ```
+  </TabItem>
+  <TabItem label="Legacy Config (.eslintrc.js)">
+    ```js title=".eslintrc.js" ins={3,5-7}
+    // .eslintrc.js
+    module.exports = {
+      plugins: ['@stricture'],
+      rules: {
+        '@stricture/enforce-boundaries': 'error'
+      }
+    };
+    ```
+  </TabItem>
+  <TabItem label="Legacy Config (.eslintrc.json)">
+    ```json title=".eslintrc.json" ins={3,5-7}
+    {
+      "plugins": ["@stricture"],
+      "rules": {
+        "@stricture/enforce-boundaries": "error"
+      }
+    }
+    ```
+  </TabItem>
+</Tabs>
+
+## Step 4: See It In Action
+
+Create a sample directory structure:
+
+```bash
+mkdir -p src/core/domain
+mkdir -p src/adapters/driven/database
+```
+
+Create a domain file:
+
+```typescript title="src/core/domain/user.ts"
+export class User {
+  constructor(
+    public readonly id: string,
+    public readonly email: string
+  ) {}
+
+  isValid(): boolean {
+    return this.email.includes('@');
+  }
+}
+```
+
+Now create a violation - domain importing from infrastructure:
+
+```typescript title="src/core/domain/order.ts"
+// ❌ This violates hexagonal architecture!
+import { Database } from '../../adapters/driven/database/db';
+
+export class Order {
+  async save() {
+    // Domain should NOT directly use infrastructure
+    await Database.query('INSERT INTO orders...');
+  }
+}
+```
+
+Run ESLint:
+
+```bash
+npx eslint src/core/domain/order.ts
+```
+
+You'll see this error:
+
+```
+src/core/domain/order.ts
+  2:1  error  Import from 'driven-adapters' to 'domain' is not allowed
+             Domain layer must remain pure - no dependencies on other layers or external libraries
+             @stricture/enforce-boundaries
+```
+
+✅ **Success!** Stricture caught the architecture violation.
+
+## Fixing the Violation
+
+The correct hexagonal architecture approach:
+
+### 1. Define a Port (Interface)
+
+```typescript title="src/core/ports/order-repository.ts"
+import { Order } from '../domain/order';
+
+export interface OrderRepository {
+  save(order: Order): Promise<void>;
+  findById(id: string): Promise<Order | null>;
+}
+```
+
+### 2. Update Domain (Pure Business Logic)
+
+```typescript title="src/core/domain/order.ts"
+// ✅ Domain is now pure - no infrastructure imports
+export class Order {
+  constructor(
+    public readonly id: string,
+    public readonly items: OrderItem[],
+    public readonly total: number
+  ) {}
+
+  addItem(item: OrderItem): Order {
+    return new Order(
+      this.id,
+      [...this.items, item],
+      this.total + item.price
+    );
+  }
+}
+```
+
+### 3. Create Application Use Case
+
+```typescript title="src/core/application/create-order.ts"
+import { Order } from '../domain/order';
+import { OrderRepository } from '../ports/order-repository';
+
+export class CreateOrderUseCase {
+  constructor(private orderRepo: OrderRepository) {}
+
+  async execute(items: OrderItem[]): Promise<Order> {
+    const order = new Order(
+      generateId(),
+      items,
+      items.reduce((sum, item) => sum + item.price, 0)
+    );
+
+    await this.orderRepo.save(order);
+    return order;
+  }
+}
+```
+
+### 4. Implement Driven Adapter
+
+```typescript title="src/adapters/driven/database/postgres-order-repository.ts"
+import { Order } from '../../../core/domain/order';
+import { OrderRepository } from '../../../core/ports/order-repository';
+
+// ✅ Adapter implements port interface
+export class PostgresOrderRepository implements OrderRepository {
+  async save(order: Order): Promise<void> {
+    await this.db.query('INSERT INTO orders...', [
+      order.id,
+      order.items,
+      order.total
+    ]);
+  }
+
+  async findById(id: string): Promise<Order | null> {
+    const row = await this.db.query('SELECT * FROM orders WHERE id = $1', [id]);
+    return row ? new Order(row.id, row.items, row.total) : null;
+  }
+}
+```
+
+### 5. Wire Everything Together
+
+```typescript title="src/index.ts"
+import { CreateOrderUseCase } from './core/application/create-order';
+import { PostgresOrderRepository } from './adapters/driven/database/postgres-order-repository';
+
+// Composition root - wire dependencies
+const orderRepo = new PostgresOrderRepository(db);
+const createOrder = new CreateOrderUseCase(orderRepo);
+
+// Use the use case
+const order = await createOrder.execute(items);
+```
+
+Run ESLint again:
+
+```bash
+npx eslint src/
+```
+
+```
+✨ No errors found!
+```
+
+✅ **Perfect!** Your architecture is now clean and enforced.
+
+## What You've Learned
+
+In 5 minutes, you've:
+
+1. ✅ **Installed Stricture** with a preset
+2. ✅ **Created a config** (single line!)
+3. ✅ **Added ESLint rule** to enforce boundaries
+4. ✅ **Saw a violation** caught automatically
+5. ✅ **Fixed the architecture** using ports and adapters
+
+## Understanding the Flow
+
+Here's what just happened:
+
+```mermaid
+%%{init: {'theme':'base', 'themeVariables': { 'primaryColor':'#b3d9ff','primaryBorderColor':'#66b3ff','secondaryColor':'#ffffb3','secondaryBorderColor':'#ffeb66'}}}%%
+graph TB
+    subgraph "Before (Violation)"
+        D1[Domain: order.ts]
+        A1[Adapter: database]
+        D1 -->|"❌ Direct import"| A1
+    end
+
+    subgraph "After (Clean)"
+        D2[Domain: order.ts]
+        P[Port: OrderRepository interface]
+        U[Use Case: CreateOrderUseCase]
+        A2[Adapter: PostgresOrderRepository]
+
+        U -->|"Uses"| D2
+        U -->|"Calls through"| P
+        A2 -->|"Implements"| P
+    end
+
+    style D1 fill:#ffb3b3
+    style D2 fill:#b3ffb3
+```
+
+## Next Steps
+
+<details>
+<summary>**Explore Other Presets**</summary>
+
+Try different architecture patterns:
+
+```json title=".stricture/config.json"
+{
+  "preset": "@stricture/layered"
+}
+```
+
+```json title=".stricture/config.json"
+{
+  "preset": "@stricture/nextjs"
+}
+```
+
+See all [available presets](/presets/).
+</details>
+
+<details>
+<summary>**Customize Rules**</summary>
+
+Override or extend preset rules:
+
+```json title=".stricture/config.json"
+{
+  "preset": "@stricture/hexagonal",
+  "rules": [
+    {
+      "id": "custom-rule",
+      "name": "Allow Shared Utils",
+      "severity": "error",
+      "from": { "pattern": "**" },
+      "to": { "pattern": "src/shared/utils/**" },
+      "allowed": true
+    }
+  ]
+}
+```
+</details>
+
+<details>
+<summary>**Add to CI/CD**</summary>
+
+Enforce architecture in your pipeline:
+
+```yaml title=".github/workflows/ci.yml"
+- name: Lint
+  run: npm run lint
+
+- name: Check Architecture
+  run: npx eslint .
+```
+</details>
+
+<details>
+<summary>**Learn Core Concepts**</summary>
+
+Understand how Stricture works:
+- [Boundaries](/getting-started/concepts/#boundaries)
+- [Rules](/getting-started/concepts/#rules)
+- [Specificity](/getting-started/concepts/#rule-specificity)
+- [Deny by Default](/getting-started/concepts/#deny-by-default)
+
+Read the [Core Concepts](/getting-started/concepts/) guide.
+</details>
+
+## Common Questions
+
+### Can I use multiple presets?
+
+Yes! Combine presets for monorepos:
+
+```json title=".stricture/config.json"
+{
+  "preset": "@stricture/hexagonal",
+  "extends": ["@stricture/nextjs"]
+}
+```
+
+### Does this work with JavaScript?
+
+Stricture works best with TypeScript, but you can use it with JavaScript projects that have type checking via JSDoc or TypeScript `checkJs` mode.
+
+### How do I ignore certain files?
+
+Use `ignorePatterns` in your config:
+
+```json title=".stricture/config.json"
+{
+  "preset": "@stricture/hexagonal",
+  "ignorePatterns": [
+    "**/*.test.ts",
+    "**/*.spec.ts",
+    "**/test/**"
+  ]
+}
+```
+
+### Can I use this with existing code?
+
+Yes! Start with `severity: "warn"` to see violations without breaking builds:
+
+```json title=".stricture/config.json"
+{
+  "preset": "@stricture/hexagonal",
+  "rules": [
+    {
+      "id": "domain-isolation",
+      "severity": "warn"
+    }
+  ]
+}
+```
+
+Then fix violations incrementally and switch to `"error"`.
+
+## Get Help
+
+- 📖 [Core Concepts](/getting-started/concepts/) - Deep dive into how Stricture works
+- 🎯 [Preset Docs](/presets/) - Explore all architecture presets
+- 💬 [GitHub Discussions](https://github.com/stricture-dev/stricture/discussions) - Ask questions
+- 🐛 [Report Issues](https://github.com/stricture-dev/stricture/issues) - Found a bug?

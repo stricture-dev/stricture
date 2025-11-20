@@ -1,0 +1,971 @@
+---
+title: Migration Guide
+description: Migrate to Stricture from no architecture enforcement or other tools
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+# Migration Guide
+
+Learn how to successfully adopt Stricture in existing projects - from initial setup to team rollout.
+
+## Migration Scenarios
+
+<CardGrid>
+  <Card title="From Nothing" icon="rocket">
+    Adding architecture enforcement to a project without any.
+  </Card>
+  <Card title="From Other Tools" icon="swap">
+    Migrating from dependency-cruiser, NX, or other tools.
+  </Card>
+  <Card title="Legacy Codebase" icon="document">
+    Incremental adoption in large projects with violations.
+  </Card>
+  <Card title="Team Rollout" icon="group">
+    Rolling out Stricture across your organization.
+  </Card>
+</CardGrid>
+
+## Migrating from No Architecture Enforcement
+
+### Phase 1: Assessment (Week 1)
+
+Start by understanding your current architecture.
+
+#### Map Your Existing Structure
+
+```bash
+# Visualize your directory structure
+tree -d -L 3 src/
+```
+
+Document what you find:
+
+```
+src/
+├── components/       # UI components (mixed concerns?)
+├── services/        # Business logic + API calls
+├── utils/           # Shared utilities
+├── api/             # API layer
+└── db/              # Database access
+```
+
+Ask these questions:
+
+- **Is there an intended architecture?** (Even informal)
+- **What layers exist?** (UI, business logic, data access)
+- **What are the pain points?** (Circular dependencies, tight coupling)
+- **Where do violations occur?** (Components calling DB directly?)
+
+#### Analyze Import Patterns
+
+Use a tool to understand current dependencies:
+
+```bash
+# Install madge to analyze dependencies
+npm install -g madge
+
+# Generate dependency graph
+madge --image graph.svg src/
+
+# Find circular dependencies
+madge --circular src/
+```
+
+#### Choose an Architecture
+
+Based on your codebase, pick a pattern:
+
+| Architecture | Best For |
+|--------------|----------|
+| **Layered** | Traditional N-tier apps, REST APIs |
+| **Hexagonal** | Domain-rich business logic, DDD |
+| **Clean** | Complex enterprise applications |
+| **Modular** | Feature-based, vertical slices |
+| **Next.js** | Next.js App Router projects |
+
+:::tip[Start Simple]
+When in doubt, start with **Layered** architecture. It's the easiest to understand and implement.
+:::
+
+### Phase 2: Setup (Week 1-2)
+
+Install Stricture with your chosen preset:
+
+<Tabs>
+  <TabItem label="npm">
+    ```bash
+    npm install -D @stricture/core @stricture/eslint-plugin @stricture/layered
+    ```
+  </TabItem>
+  <TabItem label="pnpm">
+    ```bash
+    pnpm add -D @stricture/core @stricture/eslint-plugin @stricture/layered
+    ```
+  </TabItem>
+  <TabItem label="yarn">
+    ```bash
+    yarn add -D @stricture/core @stricture/eslint-plugin @stricture/layered
+    ```
+  </TabItem>
+</Tabs>
+
+Create `.stricture/config.json`:
+
+```json title=".stricture/config.json"
+{
+  "preset": "@stricture/layered"
+}
+```
+
+Add to ESLint config:
+
+<Tabs>
+  <TabItem label="Flat Config">
+    ```js title="eslint.config.js"
+    import stricture from '@stricture/eslint-plugin';
+
+    export default [
+      {
+        plugins: {
+          '@stricture': stricture
+        },
+        rules: {
+          '@stricture/enforce-boundaries': 'warn'  // Start with warnings
+        }
+      }
+    ];
+    ```
+  </TabItem>
+  <TabItem label="Legacy Config">
+    ```js title=".eslintrc.js"
+    module.exports = {
+      plugins: ['@stricture'],
+      rules: {
+        '@stricture/enforce-boundaries': 'warn'  // Start with warnings
+      }
+    };
+    ```
+  </TabItem>
+</Tabs>
+
+:::note[Start with Warnings]
+Use `'warn'` initially to avoid blocking builds. Upgrade to `'error'` once violations are fixed.
+:::
+
+### Phase 3: Map Current Structure to Preset (Week 2)
+
+Your structure likely doesn't match the preset exactly. Customize the boundaries:
+
+#### Example: Mapping to Layered Architecture
+
+Your structure:
+
+```
+src/
+├── components/       # UI layer
+├── services/        # Business logic
+├── api/             # API/HTTP layer
+├── repositories/    # Data access
+└── db/              # Database utilities
+```
+
+Custom configuration:
+
+```json title=".stricture/config.json"
+{
+  "preset": "@stricture/layered",
+  "boundaries": [
+    {
+      "name": "presentation",
+      "pattern": "src/{components,pages}/**",
+      "mode": "file",
+      "tags": ["presentation"],
+      "metadata": { "layer": 3 }
+    },
+    {
+      "name": "business",
+      "pattern": "src/services/**",
+      "mode": "file",
+      "tags": ["business"],
+      "metadata": { "layer": 2 }
+    },
+    {
+      "name": "data",
+      "pattern": "src/{repositories,db,api}/**",
+      "mode": "file",
+      "tags": ["data"],
+      "metadata": { "layer": 1 }
+    }
+  ],
+  "rules": [
+    {
+      "id": "presentation-to-business",
+      "from": { "tag": "presentation" },
+      "to": { "tag": "business" },
+      "allowed": true
+    },
+    {
+      "id": "business-to-data",
+      "from": { "tag": "business" },
+      "to": { "tag": "data" },
+      "allowed": true
+    },
+    {
+      "id": "no-skip-layers",
+      "from": { "tag": "presentation" },
+      "to": { "tag": "data" },
+      "allowed": false,
+      "message": "Presentation layer cannot directly access data layer. Use business layer."
+    }
+  ]
+}
+```
+
+:::tip[Incremental Boundaries]
+Start with broad boundaries (3-4 layers). Refine them as you fix violations.
+:::
+
+### Phase 4: Identify Violations (Week 2-3)
+
+Run ESLint to find all violations:
+
+```bash
+# Get full report
+npx eslint . --format stylish > violations.txt
+
+# Count violations by type
+npx eslint . --format json | jq '.[] | .messages | length' | awk '{sum+=$1} END {print sum}'
+```
+
+Categorize violations:
+
+1. **Quick wins** - Easy to fix (wrong imports)
+2. **Refactoring needed** - Require code changes
+3. **Architecture violations** - Major structural issues
+
+#### Create a Violation Dashboard
+
+```bash
+# Install ESLint HTML reporter
+npm install -D eslint-html-reporter
+
+# Generate HTML report
+npx eslint . -f node_modules/eslint-html-reporter/reporter.js -o violations.html
+
+# Open in browser
+open violations.html
+```
+
+### Phase 5: Fix Violations (Week 3-8)
+
+#### Strategy 1: File-by-File
+
+Fix one file at a time:
+
+```bash
+# Fix a single file
+npx eslint src/components/UserProfile.tsx --fix
+```
+
+#### Strategy 2: Layer-by-Layer
+
+Fix violations starting from the innermost layer:
+
+1. Fix data layer violations first
+2. Then business layer
+3. Finally presentation layer
+
+#### Strategy 3: Incremental Rules
+
+Enable rules gradually:
+
+```json title=".stricture/config.json"
+{
+  "preset": "@stricture/layered",
+  "rules": [
+    {
+      "id": "no-skip-layers",
+      "severity": "error"  // Enable this rule first
+    },
+    {
+      "id": "business-isolation",
+      "severity": "off"    // Enable later
+    }
+  ]
+}
+```
+
+#### Common Fixes
+
+**Violation: Presentation calling data directly**
+
+```typescript
+// ❌ Before
+// src/components/UserProfile.tsx
+import { UserRepository } from '../repositories/user-repository'
+
+function UserProfile() {
+  const user = await UserRepository.find(id)
+  return <div>{user.name}</div>
+}
+```
+
+```typescript
+// ✅ After - Add business layer
+// src/services/user-service.ts
+export class UserService {
+  constructor(private repo: UserRepository) {}
+
+  async getUser(id: string) {
+    return this.repo.find(id)
+  }
+}
+
+// src/components/UserProfile.tsx
+import { UserService } from '../services/user-service'
+
+function UserProfile() {
+  const user = await userService.getUser(id)
+  return <div>{user.name}</div>
+}
+```
+
+**Violation: Circular dependencies**
+
+```typescript
+// ❌ Before - Circular
+// src/services/user-service.ts
+import { OrderService } from './order-service'
+
+// src/services/order-service.ts
+import { UserService } from './user-service'
+```
+
+```typescript
+// ✅ After - Extract shared logic
+// src/services/shared/validation.ts
+export const validateEmail = (email: string) => { ... }
+
+// src/services/user-service.ts
+import { validateEmail } from './shared/validation'
+
+// src/services/order-service.ts
+import { validateEmail } from './shared/validation'
+```
+
+### Phase 6: Team Rollout (Week 4+)
+
+#### Communicate the Change
+
+Send a team announcement:
+
+```markdown
+# Architecture Enforcement with Stricture
+
+Starting next week, we're enforcing architecture boundaries with Stricture.
+
+**What's changing:**
+- ESLint will flag violations of our layered architecture
+- CI builds will fail on architecture violations
+
+**What you need to do:**
+1. Run `npm install` to get the new dependencies
+2. Run `npx eslint .` to check for violations in your branch
+3. Fix any violations before merging
+
+**Resources:**
+- [Internal wiki: Our Architecture]
+- [Stricture docs](https://stricture.dev)
+- #architecture Slack channel for questions
+
+**Rollout plan:**
+- Week 1: Warnings only (CI passes)
+- Week 2: Errors in CI (PRs blocked)
+```
+
+#### Training Session
+
+Hold a 30-minute session:
+
+1. **Why architecture matters** (5 min)
+   - Maintenance cost
+   - Onboarding time
+   - Bug reduction
+
+2. **Our architecture** (10 min)
+   - Show the layers
+   - Show the diagram
+   - Explain the rules
+
+3. **How Stricture works** (10 min)
+   - Demo violations
+   - Show error messages
+   - Fix a violation live
+
+4. **Q&A** (5 min)
+
+#### Create Documentation
+
+Add to your project README:
+
+```markdown
+## Architecture
+
+This project uses a layered architecture enforced by Stricture:
+
+```mermaid
+graph TB
+    Presentation --> Business
+    Business --> Data
+    style Presentation fill:#e3f2fd
+    style Business fill:#f1f8e9
+    style Data fill:#fff3e0
+```
+
+**Layers:**
+- **Presentation** (`components/`, `pages/`) - UI components
+- **Business** (`services/`) - Business logic
+- **Data** (`repositories/`, `api/`) - Data access
+
+**Rules:**
+- Presentation can call Business
+- Business can call Data
+- No layer skipping (Presentation → Data is forbidden)
+```
+
+### Phase 7: CI Integration (Week 5+)
+
+Add to CI pipeline:
+
+<Tabs>
+<TabItem label="GitHub Actions">
+```yaml title=".github/workflows/ci.yml"
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - run: npm run lint  # Includes Stricture
+```
+</TabItem>
+<TabItem label="GitLab CI">
+```yaml title=".gitlab-ci.yml"
+lint:
+  image: node:20
+  script:
+    - npm ci
+    - npm run lint
+```
+</TabItem>
+<TabItem label="CircleCI">
+```yaml title=".circleci/config.yml"
+version: 2.1
+jobs:
+  lint:
+    docker:
+      - image: cimg/node:20.0
+    steps:
+      - checkout
+      - run: npm ci
+      - run: npm run lint
+```
+</TabItem>
+</Tabs>
+
+Upgrade severity to error:
+
+```js title="eslint.config.js"
+export default [
+  {
+    rules: {
+      '@stricture/enforce-boundaries': 'error'  // Now blocks CI
+    }
+  }
+];
+```
+
+## Migrating from Other Tools
+
+### From dependency-cruiser
+
+dependency-cruiser uses `.dependency-cruiser.js` with rules. Here's how to migrate:
+
+#### dependency-cruiser config
+
+```javascript title=".dependency-cruiser.js"
+module.exports = {
+  forbidden: [
+    {
+      name: 'no-circular',
+      severity: 'error',
+      from: {},
+      to: { circular: true }
+    },
+    {
+      name: 'no-orphans',
+      severity: 'warn',
+      from: { orphan: true },
+      to: {}
+    },
+    {
+      name: 'no-ui-to-db',
+      from: { path: '^src/ui' },
+      to: { path: '^src/db' }
+    }
+  ]
+}
+```
+
+#### Equivalent Stricture config
+
+```json title=".stricture/config.json"
+{
+  "boundaries": [
+    {
+      "name": "ui",
+      "pattern": "src/ui/**",
+      "mode": "file",
+      "tags": ["ui"]
+    },
+    {
+      "name": "business",
+      "pattern": "src/business/**",
+      "mode": "file",
+      "tags": ["business"]
+    },
+    {
+      "name": "db",
+      "pattern": "src/db/**",
+      "mode": "file",
+      "tags": ["db"]
+    }
+  ],
+  "rules": [
+    {
+      "id": "ui-to-business",
+      "from": { "tag": "ui" },
+      "to": { "tag": "business" },
+      "allowed": true
+    },
+    {
+      "id": "business-to-db",
+      "from": { "tag": "business" },
+      "to": { "tag": "db" },
+      "allowed": true
+    },
+    {
+      "id": "no-ui-to-db",
+      "from": { "tag": "ui" },
+      "to": { "tag": "db" },
+      "allowed": false,
+      "message": "UI layer cannot directly access database. Use business layer."
+    }
+  ]
+}
+```
+
+**Key differences:**
+
+| Feature | dependency-cruiser | Stricture |
+|---------|-------------------|-----------|
+| **Circular deps** | Built-in detection | ESLint detects via other rules |
+| **Orphans** | Built-in detection | Not applicable (ESLint/TS detect unused) |
+| **Path matching** | Regex patterns | Glob patterns |
+| **Rule logic** | Explicit forbidden | Deny-by-default + explicit allowed |
+
+:::note[Circular Dependencies]
+Stricture prevents architectural violations that often cause circular deps. Use ESLint's `import/no-cycle` rule for explicit circular dependency detection.
+:::
+
+### From NX Module Boundaries
+
+NX uses tags in `project.json`. Here's the migration:
+
+#### NX config
+
+```json title="project.json"
+{
+  "tags": ["type:feature", "scope:admin"]
+}
+```
+
+```json title=".eslintrc.json"
+{
+  "rules": {
+    "@nrwl/nx/enforce-module-boundaries": [
+      "error",
+      {
+        "allow": [],
+        "depConstraints": [
+          {
+            "sourceTag": "type:ui",
+            "onlyDependOnLibsWithTags": ["type:feature", "type:util"]
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+#### Equivalent Stricture config
+
+```json title=".stricture/config.json"
+{
+  "boundaries": [
+    {
+      "name": "ui",
+      "pattern": "libs/ui/**",
+      "mode": "file",
+      "tags": ["ui"]
+    },
+    {
+      "name": "feature",
+      "pattern": "libs/feature/**",
+      "mode": "file",
+      "tags": ["feature"]
+    },
+    {
+      "name": "util",
+      "pattern": "libs/util/**",
+      "mode": "file",
+      "tags": ["util"]
+    }
+  ],
+  "rules": [
+    {
+      "id": "ui-to-feature",
+      "from": { "tag": "ui" },
+      "to": { "tag": "feature" },
+      "allowed": true
+    },
+    {
+      "id": "ui-to-util",
+      "from": { "tag": "ui" },
+      "to": { "tag": "util" },
+      "allowed": true
+    }
+  ]
+}
+```
+
+**Benefits over NX:**
+
+- Works outside NX workspaces
+- More flexible pattern matching
+- Better error messages
+- Architecture-focused (not project-focused)
+
+## Incremental Adoption Strategy
+
+For large codebases with many violations, use this strategy:
+
+### 1. Allowlist Pattern
+
+Start by blocking new violations while allowing existing ones:
+
+```json title=".stricture/config.json"
+{
+  "boundaries": [ /* ... */ ],
+  "rules": [
+    {
+      "id": "ui-to-db",
+      "from": { "tag": "ui" },
+      "to": { "tag": "db" },
+      "allowed": false
+    }
+  ],
+  "exceptions": [
+    {
+      "rule": "ui-to-db",
+      "files": [
+        "src/ui/legacy/UserProfile.tsx",
+        "src/ui/legacy/Dashboard.tsx"
+      ],
+      "reason": "Legacy code - will be refactored in Q2 2024"
+    }
+  ]
+}
+```
+
+:::note[Exceptions are Not Built-in]
+Stricture doesn't have built-in exceptions. Use ESLint comments for now:
+
+```typescript
+// eslint-disable-next-line @stricture/enforce-boundaries
+import { Database } from '../db'  // TODO: Refactor in Q2
+```
+:::
+
+### 2. Directory-by-Directory
+
+Enable Stricture in specific directories:
+
+```json title="eslint.config.js"
+export default [
+  {
+    // Stricture enabled only in new code
+    files: ['src/features/**/*.ts'],
+    plugins: { '@stricture': stricture },
+    rules: {
+      '@stricture/enforce-boundaries': 'error'
+    }
+  },
+  {
+    // Legacy code - no Stricture yet
+    files: ['src/legacy/**/*.ts'],
+    rules: {
+      '@stricture/enforce-boundaries': 'off'
+    }
+  }
+];
+```
+
+Gradually expand coverage:
+
+**Week 1-2:** `src/features/**`
+**Week 3-4:** `src/services/**`
+**Week 5-6:** `src/components/**`
+**Week 7+:** `src/legacy/**`
+
+### 3. Rule-by-Rule
+
+Enable rules incrementally:
+
+```json title=".stricture/config.json"
+{
+  "preset": "@stricture/layered",
+  "rules": [
+    {
+      "id": "no-skip-layers",
+      "severity": "error"     // ✅ Enabled
+    },
+    {
+      "id": "presentation-isolation",
+      "severity": "warn"      // ⚠️  Warning only
+    },
+    {
+      "id": "business-pure",
+      "severity": "off"       // ❌ Disabled for now
+    }
+  ]
+}
+```
+
+### 4. Team-by-Team
+
+Roll out to teams gradually:
+
+| Week | Team | Status |
+|------|------|--------|
+| 1-2 | Platform | Pilot (warnings) |
+| 3-4 | Platform | Enforced (errors) |
+| 5-6 | Product | Pilot |
+| 7-8 | Product | Enforced |
+| 9+ | All teams | Enforced |
+
+## Dealing with Legacy Violations
+
+### Prioritization Matrix
+
+| Impact | Effort | Priority |
+|--------|--------|----------|
+| High | Low | 🔴 Fix immediately |
+| High | High | 🟡 Schedule for sprint |
+| Low | Low | 🟢 Fix when nearby |
+| Low | High | ⚪ Add to backlog |
+
+**High Impact Violations:**
+- UI calling database directly
+- Business logic in UI components
+- Circular dependencies
+- Security boundaries violated
+
+**Low Impact Violations:**
+- Minor layering violations
+- Test code violations
+- Utils/helpers in wrong layer
+
+### Create a Refactoring Plan
+
+Track violations in your issue tracker:
+
+```markdown
+**Epic: Architecture Cleanup**
+
+- [ ] #123 Fix UserProfile direct DB access (High/Low)
+- [ ] #124 Extract auth logic from UI (High/High)
+- [ ] #125 Move utils to correct layer (Low/Low)
+- [ ] #126 Refactor legacy admin panel (Low/High)
+```
+
+### The Strangler Fig Pattern
+
+Gradually replace legacy code:
+
+1. **Create new architecture** alongside old
+2. **Route new features** to new architecture
+3. **Migrate old features** incrementally
+4. **Delete old code** once everything is migrated
+
+```
+src/
+├── legacy/              # Old code (Stricture disabled)
+│   └── user-profile/
+└── features/            # New code (Stricture enforced)
+    └── user-profile/    # Gradually migrated
+```
+
+## Team Rollout Best Practices
+
+### Before Rollout
+
+- [ ] **Get buy-in from leadership** - Explain ROI (maintenance cost reduction)
+- [ ] **Identify champions** - 2-3 developers who support the change
+- [ ] **Document the architecture** - Clear diagrams and rules
+- [ ] **Create example PRs** - Show how to fix violations
+- [ ] **Set up office hours** - Weekly Q&A session
+
+### During Rollout
+
+- [ ] **Start with warnings** - Don't block builds immediately
+- [ ] **Pair programming sessions** - Help developers fix violations
+- [ ] **Share progress** - Weekly update on violation count
+- [ ] **Celebrate wins** - Recognize teams that achieve 100% compliance
+- [ ] **Be flexible** - Adjust rules based on feedback
+
+### After Rollout
+
+- [ ] **Monitor adoption** - Track violation trends
+- [ ] **Refine rules** - Adjust based on real usage
+- [ ] **Update documentation** - Keep architecture docs current
+- [ ] **Onboarding** - Add Stricture to new developer training
+
+## Measuring Success
+
+### Metrics to Track
+
+**Violation Count**
+
+```bash
+# Track violations over time
+npx eslint . --format json | jq '[.[] | .messages | length] | add' > metrics/violations-$(date +%Y-%m-%d).txt
+```
+
+**Technical Debt**
+
+```bash
+# Estimate refactoring time
+# Each violation ≈ 15-30 minutes
+violations=$(npx eslint . --format json | jq '[.[] | .messages | length] | add')
+echo "Estimated hours: $((violations * 20 / 60))"
+```
+
+**Compliance by Module**
+
+```bash
+# Violations by directory
+npx eslint src/ --format json | jq -r '.[] | .filePath' | xargs dirname | sort | uniq -c
+```
+
+### Success Criteria
+
+- ✅ **Week 4:** 50% reduction in violations
+- ✅ **Week 8:** All critical violations fixed
+- ✅ **Week 12:** 100% compliance, errors in CI
+
+## Common Migration Pitfalls
+
+### Pitfall 1: Boiling the Ocean
+
+**Problem:** Trying to fix everything at once
+
+**Solution:** Start small, iterate
+
+```bash
+# ❌ Bad
+npx eslint . --fix  # Breaks everything
+
+# ✅ Good
+npx eslint src/features/checkout --fix  # One feature at a time
+```
+
+### Pitfall 2: Wrong Architecture
+
+**Problem:** Chosen preset doesn't match codebase
+
+**Solution:** Customize boundaries to fit reality
+
+Don't force a hexagonal architecture on a simple CRUD app. Use layered instead.
+
+### Pitfall 3: Team Resistance
+
+**Problem:** Developers see it as bureaucracy
+
+**Solution:** Show the value
+
+- Demonstrate how violations caused bugs
+- Show time saved during onboarding
+- Highlight reduced merge conflicts
+
+### Pitfall 4: Configuration Churn
+
+**Problem:** Constantly changing rules
+
+**Solution:** Lock down config after initial setup
+
+```json
+// ✅ Good - Stable config
+{
+  "preset": "@stricture/layered",
+  "boundaries": [ /* Locked down */ ]
+}
+
+// ❌ Bad - Constantly changing
+{
+  "boundaries": [ /* Different every week */ ]
+}
+```
+
+### Pitfall 5: Ignoring Context
+
+**Problem:** Enforcing rules blindly
+
+**Solution:** Allow pragmatic exceptions
+
+```typescript
+// Sometimes you need to break rules (rarely!)
+// eslint-disable-next-line @stricture/enforce-boundaries -- Migration deadline
+import { OldApi } from '../legacy'
+```
+
+## Next Steps
+
+<CardGrid>
+  <Card title="Monorepo Setup" icon="module">
+    Set up Stricture across multiple packages.
+    <a href="/guides/monorepos/">Monorepo guide →</a>
+  </Card>
+  <Card title="Troubleshooting" icon="warning">
+    Debug common issues during migration.
+    <a href="/guides/troubleshooting/">Troubleshoot →</a>
+  </Card>
+  <Card title="Custom Presets" icon="puzzle">
+    Create your own preset for your architecture.
+    <a href="/guides/custom-presets/">Create preset →</a>
+  </Card>
+  <Card title="Core Concepts" icon="open-book">
+    Understand boundaries and rules deeply.
+    <a href="/getting-started/concepts/">Learn concepts →</a>
+  </Card>
+</CardGrid>

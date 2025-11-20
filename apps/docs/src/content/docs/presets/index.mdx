@@ -1,0 +1,262 @@
+---
+title: Presets
+description: Pre-configured architectural patterns for common project structures
+---
+
+Stricture provides battle-tested presets for popular architectural patterns. Each preset comes with pre-configured boundaries and rules that enforce best practices out of the box.
+
+## What Are Presets?
+
+Presets are pre-packaged architectural configurations that include:
+
+- **Boundary definitions** - File patterns that define architectural layers
+- **Enforcement rules** - Dependency constraints between layers
+- **Best practices** - Battle-tested patterns used in production
+
+Instead of manually defining boundaries and rules, you can use a preset and get started immediately:
+
+```json
+{
+  "preset": "@stricture/hexagonal"
+}
+```
+
+## Why Use Presets?
+
+### Zero Configuration
+
+Presets work out-of-the-box with common project structures. No need to define boundaries or rules manually.
+
+### Battle-Tested Patterns
+
+Each preset embodies proven architectural patterns used successfully in production applications.
+
+### Consistency
+
+Using presets ensures consistent architecture across your organization's projects.
+
+### Learning Tool
+
+Presets serve as reference implementations, helping teams learn architectural patterns through enforcement.
+
+## Available Presets
+
+<div class="preset-cards">
+
+### Hexagonal Architecture
+
+**Package:** `@stricture/hexagonal`
+
+Domain-centric architecture with clear separation between business logic and adapters.
+
+- **Best for:** Complex domain logic, DDD projects
+- **Complexity:** Medium-High
+- **Learning curve:** Medium
+
+[Learn more →](/presets/hexagonal)
+
+---
+
+### Layered Architecture
+
+**Package:** `@stricture/layered`
+
+Traditional N-tier architecture with presentation, application, domain, and infrastructure layers.
+
+- **Best for:** Traditional applications, established teams
+- **Complexity:** Low-Medium
+- **Learning curve:** Low
+
+[Learn more →](/presets/layered)
+
+---
+
+### Clean Architecture
+
+**Package:** `@stricture/clean`
+
+Uncle Bob's Clean Architecture with concentric dependency circles.
+
+- **Best for:** Enterprise applications, strict dependency control
+- **Complexity:** Medium-High
+- **Learning curve:** Medium
+
+[Learn more →](/presets/clean)
+
+---
+
+### Modular Architecture
+
+**Package:** `@stricture/modular`
+
+Feature-based modules with public API boundaries and encapsulation.
+
+- **Best for:** Large applications, multiple teams
+- **Complexity:** Medium
+- **Learning curve:** Low-Medium
+
+[Learn more →](/presets/modular)
+
+---
+
+### Next.js Patterns
+
+**Package:** `@stricture/nextjs`
+
+Next.js App Router patterns with server/client boundaries.
+
+- **Best for:** Next.js applications, React Server Components
+- **Complexity:** Low
+- **Learning curve:** Low
+
+[Learn more →](/presets/nextjs)
+
+---
+
+### NestJS Patterns
+
+**Package:** `@stricture/nestjs`
+
+NestJS best practices with controller/service/repository layers.
+
+- **Best for:** NestJS applications, API backends
+- **Complexity:** Low-Medium
+- **Learning curve:** Low
+
+[Learn more →](/presets/nestjs)
+
+</div>
+
+## Comparison Table
+
+| Preset | Best For | Complexity | Learning Curve | Key Benefit |
+|--------|----------|------------|----------------|-------------|
+| **Hexagonal** | Complex domains, DDD | Medium-High | Medium | Domain isolation |
+| **Layered** | Traditional apps | Low-Medium | Low | Familiar pattern |
+| **Clean** | Enterprise apps | Medium-High | Medium | Strict dependencies |
+| **Modular** | Large teams | Medium | Low-Medium | Module encapsulation |
+| **Next.js** | React SSR apps | Low | Low | Framework-specific |
+| **NestJS** | API backends | Low-Medium | Low | Framework-specific |
+
+## How to Choose?
+
+### Choose Hexagonal if you have:
+- Complex business rules
+- Domain-Driven Design approach
+- Need for adapter swappability
+- Multiple entry points (CLI, HTTP, GraphQL)
+
+### Choose Layered if you have:
+- Traditional application structure
+- Team familiar with N-tier patterns
+- Straightforward business logic
+- Need for simplicity
+
+### Choose Clean if you have:
+- Enterprise application requirements
+- Strict dependency control needs
+- Framework independence as priority
+- Long-term maintainability focus
+
+### Choose Modular if you have:
+- Large application
+- Multiple teams working on features
+- Need for module isolation
+- Feature-based organization
+
+### Choose Next.js if you have:
+- Next.js App Router application
+- Server/Client Component separation needs
+- Server Actions usage
+- Next.js-specific patterns
+
+### Choose NestJS if you have:
+- NestJS application
+- API backend structure
+- Dependency injection patterns
+- TypeScript decorators
+
+## Installation
+
+Install any preset as a dev dependency:
+
+```bash
+npm install --save-dev @stricture/hexagonal
+# or
+pnpm add -D @stricture/layered
+# or
+yarn add -D @stricture/clean
+```
+
+## Usage
+
+Create `.stricture/config.json` and reference the preset:
+
+```json
+{
+  "preset": "@stricture/hexagonal"
+}
+```
+
+That's it! The preset defines all boundaries and rules for you.
+
+## Customization
+
+You can extend or override preset configurations:
+
+```json
+{
+  "preset": "@stricture/hexagonal",
+  "boundaries": [
+    {
+      "name": "shared",
+      "pattern": "src/shared/**",
+      "mode": "file",
+      "tags": ["shared"]
+    }
+  ],
+  "rules": [
+    {
+      "id": "all-to-shared",
+      "from": { "tag": "*" },
+      "to": { "tag": "shared" },
+      "allowed": true
+    }
+  ]
+}
+```
+
+:::tip[Start Simple]
+Start with a preset as-is. Only customize when you have specific needs that differ from the preset's assumptions.
+:::
+
+## Multiple Presets
+
+You cannot use multiple presets simultaneously. Each preset defines a complete architectural pattern.
+
+If you need multiple patterns in a monorepo, use separate `.stricture/config.json` files in each package.
+
+## Creating Custom Presets
+
+You can create organization-specific presets by following the same structure:
+
+```typescript
+import type { ArchPreset } from '@stricture/core'
+
+export const myPreset: ArchPreset = {
+  boundaries: [
+    // Your boundary definitions
+  ],
+  rules: [
+    // Your rules
+  ]
+}
+```
+
+See the [API Reference](/api/types#archpreset) for details.
+
+## Next Steps
+
+- Explore individual preset documentation
+- Check out [examples](/examples) for real-world usage
+- Read the [configuration guide](/configuration) to learn about customization
