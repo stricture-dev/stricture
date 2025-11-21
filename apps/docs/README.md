@@ -241,18 +241,6 @@ pnpm preview
 
 The site is configured for Cloudflare Pages deployment with `wrangler.toml`.
 
-**Option 1: Deploy from CLI**
-
-```bash
-# Build the site
-pnpm build
-
-# Deploy to Cloudflare Pages
-pnpm deploy
-```
-
-**Option 2: Connect Git Repository**
-
 1. Go to Cloudflare Pages dashboard
 2. Connect your GitHub repository
 3. Configure build settings:
