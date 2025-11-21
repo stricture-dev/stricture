@@ -239,11 +239,30 @@ pnpm preview
 
 ### Cloudflare Pages (Recommended)
 
+The site is configured for Cloudflare Pages deployment with `wrangler.toml`.
+
+**Option 1: Deploy from CLI**
+
 ```bash
-# Connect repo to Cloudflare Pages
-# Build command: pnpm build
-# Output directory: dist
+# Build the site
+pnpm build
+
+# Deploy to Cloudflare Pages
+pnpm deploy
 ```
+
+**Option 2: Connect Git Repository**
+
+1. Go to Cloudflare Pages dashboard
+2. Connect your GitHub repository
+3. Configure build settings:
+   - **Build command**: `pnpm run build`
+   - **Deploy command**: `npx wrangler pages deploy dist`
+   - **Build output directory**: `/apps/docs`
+   - **Root directory**: `/apps/docs`
+4. Deploy!
+
+The `wrangler.toml` configuration tells Cloudflare to deploy the `dist/` directory as a static site.
 
 ### Vercel
 
