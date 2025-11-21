@@ -56,7 +56,6 @@ export default defineConfig({
           label: 'Guides',
           items: [
             { label: 'Custom Presets', link: '/guides/custom-presets/' },
-            { label: 'Migration Guide', link: '/guides/migration/' },
             { label: 'Monorepo Setup', link: '/guides/monorepos/' },
             { label: 'Troubleshooting', link: '/guides/troubleshooting/' },
           ],
