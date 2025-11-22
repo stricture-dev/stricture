@@ -39,10 +39,90 @@ export default {
       rules: {
         '@stricture/enforce-boundaries': 'error'
       }
+    },
+    hexagonal: {
+      plugins: ['@stricture'],
+      rules: {
+        '@stricture/enforce-boundaries': 'error'
+      }
+    },
+    layered: {
+      plugins: ['@stricture'],
+      rules: {
+        '@stricture/enforce-boundaries': 'error'
+      }
+    },
+    clean: {
+      plugins: ['@stricture'],
+      rules: {
+        '@stricture/enforce-boundaries': 'error'
+      }
+    },
+    modular: {
+      plugins: ['@stricture'],
+      rules: {
+        '@stricture/enforce-boundaries': 'error'
+      }
+    },
+    nextjs: {
+      plugins: ['@stricture'],
+      rules: {
+        '@stricture/enforce-boundaries': 'error'
+      }
+    },
+    nestjs: {
+      plugins: ['@stricture'],
+      rules: {
+        '@stricture/enforce-boundaries': 'error'
+      }
     }
   }
 }
 ```
+
+### Preset Configs
+
+The plugin exports shareable ESLint configs for each Stricture preset. These configs enable users to quickly set up ESLint with the `enforce-boundaries` rule without manually configuring the plugin.
+
+**Available Configs:**
+
+- `recommended` - Basic setup with enforce-boundaries rule enabled
+- `hexagonal` - For projects using `@stricture/hexagonal` preset
+- `layered` - For projects using `@stricture/layered` preset
+- `clean` - For projects using `@stricture/clean` preset
+- `modular` - For projects using `@stricture/modular` preset
+- `nextjs` - For projects using `@stricture/nextjs` preset
+- `nestjs` - For projects using `@stricture/nestjs` preset
+
+**Usage (Legacy ESLint Config):**
+
+```javascript
+// .eslintrc.js
+module.exports = {
+  extends: ['plugin:@stricture/hexagonal']
+}
+```
+
+**Usage (Flat ESLint Config):**
+
+```javascript
+// eslint.config.js
+import stricture from '@stricture/eslint-plugin'
+
+export default [
+  stricture.configs.hexagonal
+]
+```
+
+**What configs provide:**
+
+Each config is functionally identical - they all enable the `@stricture/enforce-boundaries` rule with `'error'` severity. The different config names serve as semantic indicators:
+
+1. **Documentation clarity** - Makes it clear which preset the project is using
+2. **Future extensibility** - Allows preset-specific linting rules to be added later
+3. **Convention over configuration** - Users can extend the config matching their chosen preset
+
+The actual architectural rules (boundaries, allowed imports, etc.) are defined in `.stricture/config.json`, not in the ESLint configs.
 
 ### Rule: `enforce-boundaries`
 

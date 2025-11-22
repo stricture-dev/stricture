@@ -650,6 +650,46 @@ Gradually tighten rules as you refactor.
 
 ## Troubleshooting
 
+### Which packages do I need?
+
+**Minimum setup:**
+```bash
+npm install -D @stricture/eslint-plugin
+```
+
+Then create a custom config in `.stricture/config.json`.
+
+**Recommended setup (with preset):**
+```bash
+npm install -D @stricture/eslint-plugin @stricture/hexagonal
+```
+
+Then reference the preset:
+```json
+{
+  "preset": "@stricture/hexagonal"
+}
+```
+
+**Do I need @stricture/core?**
+
+No. It's automatically installed as a dependency of the ESLint plugin and presets.
+
+**Can I use multiple presets?**
+
+Yes, use the `extends` field:
+```json
+{
+  "preset": "@stricture/hexagonal",
+  "extends": ["@stricture/nextjs"]
+}
+```
+
+Install both presets:
+```bash
+npm install -D @stricture/hexagonal @stricture/nextjs
+```
+
 ### Configuration Not Found
 
 **Error:** `Could not find .stricture/config.json`

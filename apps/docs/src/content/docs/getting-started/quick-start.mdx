@@ -17,25 +17,17 @@ By the end of this guide, you'll have:
 
 ## Step 1: Install Packages
 
-Install Stricture core, ESLint plugin, and the hexagonal preset:
+Install the ESLint plugin and the hexagonal preset:
 
-<Tabs>
-  <TabItem label="npm">
-    ```bash
-    npm install --save-dev @stricture/core @stricture/eslint-plugin @stricture/hexagonal
-    ```
-  </TabItem>
-  <TabItem label="pnpm">
-    ```bash
-    pnpm add -D @stricture/core @stricture/eslint-plugin @stricture/hexagonal
-    ```
-  </TabItem>
-  <TabItem label="yarn">
-    ```bash
-    yarn add -D @stricture/core @stricture/eslint-plugin @stricture/hexagonal
-    ```
-  </TabItem>
-</Tabs>
+```bash
+npm install -D @stricture/eslint-plugin @stricture/hexagonal
+# or
+pnpm add -D @stricture/eslint-plugin @stricture/hexagonal
+# or
+yarn add -D @stricture/eslint-plugin @stricture/hexagonal
+```
+
+> **Note**: `@stricture/core` is automatically installed as a dependency and does not need to be added explicitly.
 
 :::tip[Different Architecture?]
 Using a different pattern? Install a different preset:
@@ -76,10 +68,20 @@ Learn more in [Core Concepts](/getting-started/concepts/).
 
 ## Step 3: Add ESLint Rule
 
-Add Stricture to your ESLint configuration:
+Add Stricture to your ESLint configuration. The easiest way is to use the preset's recommended config:
 
 <Tabs>
-  <TabItem label="Flat Config (ESLint 9+)">
+  <TabItem label="Recommended (Legacy Config)">
+    ```js title=".eslintrc.js"
+    // .eslintrc.js
+    module.exports = {
+      extends: ['plugin:@stricture/hexagonal']
+    };
+    ```
+
+    This automatically enables the `@stricture/enforce-boundaries` rule.
+  </TabItem>
+  <TabItem label="Manual (Flat Config)">
     ```js title="eslint.config.js" ins={2,6-13}
     // eslint.config.js
     import stricture from '@stricture/eslint-plugin';
@@ -97,7 +99,7 @@ Add Stricture to your ESLint configuration:
     ];
     ```
   </TabItem>
-  <TabItem label="Legacy Config (.eslintrc.js)">
+  <TabItem label="Manual (Legacy .eslintrc.js)">
     ```js title=".eslintrc.js" ins={3,5-7}
     // .eslintrc.js
     module.exports = {
@@ -108,7 +110,7 @@ Add Stricture to your ESLint configuration:
     };
     ```
   </TabItem>
-  <TabItem label="Legacy Config (.eslintrc.json)">
+  <TabItem label="Manual (Legacy .eslintrc.json)">
     ```json title=".eslintrc.json" ins={3,5-7}
     {
       "plugins": ["@stricture"],
@@ -119,6 +121,10 @@ Add Stricture to your ESLint configuration:
     ```
   </TabItem>
 </Tabs>
+
+:::tip[Easiest Setup]
+Use the preset's recommended config (e.g., `plugin:@stricture/hexagonal`) for automatic rule configuration with legacy ESLint configs.
+:::
 
 ## Step 4: See It In Action
 
@@ -291,6 +297,25 @@ In 5 minutes, you've:
 3. ✅ **Added ESLint rule** to enforce boundaries
 4. ✅ **Saw a violation** caught automatically
 5. ✅ **Fixed the architecture** using ports and adapters
+
+## Even Easier: Use the CLI
+
+Instead of manual setup, you can use the interactive CLI to set everything up automatically:
+
+```bash
+npx stricture init
+```
+
+The CLI will:
+- ✅ Detect your project framework (Next.js, NestJS, standard TypeScript, etc.)
+- ✅ Recommend appropriate presets based on your project structure
+- ✅ Create `.stricture/config.json` automatically
+- ✅ Update your ESLint configuration
+- ✅ Install required dependencies
+
+This is the fastest way to get started, especially for framework-specific projects like Next.js.
+
+[View full CLI documentation →](/api/cli/)
 
 ## Understanding the Flow
 

@@ -66,4 +66,153 @@ describe('validate command', () => {
     const result = await validate({ configPath })
     expect(result).toBe(false)
   })
+
+  describe('structure validation', () => {
+    it('should pass when all expected directories exist', async () => {
+      // Create .stricture directory and config
+      await ensureDir(path.join(TEST_DIR, '.stricture'))
+
+      const config = {
+        version: '1',
+        preset: '@stricture/hexagonal',
+        boundaries: [
+          {
+            name: 'domain',
+            pattern: 'src/domain/**',
+            mode: 'file' as const,
+            tags: ['domain']
+          },
+          {
+            name: 'ports',
+            pattern: 'src/ports/**',
+            mode: 'file' as const,
+            tags: ['ports']
+          }
+        ],
+        rules: []
+      }
+
+      const configPath = path.join(TEST_DIR, '.stricture/config.json')
+      await fs.writeFile(configPath, JSON.stringify(config, null, 2))
+
+      // Create expected directories
+      await ensureDir(path.join(TEST_DIR, 'src/domain'))
+      await ensureDir(path.join(TEST_DIR, 'src/ports'))
+
+      const result = await validate({
+        configPath,
+        structure: true,
+        projectRoot: TEST_DIR
+      })
+      expect(result).toBe(true)
+    })
+
+    it('should fail when some directories are missing', async () => {
+      // Create .stricture directory and config
+      await ensureDir(path.join(TEST_DIR, '.stricture'))
+
+      const config = {
+        version: '1',
+        preset: '@stricture/hexagonal',
+        boundaries: [
+          {
+            name: 'domain',
+            pattern: 'src/domain/**',
+            mode: 'file' as const,
+            tags: ['domain']
+          },
+          {
+            name: 'ports',
+            pattern: 'src/ports/**',
+            mode: 'file' as const,
+            tags: ['ports']
+          }
+        ],
+        rules: []
+      }
+
+      const configPath = path.join(TEST_DIR, '.stricture/config.json')
+      await fs.writeFile(configPath, JSON.stringify(config, null, 2))
+
+      // Only create one directory
+      await ensureDir(path.join(TEST_DIR, 'src/domain'))
+
+      const result = await validate({
+        configPath,
+        structure: true,
+        projectRoot: TEST_DIR
+      })
+      expect(result).toBe(false)
+    })
+
+    it('should fail when no expected directories exist', async () => {
+      // Create .stricture directory and config
+      await ensureDir(path.join(TEST_DIR, '.stricture'))
+
+      const config = {
+        version: '1',
+        preset: '@stricture/hexagonal',
+        boundaries: [
+          {
+            name: 'domain',
+            pattern: 'src/domain/**',
+            mode: 'file' as const,
+            tags: ['domain']
+          }
+        ],
+        rules: []
+      }
+
+      const configPath = path.join(TEST_DIR, '.stricture/config.json')
+      await fs.writeFile(configPath, JSON.stringify(config, null, 2))
+
+      // Don't create any directories
+
+      const result = await validate({
+        configPath,
+        structure: true,
+        projectRoot: TEST_DIR
+      })
+      expect(result).toBe(false)
+    })
+
+    it('should handle complex patterns correctly', async () => {
+      // Create .stricture directory and config
+      await ensureDir(path.join(TEST_DIR, '.stricture'))
+
+      const config = {
+        version: '1',
+        preset: '@stricture/hexagonal',
+        boundaries: [
+          {
+            name: 'domain',
+            pattern: 'src/core/domain/**/*.ts',
+            mode: 'file' as const,
+            tags: ['domain']
+          },
+          {
+            name: 'adapters',
+            pattern: 'src/adapters/driving/**',
+            mode: 'file' as const,
+            tags: ['adapters']
+          }
+        ],
+        rules: []
+      }
+
+      const configPath = path.join(TEST_DIR, '.stricture/config.json')
+      await fs.writeFile(configPath, JSON.stringify(config, null, 2))
+
+      // Create expected directories
+      await ensureDir(path.join(TEST_DIR, 'src/core/domain'))
+      await ensureDir(path.join(TEST_DIR, 'src/adapters/driving'))
+
+      const result = await validate({
+        configPath,
+        structure: true,
+        projectRoot: TEST_DIR
+      })
+      expect(result).toBe(true)
+    })
+  })
 })

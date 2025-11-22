@@ -19,6 +19,8 @@ This preset enforces NestJS architectural best practices:
 npm install -D @stricture/nestjs @stricture/eslint-plugin
 ```
 
+> Note: @stricture/core is automatically installed as a dependency of this preset.
+
 Or use the CLI:
 
 ```bash

@@ -77,11 +77,13 @@ program
   .description('Validate configuration file')
   .option('--config <path>', 'Path to config file')
   .option('--verbose', 'Verbose output')
+  .option('--structure', 'Check if project structure matches preset')
   .action(async (options) => {
     try {
       const valid = await validate({
         configPath: options.config,
-        verbose: options.verbose
+        verbose: options.verbose,
+        structure: options.structure
       })
 
       if (!valid) {

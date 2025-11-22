@@ -398,7 +398,6 @@ packages:
     "lint:stricture": "pnpm -r exec eslint . --rule '@stricture/enforce-boundaries: error'"
   },
   "devDependencies": {
-    "@stricture/core": "^0.1.0",
     "@stricture/eslint-plugin": "^0.1.0"
   }
 }
@@ -408,7 +407,7 @@ Install dependencies:
 
 ```bash
 # Install in all packages
-pnpm install -D -w @stricture/core @stricture/eslint-plugin
+pnpm install -D -w @stricture/eslint-plugin
 
 # Install preset in specific package
 pnpm --filter @my-company/api add -D @stricture/hexagonal

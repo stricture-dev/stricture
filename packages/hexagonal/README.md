@@ -30,6 +30,8 @@ graph TB
 npm install -D @stricture/hexagonal @stricture/eslint-plugin
 ```
 
+> Note: @stricture/core is automatically installed as a dependency of this preset.
+
 Or use the CLI:
 
 ```bash

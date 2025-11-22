@@ -83,11 +83,17 @@ This single line gives you complete hexagonal architecture enforcement!
 
 ### Basic Usage
 
-Install the preset:
+Install the ESLint plugin and preset:
 
 ```bash
-pnpm add -D @stricture/hexagonal
+npm install -D @stricture/eslint-plugin @stricture/hexagonal
+# or
+pnpm add -D @stricture/eslint-plugin @stricture/hexagonal
+# or
+yarn add -D @stricture/eslint-plugin @stricture/hexagonal
 ```
+
+> **Note**: `@stricture/core` is automatically installed as a dependency and does not need to be added explicitly.
 
 Reference it in your config:
 

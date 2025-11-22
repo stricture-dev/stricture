@@ -39,6 +39,11 @@ Lower layers must NEVER import from higher layers, maintaining a clean separatio
 
 ```bash
 npm install -D @stricture/layered @stricture/eslint-plugin
+```
+
+> Note: @stricture/core is automatically installed as a dependency of this preset.
+
+```bash
 npx stricture init --preset @stricture/layered
 ```
 

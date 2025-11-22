@@ -37,6 +37,11 @@ graph TB
 
 ```bash
 npm install -D @stricture/clean @stricture/eslint-plugin
+```
+
+> Note: @stricture/core is automatically installed as a dependency of this preset.
+
+```bash
 npx stricture init --preset @stricture/clean
 ```
 

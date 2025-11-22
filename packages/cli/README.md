@@ -154,6 +154,36 @@ Boundaries: 4
 Rules: 8
 ```
 
+**Options**:
+
+- `--structure` - Check if project structure matches preset expectations
+
+**Example with structure checking**:
+
+```bash
+npx stricture validate --structure
+```
+
+**Output**:
+
+```
+Validating configuration...
+✓ Configuration is valid
+
+Checking project structure...
+
+Preset: @stricture/hexagonal
+Expected boundaries:
+  ✓ src/core/domain/ (domain)
+  ✓ src/core/ports/ (ports)
+  ✗ src/adapters/driving/ (driving-adapters)
+  ✗ src/adapters/driven/ (driven-adapters)
+
+⚠ Warning: 2 expected directories are missing.
+
+ℹ Suggestion: Run 'stricture scaffold' to create the expected structure.
+```
+
 ---
 
 ### `stricture diagram`
@@ -307,6 +337,9 @@ All commands support:
 **`check`**:
 - `--fix` - Auto-fix where possible
 - `--format <format>` - Output format: text, json, checkstyle
+
+**`validate`**:
+- `--structure` - Check if project structure matches preset
 
 **`diagram`**:
 - `--output <file>` - Output file

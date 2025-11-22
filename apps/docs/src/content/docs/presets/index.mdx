@@ -21,6 +21,59 @@ Instead of manually defining boundaries and rules, you can use a preset and get 
 }
 ```
 
+## Understanding Package Dependencies
+
+Stricture has a clear package architecture:
+
+```mermaid
+%%{init: {'theme':'base'}}%%
+graph LR
+    User[Your Project]
+    Plugin[@stricture/eslint-plugin]
+    Preset[@stricture/hexagonal]
+    Core[@stricture/core]
+
+    User -->|installs| Plugin
+    User -->|installs| Preset
+    Plugin -->|depends on| Core
+    Preset -->|depends on| Core
+
+    style User fill:#e3f2fd
+    style Plugin fill:#fff3e0
+    style Preset fill:#f3e5f5
+    style Core fill:#e8f5e9
+```
+
+**What you install:**
+- **ESLint Plugin** - Integrates with ESLint to enforce rules
+- **Preset Package** - Contains boundaries and rules for your architecture
+
+**What gets installed automatically:**
+- **Core Package** - Shared validation logic (transitive dependency)
+
+### Installation Pattern
+
+For any preset:
+```bash
+npm install -D @stricture/eslint-plugin @stricture/[preset-name]
+```
+
+Examples:
+```bash
+# Hexagonal architecture
+npm install -D @stricture/eslint-plugin @stricture/hexagonal
+
+# Next.js patterns
+npm install -D @stricture/eslint-plugin @stricture/nextjs
+
+# Custom config (no preset)
+npm install -D @stricture/eslint-plugin
+```
+
+:::tip[Core is Automatic]
+You never need to install `@stricture/core` directly. It's automatically included as a dependency of the plugin and presets.
+:::
+
 ## Why Use Presets?
 
 ### Zero Configuration
@@ -129,14 +182,14 @@ NestJS best practices with controller/service/repository layers.
 
 ## Comparison Table
 
-| Preset | Best For | Complexity | Learning Curve | Key Benefit |
-|--------|----------|------------|----------------|-------------|
-| **Hexagonal** | Complex domains, DDD | Medium-High | Medium | Domain isolation |
-| **Layered** | Traditional apps | Low-Medium | Low | Familiar pattern |
-| **Clean** | Enterprise apps | Medium-High | Medium | Strict dependencies |
-| **Modular** | Large teams | Medium | Low-Medium | Module encapsulation |
-| **Next.js** | React SSR apps | Low | Low | Framework-specific |
-| **NestJS** | API backends | Low-Medium | Low | Framework-specific |
+| Preset | Best For | Complexity | Learning Curve | Key Benefit | Required Packages |
+|--------|----------|------------|----------------|-------------|-------------------|
+| **Hexagonal** | Complex domains, DDD | Medium-High | Medium | Domain isolation | `@stricture/eslint-plugin @stricture/hexagonal` |
+| **Layered** | Traditional apps | Low-Medium | Low | Familiar pattern | `@stricture/eslint-plugin @stricture/layered` |
+| **Clean** | Enterprise apps | Medium-High | Medium | Strict dependencies | `@stricture/eslint-plugin @stricture/clean` |
+| **Modular** | Large teams | Medium | Low-Medium | Module encapsulation | `@stricture/eslint-plugin @stricture/modular` |
+| **Next.js** | React SSR apps | Low | Low | Framework-specific | `@stricture/eslint-plugin @stricture/nextjs` |
+| **NestJS** | API backends | Low-Medium | Low | Framework-specific | `@stricture/eslint-plugin @stricture/nestjs` |
 
 ## How to Choose?
 

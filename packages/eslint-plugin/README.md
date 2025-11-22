@@ -12,9 +12,41 @@ npm install -D @stricture/eslint-plugin
 
 ## Usage
 
-### Basic Setup
+### Recommended Setup
 
-Add to your `.eslintrc.js` or `eslint.config.js`:
+The easiest way to set up the plugin is to extend one of the preset configs:
+
+```javascript
+// .eslintrc.js (Legacy config)
+module.exports = {
+  extends: ['plugin:@stricture/hexagonal']
+}
+```
+
+```javascript
+// eslint.config.js (Flat config)
+import stricture from '@stricture/eslint-plugin'
+
+export default [
+  stricture.configs.hexagonal
+]
+```
+
+**Available preset configs:**
+
+- `plugin:@stricture/recommended` - Basic setup
+- `plugin:@stricture/hexagonal` - For Hexagonal Architecture projects
+- `plugin:@stricture/layered` - For Layered Architecture projects
+- `plugin:@stricture/clean` - For Clean Architecture projects
+- `plugin:@stricture/modular` - For Modular Architecture projects
+- `plugin:@stricture/nextjs` - For Next.js projects
+- `plugin:@stricture/nestjs` - For NestJS projects
+
+All configs enable the `@stricture/enforce-boundaries` rule with error severity. Choose the config that matches your project's preset for semantic clarity.
+
+### Manual Setup
+
+If you prefer manual configuration:
 
 ```javascript
 // .eslintrc.js (Legacy config)

@@ -26,6 +26,59 @@ graph LR
     style DN fill:#ffb3b3
 ```
 
+## Package Architecture
+
+Stricture is split into focused packages:
+
+### Core Packages
+
+**`@stricture/core`** - Validation engine
+- Pure TypeScript library
+- Contains all validation logic
+- Used by all other packages
+- **You don't install this directly**
+
+**`@stricture/eslint-plugin`** - ESLint integration
+- Thin wrapper around core
+- Provides ESLint rule
+- **Required for all setups**
+
+### Preset Packages
+
+Architecture-specific presets:
+- `@stricture/hexagonal` - Ports & Adapters
+- `@stricture/layered` - N-tier architecture
+- `@stricture/clean` - Clean Architecture
+- `@stricture/modular` - Feature modules
+- `@stricture/nextjs` - Next.js patterns
+- `@stricture/nestjs` - NestJS patterns
+
+**Each preset includes:**
+- Boundary definitions
+- Architecture rules
+- Documentation
+- Depends on `@stricture/core` (automatically installed)
+
+### Optional Packages
+
+**`@stricture/cli`** - Command-line tools
+- Interactive setup
+- Validation commands
+- Scaffolding
+- Not required, but helpful
+
+### Typical Installation
+
+Most projects install:
+1. **ESLint plugin** (required)
+2. **One or more presets** (recommended)
+
+```bash
+npm install -D @stricture/eslint-plugin @stricture/hexagonal
+```
+
+The core package is installed automatically as a dependency.
+
 ## Boundaries
 
 **Boundaries** define the architectural layers in your codebase. Each boundary represents a group of files with a specific role.

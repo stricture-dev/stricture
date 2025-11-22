@@ -27,6 +27,29 @@ export interface CheckOptions {
 export interface ValidateOptions {
   configPath?: string // Path to config file
   verbose?: boolean // Verbose output
+  structure?: boolean // Check if project structure matches preset
+  projectRoot?: string // Project root directory (defaults to process.cwd())
+}
+
+/**
+ * Result of checking a single boundary
+ */
+export interface BoundaryCheckResult {
+  boundary: string // Boundary name
+  pattern: string // Original pattern
+  expectedPath: string // Expected directory path
+  exists: boolean // Whether directory exists
+  description?: string // Boundary description
+}
+
+/**
+ * Result of structure validation
+ */
+export interface StructureValidationResult {
+  valid: boolean // All expected directories exist
+  partial: boolean // Some directories exist
+  boundaries: BoundaryCheckResult[]
+  missingCount: number // Count of missing directories
 }
 
 /**

@@ -21,124 +21,146 @@ Before installing Stricture, ensure your project has:
 Stricture works with both ESLint legacy config (`.eslintrc.*`) and the new flat config (`eslint.config.js`).
 :::
 
-## Installation
+## Choose Your Path
 
-Install Stricture with your preferred package manager:
+Stricture supports two workflows:
 
-<Tabs>
-  <TabItem label="npm">
-    ```bash
-    npm install --save-dev @stricture/core @stricture/eslint-plugin
-    ```
-  </TabItem>
-  <TabItem label="pnpm">
-    ```bash
-    pnpm add -D @stricture/core @stricture/eslint-plugin
-    ```
-  </TabItem>
-  <TabItem label="yarn">
-    ```bash
-    yarn add -D @stricture/core @stricture/eslint-plugin
-    ```
-  </TabItem>
-</Tabs>
+### 🎯 Using Presets (Recommended for most projects)
 
-This installs the core validation engine and the ESLint plugin.
+**Best for:**
+- Teams wanting proven architecture patterns
+- Projects starting with hexagonal, layered, clean, or modular architecture
+- Quick setup with minimal configuration
 
-## Installing with a Preset
+**Install a preset:**
+```bash
+npm install -D @stricture/eslint-plugin @stricture/hexagonal
+```
 
-Most projects should start with an architecture preset. Install the preset that matches your architecture:
+**Popular presets:**
+- `@stricture/hexagonal` - Ports & Adapters
+- `@stricture/layered` - Traditional N-tier
+- `@stricture/clean` - Uncle Bob's Clean Architecture
+- `@stricture/nextjs` - Next.js App Router patterns
 
-### Hexagonal (Ports & Adapters)
+[Explore all presets →](/presets/)
 
-<Tabs>
-  <TabItem label="npm">
-    ```bash
-    npm install --save-dev @stricture/hexagonal
-    ```
-  </TabItem>
-  <TabItem label="pnpm">
-    ```bash
-    pnpm add -D @stricture/hexagonal
-    ```
-  </TabItem>
-  <TabItem label="yarn">
-    ```bash
-    yarn add -D @stricture/hexagonal
-    ```
-  </TabItem>
-</Tabs>
+### 🔧 Creating Custom Architecture
 
-### Layered Architecture
+**Best for:**
+- Unique architecture patterns
+- Custom organizational standards
+- Creating reusable presets for your company
 
-<Tabs>
-  <TabItem label="npm">
-    ```bash
-    npm install --save-dev @stricture/layered
-    ```
-  </TabItem>
-  <TabItem label="pnpm">
-    ```bash
-    pnpm add -D @stricture/layered
-    ```
-  </TabItem>
-  <TabItem label="yarn">
-    ```bash
-    yarn add -D @stricture/layered
-    ```
-  </TabItem>
-</Tabs>
+**Setup:**
+1. Install core packages: `npm install -D @stricture/eslint-plugin`
+2. Define custom boundaries and rules in `.stricture/config.json`
 
-### Clean Architecture
+[Learn to create custom presets →](/guides/custom-presets/)
 
-<Tabs>
-  <TabItem label="npm">
-    ```bash
-    npm install --save-dev @stricture/clean
-    ```
-  </TabItem>
-  <TabItem label="pnpm">
-    ```bash
-    pnpm add -D @stricture/clean
-    ```
-  </TabItem>
-  <TabItem label="yarn">
-    ```bash
-    yarn add -D @stricture/clean
-    ```
-  </TabItem>
-</Tabs>
+## Recommended: CLI Setup
 
-### Next.js
+The fastest way to get started is with the interactive CLI:
 
-<Tabs>
-  <TabItem label="npm">
-    ```bash
-    npm install --save-dev @stricture/nextjs
-    ```
-  </TabItem>
-  <TabItem label="pnpm">
-    ```bash
-    pnpm add -D @stricture/nextjs
-    ```
-  </TabItem>
-  <TabItem label="yarn">
-    ```bash
-    yarn add -D @stricture/nextjs
-    ```
-  </TabItem>
-</Tabs>
+```bash
+npx stricture init
+```
+
+The CLI will:
+- ✅ Detect your project framework (Next.js, NestJS, etc.)
+- ✅ Recommend appropriate presets
+- ✅ Create `.stricture/config.json` automatically
+- ✅ Update your ESLint configuration
+- ✅ Install required dependencies
+
+[View full CLI documentation →](/api/cli/)
+
+:::tip[Quick and Easy]
+The CLI handles all setup automatically. Skip to [Step 4](#verify-installation) after running `npx stricture init`.
+:::
+
+## Manual Setup
+
+Prefer manual control? Follow these steps:
+
+### Install Packages
+
+Install the ESLint plugin and your chosen preset:
+
+```bash
+npm install -D @stricture/eslint-plugin @stricture/hexagonal
+# or
+pnpm add -D @stricture/eslint-plugin @stricture/hexagonal
+# or
+yarn add -D @stricture/eslint-plugin @stricture/hexagonal
+```
+
+> **Note**: `@stricture/core` is automatically installed as a dependency and does not need to be added explicitly.
+
+### Other Presets
+
+Choose the preset that matches your architecture:
+
+#### Hexagonal (Ports & Adapters)
+
+```bash
+npm install -D @stricture/hexagonal
+# or
+pnpm add -D @stricture/hexagonal
+# or
+yarn add -D @stricture/hexagonal
+```
+
+#### Layered Architecture
+
+```bash
+npm install -D @stricture/layered
+# or
+pnpm add -D @stricture/layered
+# or
+yarn add -D @stricture/layered
+```
+
+#### Clean Architecture
+
+```bash
+npm install -D @stricture/clean
+# or
+pnpm add -D @stricture/clean
+# or
+yarn add -D @stricture/clean
+```
+
+#### Next.js
+
+```bash
+npm install -D @stricture/nextjs
+# or
+pnpm add -D @stricture/nextjs
+# or
+yarn add -D @stricture/nextjs
+```
 
 :::tip[Browse All Presets]
 See the [Presets](/presets/) page for all available architecture presets.
 :::
 
-## Configure ESLint
+### Configure ESLint
 
-Add Stricture to your ESLint configuration:
+Add Stricture to your ESLint configuration. You can either use the preset's recommended config (easiest) or configure manually:
 
 <Tabs>
-  <TabItem label="Flat Config (ESLint 9+)">
+  <TabItem label="Recommended Config (Legacy)">
+    ```js
+    // .eslintrc.js
+    module.exports = {
+      extends: ['plugin:@stricture/hexagonal']
+    };
+    ```
+
+    The preset config automatically enables the `@stricture/enforce-boundaries` rule.
+  </TabItem>
+  <TabItem label="Manual (Flat Config)">
     ```js
     // eslint.config.js
     import stricture from '@stricture/eslint-plugin';
@@ -155,7 +177,7 @@ Add Stricture to your ESLint configuration:
     ];
     ```
   </TabItem>
-  <TabItem label="Legacy Config (.eslintrc.js)">
+  <TabItem label="Manual (Legacy .eslintrc.js)">
     ```js
     // .eslintrc.js
     module.exports = {
@@ -166,7 +188,7 @@ Add Stricture to your ESLint configuration:
     };
     ```
   </TabItem>
-  <TabItem label="Legacy Config (.eslintrc.json)">
+  <TabItem label="Manual (Legacy .eslintrc.json)">
     ```json
     {
       "plugins": ["@stricture"],
@@ -177,6 +199,10 @@ Add Stricture to your ESLint configuration:
     ```
   </TabItem>
 </Tabs>
+
+:::tip[Use Preset Configs]
+Each preset provides a recommended ESLint config (e.g., `plugin:@stricture/hexagonal`). This is the easiest way to get started with legacy ESLint configs.
+:::
 
 ## Create Configuration
 

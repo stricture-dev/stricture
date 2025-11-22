@@ -69,6 +69,7 @@ interface CheckOptions {
 interface ValidateOptions {
   configPath?: string
   verbose?: boolean
+  structure?: boolean          // Check if project structure matches preset
 }
 
 interface DiagramOptions {
@@ -117,6 +118,21 @@ interface Violation {
   from: BoundaryDefinition
   to: BoundaryDefinition
   message: string
+}
+
+interface BoundaryCheckResult {
+  boundary: string             // Boundary name
+  pattern: string              // Original pattern
+  expectedPath: string         // Expected directory path
+  exists: boolean              // Whether directory exists
+  description?: string         // Boundary description
+}
+
+interface StructureValidationResult {
+  valid: boolean               // All expected directories exist
+  partial: boolean             // Some directories exist
+  boundaries: BoundaryCheckResult[]
+  missingCount: number         // Count of missing directories
 }
 ```
 
@@ -362,6 +378,112 @@ async function check(options: CheckOptions): Promise<CheckResult> {
       rulesLoaded: config.rules.length
     }
   }
+}
+```
+
+#### Structure Validation Algorithm
+
+```typescript
+async function validateStructure(
+  config: StrictureConfig,
+  projectRoot: string
+): Promise<StructureValidationResult> {
+  const results: BoundaryCheckResult[] = []
+
+  // 1. Extract expected directories from boundary patterns
+  for (const boundary of config.boundaries) {
+    // Extract base directory from pattern (e.g., 'src/core/domain/**' -> 'src/core/domain')
+    const baseDir = extractBaseDirectory(boundary.pattern)
+    const fullPath = path.join(projectRoot, baseDir)
+
+    // 2. Check if directory exists
+    const exists = await directoryExists(fullPath)
+
+    results.push({
+      boundary: boundary.name,
+      pattern: boundary.pattern,
+      expectedPath: baseDir,
+      exists,
+      description: boundary.metadata?.description
+    })
+  }
+
+  // 3. Determine overall validity
+  const allExist = results.every(r => r.exists)
+  const someExist = results.some(r => r.exists)
+
+  return {
+    valid: allExist,
+    partial: someExist && !allExist,
+    boundaries: results,
+    missingCount: results.filter(r => !r.exists).length
+  }
+}
+
+function extractBaseDirectory(pattern: string): string {
+  // Remove glob patterns to get base directory
+  // 'src/core/domain/**' -> 'src/core/domain'
+  // 'src/adapters/driving/**/*.ts' -> 'src/adapters/driving'
+  return pattern
+    .replace(/\/\*\*.*$/, '') // Remove /** and everything after
+    .replace(/\/\*.*$/, '')   // Remove /* and everything after
+    .replace(/\*.*$/, '')     // Remove remaining wildcards
+}
+```
+
+**Structure validation flow**:
+
+```typescript
+async function validate(options: ValidateOptions) {
+  // ... existing config validation ...
+
+  if (options.structure) {
+    logger.log('')
+    logger.heading('Checking project structure...')
+    logger.log('')
+
+    // Load preset to get expected boundaries
+    const preset = await loadPreset(config.preset)
+    const structureResult = await validateStructure(config, projectRoot)
+
+    // Display results
+    logger.dim(`Preset: ${config.preset}`)
+    logger.dim('Expected boundaries:')
+    logger.log('')
+
+    for (const boundary of structureResult.boundaries) {
+      const status = boundary.exists ? '✓' : '✗'
+      const color = boundary.exists ? chalk.green : chalk.red
+      logger.log(color(`  ${status} ${boundary.expectedPath}/ (${boundary.boundary})`))
+
+      if (options.verbose && boundary.description) {
+        logger.dim(`    ${boundary.description}`)
+      }
+    }
+
+    logger.log('')
+
+    if (!structureResult.valid) {
+      if (structureResult.partial) {
+        logger.warn(
+          `Warning: ${structureResult.missingCount} expected ${
+            structureResult.missingCount === 1 ? 'directory is' : 'directories are'
+          } missing.`
+        )
+      } else {
+        logger.error('No expected directories found.')
+      }
+      logger.log('')
+      logger.info("Suggestion: Run 'stricture scaffold' to create the expected structure.")
+      logger.log('')
+      return false
+    }
+
+    logger.success('Project structure matches preset expectations')
+    logger.log('')
+  }
+
+  return true
 }
 ```
 

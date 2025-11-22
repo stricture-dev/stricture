@@ -16,6 +16,11 @@ Modular architecture organizes code by **features** or **business capabilities**
 
 ```bash
 npm install -D @stricture/modular @stricture/eslint-plugin
+```
+
+> Note: @stricture/core is automatically installed as a dependency of this preset.
+
+```bash
 npx stricture init --preset @stricture/modular
 ```
 
