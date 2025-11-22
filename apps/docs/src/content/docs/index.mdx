@@ -34,23 +34,14 @@ Install Stricture in your project:
 npm install --save-dev @stricture/eslint-plugin @stricture/hexagonal
 ```
 
-Create `.stricture/config.json`:
+Configure in your ESLint config:
 
-```json
-{
-  "preset": "@stricture/hexagonal"
-}
-```
+```js title="eslint.config.js"
+import stricture from '@stricture/eslint-plugin'
 
-Add to your ESLint config:
-
-```js
-module.exports = {
-  plugins: ['@stricture'],
-  rules: {
-    '@stricture/enforce-boundaries': 'error'
-  }
-};
+export default [
+  stricture.configs.hexagonal()  // Zero-config!
+]
 ```
 
 That's it! Stricture will now enforce hexagonal architecture boundaries in your codebase.

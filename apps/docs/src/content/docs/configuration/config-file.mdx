@@ -7,6 +7,57 @@ import { Tabs, TabItem, Card, CardGrid, Aside } from '@astrojs/starlight/compone
 
 The `.stricture/config.json` file is where you define your architecture rules. This file controls how Stricture enforces boundaries in your codebase.
 
+## Configuration Approaches
+
+Stricture supports two configuration approaches:
+
+### Inline Configuration
+
+Configure directly in your ESLint config:
+
+```js title="eslint.config.js"
+import stricture from '@stricture/eslint-plugin'
+
+export default [
+  stricture.configs.hexagonal({
+    ignorePatterns: ['**/*.test.ts'],
+    // ... custom config
+  })
+]
+```
+
+**Use inline when:**
+- ✅ Using a preset with minimal customization
+- ✅ Configuration is simple (< 5 custom rules/boundaries)
+- ✅ You prefer everything in one place
+- ✅ Quick setup for new projects
+
+### File-Based Configuration
+
+Use `.stricture/config.json` for complex setups:
+
+```json title=".stricture/config.json"
+{
+  "preset": "@stricture/hexagonal",
+  "boundaries": [ /* many boundaries */ ],
+  "rules": [ /* many rules */ ]
+}
+```
+
+```js title="eslint.config.js"
+export default [
+  stricture.configs.recommended()
+]
+```
+
+**Use file-based when:**
+- ✅ Complex configuration with many boundaries/rules
+- ✅ Sharing config across multiple tools (CLI, IDE extensions)
+- ✅ Team prefers separation of concerns
+- ✅ Easier to review large configs in PRs
+
+Both approaches are equally valid - choose what works best for your team.
+
 ## File Location
 
 Place your configuration at the root of your project:

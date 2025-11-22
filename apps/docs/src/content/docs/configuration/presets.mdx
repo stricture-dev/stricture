@@ -81,9 +81,53 @@ This single line gives you complete hexagonal architecture enforcement!
 
 ## Using Presets
 
-### Basic Usage
+### Inline Configuration (Recommended)
 
-Install the ESLint plugin and preset:
+The simplest way to use a preset:
+
+```js title="eslint.config.js"
+import stricture from '@stricture/eslint-plugin'
+
+export default [
+  stricture.configs.hexagonal()  // Auto-loads @stricture/hexagonal
+]
+```
+
+**That's it!** No `.stricture/config.json` needed.
+
+### With Customization
+
+Add overrides to the preset:
+
+```js title="eslint.config.js"
+export default [
+  stricture.configs.hexagonal({
+    ignorePatterns: ['**/*.test.ts'],
+    boundaries: [
+      {
+        name: 'shared',
+        pattern: 'src/shared/**',
+        mode: 'file',
+        tags: ['shared']
+      }
+    ],
+    rules: [
+      {
+        id: 'all-to-shared',
+        from: { pattern: '**' },
+        to: { tag: 'shared' },
+        allowed: true
+      }
+    ]
+  })
+]
+```
+
+### File-Based Configuration
+
+For complex setups, use a separate file:
+
+Install the preset:
 
 ```bash
 npm install -D @stricture/eslint-plugin @stricture/hexagonal
@@ -103,7 +147,13 @@ Reference it in your config:
 }
 ```
 
-That's it! The preset defines all boundaries and rules.
+Configure ESLint:
+
+```js title="eslint.config.js"
+export default [
+  stricture.configs.recommended()
+]
+```
 
 ### Preset Requirements
 

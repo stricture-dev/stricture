@@ -12,37 +12,99 @@ npm install -D @stricture/eslint-plugin
 
 ## Usage
 
-### Recommended Setup
+### Recommended Setup (Zero-Config)
 
-The easiest way to set up the plugin is to extend one of the preset configs:
-
-```javascript
-// .eslintrc.js (Legacy config)
-module.exports = {
-  extends: ['plugin:@stricture/hexagonal']
-}
-```
+The easiest way is to use inline configuration:
 
 ```javascript
-// eslint.config.js (Flat config)
+// eslint.config.js (Flat config - recommended)
 import stricture from '@stricture/eslint-plugin'
 
 export default [
-  stricture.configs.hexagonal
+  stricture.configs.hexagonal()  // Auto-loads @stricture/hexagonal preset
 ]
 ```
 
-**Available preset configs:**
+```javascript
+// .eslintrc.js (Legacy config)
+const stricture = require('@stricture/eslint-plugin')
 
-- `plugin:@stricture/recommended` - Basic setup
-- `plugin:@stricture/hexagonal` - For Hexagonal Architecture projects
-- `plugin:@stricture/layered` - For Layered Architecture projects
-- `plugin:@stricture/clean` - For Clean Architecture projects
-- `plugin:@stricture/modular` - For Modular Architecture projects
-- `plugin:@stricture/nextjs` - For Next.js projects
-- `plugin:@stricture/nestjs` - For NestJS projects
+module.exports = {
+  extends: ['plugin:@stricture/recommended'],
+  rules: {
+    '@stricture/enforce-boundaries': ['error', {
+      inlineConfig: require('@stricture/hexagonal').default
+    }]
+  }
+}
+```
 
-All configs enable the `@stricture/enforce-boundaries` rule with error severity. Choose the config that matches your project's preset for semantic clarity.
+**No `.stricture/config.json` needed!**
+
+### Setup with Customization
+
+Add overrides to the preset:
+
+```javascript
+export default [
+  stricture.configs.hexagonal({
+    ignorePatterns: ['**/*.test.ts', 'src/legacy/**'],
+    rules: [
+      {
+        id: 'no-legacy-imports',
+        from: { pattern: 'src/**', exclude: ['src/legacy/**'] },
+        to: { pattern: 'src/legacy/**' },
+        allowed: false,
+        message: 'No new code should depend on legacy modules'
+      }
+    ]
+  })
+]
+```
+
+### Setup with Separate Config File
+
+For complex configurations, use a separate file:
+
+```javascript
+// eslint.config.js
+export default [
+  stricture.configs.recommended()  // Reads .stricture/config.json
+]
+```
+
+```json
+// .stricture/config.json
+{
+  "preset": "@stricture/hexagonal",
+  "boundaries": [ /* many boundaries */ ],
+  "rules": [ /* many rules */ ]
+}
+```
+
+## When to Use Inline vs File Config
+
+**Use Inline Config when:**
+- Using a preset with minimal or no customization
+- Config is simple (< 5 custom boundaries/rules)
+- You want everything in one place
+
+**Use File Config when:**
+- Complex configuration with many boundaries/rules
+- Sharing config across multiple tools (CLI, IDE extensions)
+- Team prefers separation of concerns
+
+### Available Preset Configs
+
+All preset configs are factory functions:
+
+- `stricture.configs.recommended()` - Basic setup (reads `.stricture/config.json`)
+- `stricture.configs.hexagonal()` - For Hexagonal Architecture projects
+- `stricture.configs.layered()` - For Layered Architecture projects
+- `stricture.configs.clean()` - For Clean Architecture projects
+- `stricture.configs.modular()` - For Modular Architecture projects
+- `stricture.configs.nextjs()` - For Next.js projects
+- `stricture.configs.nestjs()` - For NestJS projects
 
 ### Manual Setup
 

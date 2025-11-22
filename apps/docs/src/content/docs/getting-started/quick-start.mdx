@@ -38,15 +38,49 @@ Using a different pattern? Install a different preset:
 See all [available presets](/presets/).
 :::
 
-## Step 2: Create Configuration
+## Step 2: Configure Stricture
 
-Create `.stricture/config.json` in your project root:
+You have two options:
+
+### Option A: Inline Configuration (Recommended)
+
+Configure everything in your ESLint config:
+
+<Tabs>
+  <TabItem label="Flat Config (ESLint 9+)">
+    ```js title="eslint.config.js"
+    import stricture from '@stricture/eslint-plugin'
+
+    export default [
+      stricture.configs.hexagonal()  // That's it!
+    ]
+    ```
+  </TabItem>
+  <TabItem label="Legacy Config">
+    ```js title=".eslintrc.js"
+    const stricture = require('@stricture/eslint-plugin')
+
+    module.exports = {
+      extends: ['plugin:@stricture/recommended'],
+      rules: {
+        '@stricture/enforce-boundaries': ['error', {
+          inlineConfig: require('@stricture/hexagonal').default
+        }]
+      }
+    }
+    ```
+  </TabItem>
+</Tabs>
+
+**No `.stricture/config.json` needed!** The preset is automatically loaded from your `node_modules`.
+
+### Option B: Separate Config File
+
+Create `.stricture/config.json`:
 
 ```bash
 mkdir -p .stricture
 ```
-
-Add this minimal configuration:
 
 ```json title=".stricture/config.json"
 {
@@ -54,7 +88,20 @@ Add this minimal configuration:
 }
 ```
 
-That's it! The preset provides complete boundary and rule definitions.
+Then configure ESLint:
+
+```js title="eslint.config.js"
+import stricture from '@stricture/eslint-plugin'
+
+export default [
+  stricture.configs.recommended()  // Reads .stricture/config.json
+]
+```
+
+### Which Option Should You Use?
+
+- **Option A (Inline)**: Simple setups, using a preset with minimal customization
+- **Option B (File)**: Complex configs with many custom boundaries/rules
 
 :::note[What does this preset do?]
 The hexagonal preset enforces:
@@ -66,67 +113,7 @@ The hexagonal preset enforces:
 Learn more in [Core Concepts](/getting-started/concepts/).
 :::
 
-## Step 3: Add ESLint Rule
-
-Add Stricture to your ESLint configuration. The easiest way is to use the preset's recommended config:
-
-<Tabs>
-  <TabItem label="Recommended (Legacy Config)">
-    ```js title=".eslintrc.js"
-    // .eslintrc.js
-    module.exports = {
-      extends: ['plugin:@stricture/hexagonal']
-    };
-    ```
-
-    This automatically enables the `@stricture/enforce-boundaries` rule.
-  </TabItem>
-  <TabItem label="Manual (Flat Config)">
-    ```js title="eslint.config.js" ins={2,6-13}
-    // eslint.config.js
-    import stricture from '@stricture/eslint-plugin';
-
-    export default [
-      // ... your existing config
-      {
-        plugins: {
-          '@stricture': stricture
-        },
-        rules: {
-          '@stricture/enforce-boundaries': 'error'
-        }
-      }
-    ];
-    ```
-  </TabItem>
-  <TabItem label="Manual (Legacy .eslintrc.js)">
-    ```js title=".eslintrc.js" ins={3,5-7}
-    // .eslintrc.js
-    module.exports = {
-      plugins: ['@stricture'],
-      rules: {
-        '@stricture/enforce-boundaries': 'error'
-      }
-    };
-    ```
-  </TabItem>
-  <TabItem label="Manual (Legacy .eslintrc.json)">
-    ```json title=".eslintrc.json" ins={3,5-7}
-    {
-      "plugins": ["@stricture"],
-      "rules": {
-        "@stricture/enforce-boundaries": "error"
-      }
-    }
-    ```
-  </TabItem>
-</Tabs>
-
-:::tip[Easiest Setup]
-Use the preset's recommended config (e.g., `plugin:@stricture/hexagonal`) for automatic rule configuration with legacy ESLint configs.
-:::
-
-## Step 4: See It In Action
+## Step 3: See It In Action
 
 Create a sample directory structure:
 

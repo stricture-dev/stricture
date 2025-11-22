@@ -124,16 +124,77 @@ Each config is functionally identical - they all enable the `@stricture/enforce-
 
 The actual architectural rules (boundaries, allowed imports, etc.) are defined in `.stricture/config.json`, not in the ESLint configs.
 
+### Inline Configuration
+
+**Breaking Change from Pre-Release**: Configs are now factory functions that enable inline configuration, eliminating the need for `.stricture/config.json` in simple cases.
+
+**Function Signature:**
+
+```typescript
+type ConfigFactory = (overrides?: Partial<StrictureConfig>) => ESLintConfig
+
+// Available configs
+stricture.configs.recommended(overrides?)
+stricture.configs.hexagonal(overrides?)
+stricture.configs.layered(overrides?)
+stricture.configs.clean(overrides?)
+stricture.configs.modular(overrides?)
+stricture.configs.nextjs(overrides?)
+stricture.configs.nestjs(overrides?)
+```
+
+**How It Works:**
+
+1. Preset configs (`hexagonal`, `layered`, etc.) automatically load their corresponding preset package from `node_modules`
+2. The loaded preset config is merged with any overrides provided
+3. The merged config is passed to the `enforce-boundaries` rule via `inlineConfig` option
+4. If no inline config is provided, the rule falls back to reading `.stricture/config.json`
+
+**Configuration Priority:**
+
+1. **Inline config** (passed to function) - highest priority
+2. **File config** (`.stricture/config.json`) - fallback
+3. **Error** if neither exists
+
+**Examples:**
+
+Zero-config with preset:
+```javascript
+export default [stricture.configs.hexagonal()]
+```
+
+With overrides:
+```javascript
+export default [
+  stricture.configs.hexagonal({
+    ignorePatterns: ['**/*.test.ts'],
+    rules: [{
+      id: 'custom-rule',
+      from: { tag: 'domain' },
+      to: { tag: 'infrastructure' },
+      allowed: false
+    }]
+  })
+]
+```
+
+File-based (backward compatible):
+```javascript
+export default [stricture.configs.recommended()]
+// Reads .stricture/config.json
+```
+
 ### Rule: `enforce-boundaries`
 
 **Schema**:
 
 ```typescript
 interface RuleOptions {
-  configPath?: string           // Path to .stricture/config.json (default: '.stricture/config.json')
-  baseUrl?: string              // Base URL for path resolution (default: './')
-  checkDynamicImports?: boolean // Check import() expressions (default: true)
-  reportUnusedRules?: boolean   // Warn if rules never match (default: false)
+  configPath?: string            // Path to .stricture/config.json (default: '.stricture/config.json')
+  inlineConfig?: StrictureConfig // Inline configuration (NEW - takes priority over file)
+  baseUrl?: string               // Base URL for path resolution (default: './')
+  checkDynamicImports?: boolean  // Check import() expressions (default: true)
+  reportUnusedRules?: boolean    // Warn about unused rules (default: false)
 }
 ```
 

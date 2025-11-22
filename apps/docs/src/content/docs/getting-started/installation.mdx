@@ -204,9 +204,27 @@ Add Stricture to your ESLint configuration. You can either use the preset's reco
 Each preset provides a recommended ESLint config (e.g., `plugin:@stricture/hexagonal`). This is the easiest way to get started with legacy ESLint configs.
 :::
 
-## Create Configuration
+## Configure Stricture
 
-Create a `.stricture/config.json` file in your project root:
+You can configure Stricture in two ways:
+
+### 1. Inline (Zero-Config)
+
+Everything in your ESLint config - no separate file needed:
+
+```js title="eslint.config.js"
+import stricture from '@stricture/eslint-plugin'
+
+export default [
+  stricture.configs.hexagonal()  // Auto-loads @stricture/hexagonal
+]
+```
+
+This is the recommended approach for most projects.
+
+### 2. Separate Config File
+
+For complex configurations, create `.stricture/config.json`:
 
 ```bash
 mkdir -p .stricture
@@ -218,6 +236,14 @@ For a preset-based setup:
 {
   "preset": "@stricture/hexagonal"
 }
+```
+
+Then use the recommended config:
+
+```js title="eslint.config.js"
+export default [
+  stricture.configs.recommended()
+]
 ```
 
 Or for a custom configuration:

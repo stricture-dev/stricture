@@ -6,6 +6,7 @@
  */
 
 import enforceBoundaries from './rules/enforce-boundaries.js'
+import { createConfigFactory } from './configs/factory.js'
 import type { ESLint } from 'eslint'
 
 /**
@@ -23,47 +24,37 @@ const plugin: ESLint.Plugin = {
 }
 
 // Add configs after plugin is defined
-// Note: For legacy ESLint (< v9) using extends: ['plugin:@stricture/recommended'],
-// we should NOT include the plugin instance to avoid circular references during serialization
-
-// Helper function to create config (ensures each config is a separate object, not readonly)
-const createConfig = () => ({
-  plugins: ['@stricture'],
-  rules: {
-    '@stricture/enforce-boundaries': 'error'
-  }
-})
+// These are now factory functions that support inline configuration
 
 // Type assertion needed because ESLint's Plugin.configs type is too strict
-// These configs are for legacy ESLint format (< v9) with plugins as string array
 plugin.configs = {
-  // Recommended config - basic setup
-  // Used with: extends: ['plugin:@stricture/recommended']
-  recommended: createConfig(),
+  // Recommended config - basic setup (reads .stricture/config.json)
+  // Used with: stricture.configs.recommended()
+  recommended: createConfigFactory(),
 
   // Hexagonal architecture preset config
-  // Used with: extends: ['plugin:@stricture/hexagonal']
-  hexagonal: createConfig(),
+  // Used with: stricture.configs.hexagonal()
+  hexagonal: createConfigFactory('@stricture/hexagonal'),
 
   // Layered architecture preset config
-  // Used with: extends: ['plugin:@stricture/layered']
-  layered: createConfig(),
+  // Used with: stricture.configs.layered()
+  layered: createConfigFactory('@stricture/layered'),
 
   // Clean architecture preset config
-  // Used with: extends: ['plugin:@stricture/clean']
-  clean: createConfig(),
+  // Used with: stricture.configs.clean()
+  clean: createConfigFactory('@stricture/clean'),
 
   // Modular architecture preset config
-  // Used with: extends: ['plugin:@stricture/modular']
-  modular: createConfig(),
+  // Used with: stricture.configs.modular()
+  modular: createConfigFactory('@stricture/modular'),
 
   // Next.js preset config
-  // Used with: extends: ['plugin:@stricture/nextjs']
-  nextjs: createConfig(),
+  // Used with: stricture.configs.nextjs()
+  nextjs: createConfigFactory('@stricture/nextjs'),
 
   // NestJS preset config
-  // Used with: extends: ['plugin:@stricture/nestjs']
-  nestjs: createConfig()
+  // Used with: stricture.configs.nestjs()
+  nestjs: createConfigFactory('@stricture/nestjs')
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 } as any
 
