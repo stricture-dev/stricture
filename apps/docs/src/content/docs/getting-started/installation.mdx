@@ -65,59 +65,19 @@ npm install -D @stricture/eslint-plugin
 
 Add Stricture to your existing ESLint config:
 
-<Tabs>
-  <TabItem label="New Project">
-    ```js title="eslint.config.js"
-    import stricture from '@stricture/eslint-plugin'
+```js title="eslint.config.js"
+import stricture from '@stricture/eslint-plugin'
 
-    export default [
-      stricture.configs.hexagonal()
-    ]
-    ```
-  </TabItem>
-  <TabItem label="With TypeScript">
-    ```js title="eslint.config.js"
-    import tseslint from '@typescript-eslint/eslint-plugin'
-    import tsparser from '@typescript-eslint/parser'
-    import stricture from '@stricture/eslint-plugin'
-
-    export default [
-      {
-        files: ['**/*.ts'],
-        languageOptions: {
-          parser: tsparser,
-          parserOptions: {
-            project: './tsconfig.json'
-          }
-        },
-        plugins: {
-          '@typescript-eslint': tseslint
-        },
-        rules: {
-          '@typescript-eslint/no-unused-vars': 'error',
-          '@typescript-eslint/no-explicit-any': 'warn'
-        }
-      },
-      stricture.configs.hexagonal()  // Add Stricture
-    ]
-    ```
-  </TabItem>
-  <TabItem label="With Other Plugins">
-    ```js title="eslint.config.js"
-    import js from '@eslint/js'
-    import tseslint from 'typescript-eslint'
-    import prettier from 'eslint-config-prettier'
-    import stricture from '@stricture/eslint-plugin'
-
-    export default [
-      js.configs.recommended,
-      ...tseslint.configs.recommended,
-      prettier,
-      stricture.configs.hexagonal()  // Add Stricture
-    ]
-    ```
-  </TabItem>
-</Tabs>
+export default [
+  {
+    // Your existing ESLint config
+    files: ['**/*.ts', '**/*.tsx'],
+    plugins: { /* your other plugins */ },
+    rules: { /* your other rules */ }
+  },
+  stricture.configs.hexagonal()  // Add Stricture
+]
+```
 
 **No `.stricture/config.json` needed!** The preset is loaded automatically from the plugin.
 

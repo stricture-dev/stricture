@@ -52,18 +52,12 @@ Configure everything in your ESLint config:
     import stricture from '@stricture/eslint-plugin'
 
     export default [
-      // ... your existing ESLint configs
-      stricture.configs.hexagonal()  // Add Stricture
-    ]
-    ```
-  </TabItem>
-  <TabItem label="With TypeScript">
-    ```js title="eslint.config.js"
-    import tseslint from 'typescript-eslint'
-    import stricture from '@stricture/eslint-plugin'
-
-    export default [
-      ...tseslint.configs.recommended,
+      {
+        // Your existing ESLint config
+        files: ['**/*.ts', '**/*.tsx'],
+        plugins: { /* your other plugins */ },
+        rules: { /* your other rules */ }
+      },
       stricture.configs.hexagonal()  // Add Stricture
     ]
     ```
