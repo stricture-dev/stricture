@@ -17,7 +17,7 @@ By the end of this guide, you'll have:
 
 ## Step 1: Install Package
 
-Install the ESLint plugin (all architecture presets are bundled):
+Install the ESLint plugin:
 
 ```bash
 npm install -D @stricture/eslint-plugin
@@ -27,10 +27,8 @@ pnpm add -D @stricture/eslint-plugin
 yarn add -D @stricture/eslint-plugin
 ```
 
-> **Note**: All official architecture presets are bundled with the plugin. `@stricture/core` is automatically installed as a dependency.
-
 :::tip[Different Architecture?]
-All architecture presets are already bundled! Just use a different config:
+Use a different config for other architectures:
 - Layered: `stricture.configs.layered()`
 - Clean Architecture: `stricture.configs.clean()`
 - Next.js: `stricture.configs.nextjs()`
@@ -77,8 +75,6 @@ Configure everything in your ESLint config:
     ```
   </TabItem>
 </Tabs>
-
-**No `.stricture/config.json` needed!** The preset is automatically loaded from your `node_modules`.
 
 ### Option B: Separate Config File
 

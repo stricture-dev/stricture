@@ -44,16 +44,9 @@ graph LR
     style Core fill:#e8f5e9
 ```
 
-**What you install:**
-- **ESLint Plugin** - Integrates with ESLint to enforce rules
-- **Preset Package** - Contains boundaries and rules for your architecture
+### Installation
 
-**What gets installed automatically:**
-- **Core Package** - Shared validation logic (transitive dependency)
-
-### Installation Pattern
-
-Install the plugin once - all presets are bundled:
+Install the plugin:
 ```bash
 npm install -D @stricture/eslint-plugin
 ```
@@ -71,10 +64,6 @@ export default [stricture.configs.nextjs()]
 // Custom config
 export default [stricture.configs.recommended()]
 ```
-
-:::tip[Everything Bundled]
-All official architecture presets are bundled with the plugin. `@stricture/core` is automatically included as a dependency.
-:::
 
 ## Why Use Presets?
 
@@ -233,7 +222,7 @@ NestJS best practices with controller/service/repository layers.
 
 ## Installation
 
-Install the ESLint plugin - all presets are bundled:
+Install the ESLint plugin:
 
 ```bash
 npm install --save-dev @stricture/eslint-plugin
