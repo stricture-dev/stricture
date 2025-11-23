@@ -52,7 +52,19 @@ Configure everything in your ESLint config:
     import stricture from '@stricture/eslint-plugin'
 
     export default [
-      stricture.configs.hexagonal()  // That's it!
+      // ... your existing ESLint configs
+      stricture.configs.hexagonal()  // Add Stricture
+    ]
+    ```
+  </TabItem>
+  <TabItem label="With TypeScript">
+    ```js title="eslint.config.js"
+    import tseslint from 'typescript-eslint'
+    import stricture from '@stricture/eslint-plugin'
+
+    export default [
+      ...tseslint.configs.recommended,
+      stricture.configs.hexagonal()  // Add Stricture
     ]
     ```
   </TabItem>
@@ -64,7 +76,7 @@ Configure everything in your ESLint config:
       extends: ['plugin:@stricture/recommended'],
       rules: {
         '@stricture/enforce-boundaries': ['error', {
-          inlineConfig: require('@stricture/hexagonal').default
+          inlineConfig: stricture.hexagonalPreset
         }]
       }
     }

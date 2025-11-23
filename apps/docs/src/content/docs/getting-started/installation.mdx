@@ -61,19 +61,65 @@ npm install -D @stricture/eslint-plugin
 
 > **Note**: `@stricture/core` is installed automatically as a dependency.
 
-### Step 2: Configure ESLint (One Line!)
+### Step 2: Configure ESLint
 
-Add Stricture to your ESLint config:
+Add Stricture to your existing ESLint config:
 
-```js title="eslint.config.js"
-import stricture from '@stricture/eslint-plugin'
+<Tabs>
+  <TabItem label="New Project">
+    ```js title="eslint.config.js"
+    import stricture from '@stricture/eslint-plugin'
 
-export default [
-  stricture.configs.hexagonal()  // That's it!
-]
-```
+    export default [
+      stricture.configs.hexagonal()
+    ]
+    ```
+  </TabItem>
+  <TabItem label="With TypeScript">
+    ```js title="eslint.config.js"
+    import tseslint from '@typescript-eslint/eslint-plugin'
+    import tsparser from '@typescript-eslint/parser'
+    import stricture from '@stricture/eslint-plugin'
 
-**No `.stricture/config.json` needed!** The preset is loaded automatically from `node_modules`.
+    export default [
+      {
+        files: ['**/*.ts'],
+        languageOptions: {
+          parser: tsparser,
+          parserOptions: {
+            project: './tsconfig.json'
+          }
+        },
+        plugins: {
+          '@typescript-eslint': tseslint
+        },
+        rules: {
+          '@typescript-eslint/no-unused-vars': 'error',
+          '@typescript-eslint/no-explicit-any': 'warn'
+        }
+      },
+      stricture.configs.hexagonal()  // Add Stricture
+    ]
+    ```
+  </TabItem>
+  <TabItem label="With Other Plugins">
+    ```js title="eslint.config.js"
+    import js from '@eslint/js'
+    import tseslint from 'typescript-eslint'
+    import prettier from 'eslint-config-prettier'
+    import stricture from '@stricture/eslint-plugin'
+
+    export default [
+      js.configs.recommended,
+      ...tseslint.configs.recommended,
+      prettier,
+      stricture.configs.hexagonal()  // Add Stricture
+    ]
+    ```
+  </TabItem>
+</Tabs>
+
+**No `.stricture/config.json` needed!** The preset is loaded automatically from the plugin.
 
 :::tip[Different ESLint Config Format?]
 Using `.eslintrc.js` or need advanced configuration? See the [ESLint Setup Guide](/guides/eslint-setup/).
