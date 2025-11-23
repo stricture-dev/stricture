@@ -14,10 +14,10 @@ Next.js-specific architecture preset for Stricture with App Router and Server/Cl
 ## Installation
 
 ```bash
-npm install -D @stricture/nextjs @stricture/eslint-plugin
+npm install -D @stricture/eslint-plugin
 ```
 
-> Note: @stricture/core is automatically installed as a dependency of this preset.
+Or use the CLI:
 
 ```bash
 npx stricture init --preset @stricture/nextjs

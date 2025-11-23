@@ -63,7 +63,7 @@ npx stricture init
 ✓ Architecture boundaries configured!
 
 Next steps:
-  1. Run: npm install -D @stricture/eslint-plugin @stricture/clean
+  1. Run: npm install -D @stricture/eslint-plugin
   2. Run: npm run lint
 ```
 
