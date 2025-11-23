@@ -6,7 +6,7 @@
  */
 
 import enforceBoundaries from './rules/enforce-boundaries.js'
-import { createConfigFactory } from './configs/factory.js'
+import { createConfigFactory, createConfig, createConfigFromFile } from './configs/factory.js'
 import type { ESLint } from 'eslint'
 
 /**
@@ -77,3 +77,16 @@ export const rules = {
   'enforce-boundaries': enforceBoundaries
 }
 export const configs = plugin.configs
+
+// Export config helpers for custom presets
+export { createConfig, createConfigFromFile }
+
+// Export bundled presets for advanced usage
+export {
+  hexagonalPreset,
+  layeredPreset,
+  cleanPreset,
+  modularPreset,
+  nextjsPreset,
+  nestjsPreset
+} from './presets/index.js'

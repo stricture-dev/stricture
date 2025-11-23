@@ -712,10 +712,10 @@ Then create a custom config in `.stricture/config.json`.
 
 **Recommended setup (with preset):**
 ```bash
-npm install -D @stricture/eslint-plugin @stricture/hexagonal
+npm install -D @stricture/eslint-plugin
 ```
 
-Then reference the preset:
+Then reference a bundled preset:
 ```json
 {
   "preset": "@stricture/hexagonal"
@@ -724,7 +724,7 @@ Then reference the preset:
 
 **Do I need @stricture/core?**
 
-No. It's automatically installed as a dependency of the ESLint plugin and presets.
+No. It's automatically installed as a dependency of the ESLint plugin.
 
 **Can I use multiple presets?**
 
@@ -736,10 +736,7 @@ Yes, use the `extends` field:
 }
 ```
 
-Install both presets:
-```bash
-npm install -D @stricture/hexagonal @stricture/nextjs
-```
+All official presets are bundled with the plugin - no additional installation needed!
 
 ### Configuration Not Found
 

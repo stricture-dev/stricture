@@ -5,10 +5,10 @@ ESLint plugin that enforces software architecture boundaries by controlling impo
 ## Installation
 
 ```bash
-npm install -D @stricture/eslint-plugin @stricture/hexagonal
+npm install -D @stricture/eslint-plugin
 ```
 
-**Note**: Install both the plugin and a preset package. The plugin is automatically included as a dependency of preset packages.
+All official architecture presets are bundled with the plugin - no need to install them separately!
 
 ## Quick Start
 
@@ -150,7 +150,7 @@ module.exports = {
   extends: ['plugin:@stricture/recommended'],
   rules: {
     '@stricture/enforce-boundaries': ['error', {
-      inlineConfig: require('@stricture/hexagonal').default
+      inlineConfig: stricture.hexagonalPreset
     }]
   }
 }
@@ -360,19 +360,7 @@ export default defineConfig([
 
 **Check**:
 1. Are you calling the config function? `stricture.configs.hexagonal()` not `stricture.configs.hexagonal`
-2. Is the preset package installed? `npm list @stricture/hexagonal`
-3. Run with debug flag: `npx eslint --debug .`
-
-### Preset not found
-
-**Problem**: Error: `Failed to load preset "@stricture/hexagonal"`
-
-**Solution**:
-```bash
-npm install -D @stricture/hexagonal
-```
-
-Verify it's in `devDependencies` in `package.json`.
+2. Run with debug flag: `npx eslint --debug .`
 
 ### TypeScript paths not resolving
 
@@ -399,9 +387,14 @@ See [CONTRIBUTING.md](../../CONTRIBUTING.md) in the repository root.
 
 - [`@stricture/core`](../core/README.md) - Core validation engine (automatically installed)
 - [`@stricture/cli`](../cli/README.md) - Command-line interface for Stricture
-- [`@stricture/hexagonal`](../hexagonal/README.md) - Hexagonal architecture preset
-- [`@stricture/layered`](../layered/README.md) - Layered architecture preset
-- [`@stricture/clean`](../clean/README.md) - Clean architecture preset
-- [`@stricture/modular`](../modular/README.md) - Modular architecture preset
-- [`@stricture/nextjs`](../nextjs/README.md) - Next.js preset
-- [`@stricture/nestjs`](../nestjs/README.md) - NestJS preset
+
+### Bundled Presets
+
+All official architecture presets are bundled with this plugin:
+
+- [`@stricture/hexagonal`](../hexagonal/README.md) - Hexagonal architecture (Ports & Adapters)
+- [`@stricture/layered`](../layered/README.md) - Layered architecture (N-tier)
+- [`@stricture/clean`](../clean/README.md) - Clean architecture
+- [`@stricture/modular`](../modular/README.md) - Modular architecture
+- [`@stricture/nextjs`](../nextjs/README.md) - Next.js App Router patterns
+- [`@stricture/nestjs`](../nestjs/README.md) - NestJS framework patterns

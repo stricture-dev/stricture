@@ -53,25 +53,27 @@ graph LR
 
 ### Installation Pattern
 
-For any preset:
+Install the plugin once - all presets are bundled:
 ```bash
-npm install -D @stricture/eslint-plugin @stricture/[preset-name]
-```
-
-Examples:
-```bash
-# Hexagonal architecture
-npm install -D @stricture/eslint-plugin @stricture/hexagonal
-
-# Next.js patterns
-npm install -D @stricture/eslint-plugin @stricture/nextjs
-
-# Custom config (no preset)
 npm install -D @stricture/eslint-plugin
 ```
 
-:::tip[Core is Automatic]
-You never need to install `@stricture/core` directly. It's automatically included as a dependency of the plugin and presets.
+Then use any preset in your config:
+```js
+import stricture from '@stricture/eslint-plugin'
+
+// Hexagonal architecture
+export default [stricture.configs.hexagonal()]
+
+// Next.js patterns
+export default [stricture.configs.nextjs()]
+
+// Custom config
+export default [stricture.configs.recommended()]
+```
+
+:::tip[Everything Bundled]
+All official architecture presets are bundled with the plugin. `@stricture/core` is automatically included as a dependency.
 :::
 
 ## Why Use Presets?
@@ -231,14 +233,14 @@ NestJS best practices with controller/service/repository layers.
 
 ## Installation
 
-Install any preset as a dev dependency:
+Install the ESLint plugin - all presets are bundled:
 
 ```bash
-npm install --save-dev @stricture/hexagonal
+npm install --save-dev @stricture/eslint-plugin
 # or
-pnpm add -D @stricture/layered
+pnpm add -D @stricture/eslint-plugin
 # or
-yarn add -D @stricture/clean
+yarn add -D @stricture/eslint-plugin
 ```
 
 ## Usage

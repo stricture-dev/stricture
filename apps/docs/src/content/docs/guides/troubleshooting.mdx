@@ -347,28 +347,17 @@ npm list @stricture/hexagonal
 
 ### Causes & Solutions
 
-#### Cause 1: Preset Not Installed
-
-**Solution:** Install the preset package
-
-```bash
-npm install -D @stricture/hexagonal
-
-# Verify
-npm list @stricture/hexagonal
-```
-
-#### Cause 2: Wrong Preset Name
+#### Cause 1: Wrong Preset Name
 
 **Solution:** Check available presets
 
-```bash
-# Official presets
-npm search @stricture
-
-# Install correct one
-npm install -D @stricture/layered
-```
+All official presets are bundled with the plugin:
+- `@stricture/hexagonal`
+- `@stricture/layered`
+- `@stricture/clean`
+- `@stricture/modular`
+- `@stricture/nextjs`
+- `@stricture/nestjs`
 
 Update config:
 

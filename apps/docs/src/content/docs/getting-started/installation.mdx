@@ -51,32 +51,13 @@ Stricture supports two workflows:
 
 The fastest way to get started:
 
-### Step 1: Install Packages
+### Step 1: Install Package
 
-Choose a preset that matches your architecture:
+```bash
+npm install -D @stricture/eslint-plugin
+```
 
-<Tabs>
-  <TabItem label="Hexagonal">
-    ```bash
-    npm install -D @stricture/eslint-plugin @stricture/hexagonal
-    ```
-  </TabItem>
-  <TabItem label="Layered">
-    ```bash
-    npm install -D @stricture/eslint-plugin @stricture/layered
-    ```
-  </TabItem>
-  <TabItem label="Clean">
-    ```bash
-    npm install -D @stricture/eslint-plugin @stricture/clean
-    ```
-  </TabItem>
-  <TabItem label="Next.js">
-    ```bash
-    npm install -D @stricture/eslint-plugin @stricture/nextjs
-    ```
-  </TabItem>
-</Tabs>
+**All architecture presets are bundled** - no need to install them separately!
 
 > **Note**: `@stricture/core` is installed automatically as a dependency.
 
@@ -257,13 +238,6 @@ Each package can use a different preset. See the [Monorepos Guide](/guides/monor
 1. Ensure `tsconfig.json` is in your project root
 2. Verify `baseUrl` and `paths` are configured correctly
 3. Restart your IDE/ESLint server
-
-### Preset not found
-
-**Solution**:
-1. Install the preset: `npm install -D @stricture/hexagonal`
-2. Verify it's in `devDependencies` in `package.json`
-3. Run `npm install` again
 
 For more troubleshooting help, see the [Troubleshooting Guide](/guides/troubleshooting/).
 

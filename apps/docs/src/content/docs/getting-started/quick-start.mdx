@@ -15,25 +15,25 @@ By the end of this guide, you'll have:
 - ✅ ESLint reporting architecture violations
 - ✅ Your first architectural boundary enforced
 
-## Step 1: Install Packages
+## Step 1: Install Package
 
-Install the ESLint plugin and the hexagonal preset:
+Install the ESLint plugin (all architecture presets are bundled):
 
 ```bash
-npm install -D @stricture/eslint-plugin @stricture/hexagonal
+npm install -D @stricture/eslint-plugin
 # or
-pnpm add -D @stricture/eslint-plugin @stricture/hexagonal
+pnpm add -D @stricture/eslint-plugin
 # or
-yarn add -D @stricture/eslint-plugin @stricture/hexagonal
+yarn add -D @stricture/eslint-plugin
 ```
 
-> **Note**: `@stricture/core` is automatically installed as a dependency and does not need to be added explicitly.
+> **Note**: All official architecture presets are bundled with the plugin. `@stricture/core` is automatically installed as a dependency.
 
 :::tip[Different Architecture?]
-Using a different pattern? Install a different preset:
-- Layered: `@stricture/layered`
-- Clean Architecture: `@stricture/clean`
-- Next.js: `@stricture/nextjs`
+All architecture presets are already bundled! Just use a different config:
+- Layered: `stricture.configs.layered()`
+- Clean Architecture: `stricture.configs.clean()`
+- Next.js: `stricture.configs.nextjs()`
 
 See all [available presets](/presets/).
 :::
