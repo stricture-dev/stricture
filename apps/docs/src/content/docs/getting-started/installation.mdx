@@ -144,7 +144,15 @@ export default [
 For complex configurations with many custom rules, you can use a separate config file:
 
 ```js title="eslint.config.js"
+import stricture from '@stricture/eslint-plugin'
+
 export default [
+  {
+    // Your existing ESLint config
+    files: ['**/*.ts', '**/*.tsx'],
+    plugins: { /* your other plugins */ },
+    rules: { /* your other rules */ }
+  },
   stricture.configs.recommended()  // Reads .stricture/config.json
 ]
 ```
@@ -228,8 +236,8 @@ Each package can use a different preset. See the [Monorepos Guide](/guides/monor
 ### ESLint not finding violations
 
 **Solution**:
-1. Verify the preset package is installed (`@stricture/hexagonal`, etc.)
-2. Check ESLint config has `stricture.configs.xxx()`
+1. Check ESLint config has `stricture.configs.xxx()`
+2. Verify `@stricture/eslint-plugin` is installed
 3. Run `npx eslint --debug .` to see detailed output
 
 ### TypeScript paths not resolving
