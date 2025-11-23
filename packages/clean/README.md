@@ -36,7 +36,12 @@ graph TB
 ## Installation
 
 ```bash
-npm install -D @stricture/clean @stricture/eslint-plugin
+npm install -D @stricture/eslint-plugin
+```
+
+Or use the CLI:
+
+```bash
 npx stricture init --preset @stricture/clean
 ```
 

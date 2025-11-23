@@ -1,0 +1,482 @@
+---
+title: ESLint Configuration
+description: Complete guide to configuring Stricture with ESLint flat config, legacy config, and advanced patterns
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
+This guide covers all ESLint configuration options for Stricture, from simple zero-config setups to advanced patterns with `defineConfig()` and `extends`.
+
+## Quick Reference
+
+Choose your configuration style:
+
+| Style | Best For | Example |
+|-------|----------|---------|
+| **Zero-Config** | Using a preset without customization | `stricture.configs.hexagonal()` |
+| **Inline Customization** | Adding a few custom rules | `stricture.configs.hexagonal({ rules: [...] })` |
+| **Separate Config File** | Complex configs (10+ custom rules) | `stricture.configs.recommended()` + `.stricture/config.json` |
+| **Per-File Configs** | Different rules for different file types | Using `defineConfig()` with `extends` |
+
+---
+
+## Modern Setup (Flat Config)
+
+### Level 1: Zero-Config with Preset
+
+The simplest approach - just use a preset:
+
+```js title="eslint.config.js"
+import stricture from '@stricture/eslint-plugin'
+
+export default [
+  stricture.configs.hexagonal()
+]
+```
+
+**Available presets:**
+- `stricture.configs.hexagonal()` - Ports & Adapters
+- `stricture.configs.layered()` - N-tier Architecture
+- `stricture.configs.clean()` - Clean Architecture
+- `stricture.configs.modular()` - Module-based
+- `stricture.configs.nextjs()` - Next.js App Router
+- `stricture.configs.nestjs()` - NestJS framework
+
+### Level 2: Inline Customization
+
+Add overrides directly in your ESLint config:
+
+```js title="eslint.config.js"
+import stricture from '@stricture/eslint-plugin'
+
+export default [
+  stricture.configs.hexagonal({
+    // Ignore test files
+    ignorePatterns: ['**/*.test.ts', '**/*.spec.ts'],
+
+    // Add custom rules
+    rules: [
+      {
+        id: 'no-legacy-imports',
+        from: { pattern: 'src/**', exclude: ['src/legacy/**'] },
+        to: { pattern: 'src/legacy/**' },
+        allowed: false,
+        message: 'No new code should depend on legacy modules'
+      }
+    ],
+
+    // Add custom boundaries
+    boundaries: [
+      {
+        name: 'shared',
+        pattern: 'src/shared/**',
+        mode: 'folder',
+        tags: ['shared']
+      }
+    ]
+  })
+]
+```
+
+### Level 3: Separate Config File
+
+For complex configurations (10+ custom boundaries/rules):
+
+```js title="eslint.config.js"
+import stricture from '@stricture/eslint-plugin'
+
+export default [
+  stricture.configs.recommended()  // Reads .stricture/config.json
+]
+```
+
+```json title=".stricture/config.json"
+{
+  "preset": "@stricture/hexagonal",
+  "boundaries": [
+    {
+      "name": "domain",
+      "pattern": "src/core/domain/**",
+      "mode": "file",
+      "tags": ["domain"]
+    },
+    {
+      "name": "infrastructure",
+      "pattern": "src/infrastructure/**",
+      "mode": "file",
+      "tags": ["infrastructure"]
+    }
+  ],
+  "rules": [
+    {
+      "id": "domain-isolation",
+      "name": "Domain Isolation",
+      "severity": "error",
+      "from": { "tag": "domain" },
+      "to": { "tag": "infrastructure" },
+      "allowed": false,
+      "message": "Domain cannot depend on infrastructure"
+    }
+  ]
+}
+```
+
+See the [Configuration Files Guide](/configuration/config-file/) for details on `.stricture/config.json`.
+
+---
+
+## Advanced: Per-File Configurations
+
+### Using `defineConfig()` and `extends`
+
+**Requires**: ESLint 9.17+ or `@eslint/config-helpers`
+
+Apply different configurations to different file sets:
+
+```js title="eslint.config.js"
+import { defineConfig } from 'eslint/config'
+import stricture from '@stricture/eslint-plugin'
+
+export default defineConfig([
+  // Configuration for source files
+  {
+    files: ['src/**/*.ts'],
+    extends: [stricture.configs.hexagonal()]
+  },
+
+  // Relaxed rules for test files
+  {
+    files: ['tests/**/*.ts', '**/*.test.ts'],
+    extends: [stricture.configs.hexagonal({
+      rules: [
+        {
+          id: 'allow-test-imports',
+          from: { pattern: 'tests/**' },
+          to: { pattern: 'src/**' },
+          allowed: true
+        }
+      ]
+    })]
+  },
+
+  // Different preset for scripts
+  {
+    files: ['scripts/**/*.ts'],
+    extends: [stricture.configs.modular()]
+  }
+])
+```
+
+### Benefits of `defineConfig()`
+
+1. **Type safety** - Full TypeScript IntelliSense for config
+2. **Automatic flattening** - No need for spread operators (`...`)
+3. **Clearer structure** - Easier to see which rules apply where
+
+### Using with `globalIgnores()`
+
+```js title="eslint.config.js"
+import { defineConfig, globalIgnores } from 'eslint/config'
+import stricture from '@stricture/eslint-plugin'
+
+export default defineConfig([
+  // Global ignores (never linted)
+  globalIgnores(['dist', 'build', 'node_modules', '.next']),
+
+  // Main configuration
+  {
+    files: ['**/*.ts', '**/*.tsx'],
+    extends: [stricture.configs.nextjs()]
+  }
+])
+```
+
+### Combining Multiple Configs
+
+```js title="eslint.config.js"
+import { defineConfig } from 'eslint/config'
+import stricture from '@stricture/eslint-plugin'
+import tseslint from 'typescript-eslint'
+
+export default defineConfig([
+  ...tseslint.configs.recommended,
+  {
+    files: ['src/**/*.ts'],
+    extends: [stricture.configs.hexagonal()],
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'warn',
+      '@stricture/enforce-boundaries': 'error'
+    }
+  }
+])
+```
+
+---
+
+## Legacy ESLint Config
+
+### Using .eslintrc.js
+
+```js title=".eslintrc.js"
+const stricture = require('@stricture/eslint-plugin')
+
+module.exports = {
+  extends: ['plugin:@stricture/recommended'],
+  rules: {
+    '@stricture/enforce-boundaries': ['error', {
+      inlineConfig: require('@stricture/hexagonal').default
+    }]
+  }
+}
+```
+
+### Using .eslintrc.json
+
+```json title=".eslintrc.json"
+{
+  "plugins": ["@stricture"],
+  "rules": {
+    "@stricture/enforce-boundaries": "error"
+  }
+}
+```
+
+You'll need `.stricture/config.json` for this approach.
+
+### Migration to Flat Config
+
+We recommend migrating to flat config for:
+- Better TypeScript support
+- Simpler configuration
+- Inline preset configuration
+- Modern ESLint features
+
+**Migration steps:**
+
+1. Create `eslint.config.js`:
+   ```js
+   import stricture from '@stricture/eslint-plugin'
+   export default [stricture.configs.hexagonal()]
+   ```
+
+2. Delete `.eslintrc.*` files
+
+3. Update `package.json` scripts if needed:
+   ```json
+   {
+     "scripts": {
+       "lint": "eslint ."
+     }
+   }
+   ```
+
+See ESLint's [migration guide](https://eslint.org/docs/latest/use/configure/migration-guide) for details.
+
+---
+
+## Configuration Priority
+
+When multiple configuration methods are present, Stricture uses this priority:
+
+1. **Inline config** (highest priority)
+   ```js
+   stricture.configs.hexagonal({ rules: [...] })
+   ```
+
+2. **File config**
+   ```js
+   stricture.configs.recommended()  // reads .stricture/config.json
+   ```
+
+3. **No config found** → Error
+
+---
+
+## Common Patterns
+
+### Pattern 1: Framework + Architecture
+
+Combine framework-specific and architecture presets:
+
+```js title="eslint.config.js"
+import { defineConfig } from 'eslint/config'
+import stricture from '@stricture/eslint-plugin'
+
+export default defineConfig([
+  {
+    files: ['app/**/*.tsx', 'app/**/*.ts'],
+    extends: [stricture.configs.nextjs()]
+  },
+  {
+    files: ['src/**/*.ts'],
+    extends: [stricture.configs.hexagonal()]
+  }
+])
+```
+
+### Pattern 2: Monorepo with Different Presets
+
+```js title="packages/api/eslint.config.js"
+import stricture from '@stricture/eslint-plugin'
+export default [stricture.configs.hexagonal()]
+```
+
+```js title="packages/web/eslint.config.js"
+import stricture from '@stricture/eslint-plugin'
+export default [stricture.configs.nextjs()]
+```
+
+### Pattern 3: Gradual Adoption
+
+Start with warnings, not errors:
+
+```js title="eslint.config.js"
+import stricture from '@stricture/eslint-plugin'
+
+export default [
+  {
+    plugins: { '@stricture': stricture },
+    rules: {
+      '@stricture/enforce-boundaries': 'warn'  // Warn first
+    }
+  }
+]
+```
+
+Then use `.stricture/config.json` to set severity per-rule:
+
+```json title=".stricture/config.json"
+{
+  "preset": "@stricture/hexagonal",
+  "rules": [
+    {
+      "id": "domain-isolation",
+      "severity": "error",  // Critical rules as errors
+      "from": { "tag": "domain" },
+      "to": { "pattern": "**" },
+      "allowed": false
+    },
+    {
+      "id": "adapter-ports",
+      "severity": "warn",   // Less critical as warnings
+      "from": { "tag": "adapters" },
+      "to": { "tag": "domain" },
+      "allowed": false
+    }
+  ]
+}
+```
+
+### Pattern 4: TypeScript Project References
+
+For projects using TypeScript project references:
+
+```js title="eslint.config.js"
+import { defineConfig } from 'eslint/config'
+import stricture from '@stricture/eslint-plugin'
+
+export default defineConfig([
+  {
+    files: ['packages/core/**/*.ts'],
+    extends: [stricture.configs.hexagonal()],
+    languageOptions: {
+      parserOptions: {
+        project: './packages/core/tsconfig.json'
+      }
+    }
+  },
+  {
+    files: ['packages/ui/**/*.tsx'],
+    extends: [stricture.configs.modular()],
+    languageOptions: {
+      parserOptions: {
+        project: './packages/ui/tsconfig.json'
+      }
+    }
+  }
+])
+```
+
+---
+
+## Rule Options
+
+The `@stricture/enforce-boundaries` rule accepts these options:
+
+```typescript
+{
+  rules: {
+    '@stricture/enforce-boundaries': ['error', {
+      // Inline configuration (takes priority over config file)
+      inlineConfig?: StrictureConfig,
+
+      // Path to config file (default: '.stricture/config.json')
+      configPath?: string,
+
+      // Base URL for path resolution (default: './')
+      baseUrl?: string,
+
+      // Check dynamic imports (default: true)
+      checkDynamicImports?: boolean
+    }]
+  }
+}
+```
+
+Example with options:
+
+```js title="eslint.config.js"
+import stricture from '@stricture/eslint-plugin'
+
+export default [
+  {
+    plugins: { '@stricture': stricture },
+    rules: {
+      '@stricture/enforce-boundaries': ['error', {
+        configPath: './architecture/boundaries.json',
+        baseUrl: './src',
+        checkDynamicImports: true
+      }]
+    }
+  }
+]
+```
+
+---
+
+## Troubleshooting
+
+### Config not loading
+
+**Problem**: Stricture doesn't seem to read my configuration.
+
+**Solution**:
+1. Check config file location (should be in project root)
+2. Verify JSON syntax is valid
+3. Ensure you're calling the config function: `stricture.configs.hexagonal()` not `stricture.configs.hexagonal`
+4. Run with `--debug` flag: `npx eslint --debug .`
+
+### Types not working with defineConfig
+
+**Problem**: No TypeScript IntelliSense for ESLint config.
+
+**Solution**:
+1. Upgrade to ESLint 9.17+ or install `@eslint/config-helpers`
+2. Use `eslint.config.ts` instead of `eslint.config.js`
+3. Import from correct location:
+   ```ts
+   import { defineConfig } from 'eslint/config'  // ESLint 9.17+
+   // or
+   import { defineConfig } from '@eslint/config-helpers'  // Older versions
+   ```
+
+---
+
+## Next Steps
+
+- [Configuration Files](/configuration/config-file/) - Deep dive into `.stricture/config.json`
+- [Boundaries](/configuration/boundaries/) - Define architectural boundaries
+- [Rules](/configuration/rules/) - Create boundary enforcement rules
+- [Presets](/presets/) - Explore available architecture presets
+
+For more help, see the [Troubleshooting Guide](/guides/troubleshooting/).

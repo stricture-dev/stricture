@@ -6,6 +6,7 @@
  */
 
 import enforceBoundaries from './rules/enforce-boundaries.js'
+import { createConfigFactory, createConfig, createConfigFromFile } from './configs/factory.js'
 import type { ESLint } from 'eslint'
 
 /**
@@ -23,18 +24,39 @@ const plugin: ESLint.Plugin = {
 }
 
 // Add configs after plugin is defined
-// Note: For legacy ESLint (< v9) using extends: ['plugin:@stricture/recommended'],
-// we should NOT include the plugin instance to avoid circular references during serialization
+// These are now factory functions that support inline configuration
+
+// Type assertion needed because ESLint's Plugin.configs type is too strict
 plugin.configs = {
-  // Recommended config for ESLint legacy format (< v9)
-  // Used with: extends: ['plugin:@stricture/recommended']
-  recommended: {
-    plugins: ['@stricture'],
-    rules: {
-      '@stricture/enforce-boundaries': 'error'
-    }
-  }
-}
+  // Recommended config - basic setup (reads .stricture/config.json)
+  // Used with: stricture.configs.recommended()
+  recommended: createConfigFactory(),
+
+  // Hexagonal architecture preset config
+  // Used with: stricture.configs.hexagonal()
+  hexagonal: createConfigFactory('@stricture/hexagonal'),
+
+  // Layered architecture preset config
+  // Used with: stricture.configs.layered()
+  layered: createConfigFactory('@stricture/layered'),
+
+  // Clean architecture preset config
+  // Used with: stricture.configs.clean()
+  clean: createConfigFactory('@stricture/clean'),
+
+  // Modular architecture preset config
+  // Used with: stricture.configs.modular()
+  modular: createConfigFactory('@stricture/modular'),
+
+  // Next.js preset config
+  // Used with: stricture.configs.nextjs()
+  nextjs: createConfigFactory('@stricture/nextjs'),
+
+  // NestJS preset config
+  // Used with: stricture.configs.nestjs()
+  nestjs: createConfigFactory('@stricture/nestjs')
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+} as any
 
 // For flat config (ESLint v9+), export a factory function to avoid circular references
 export const createFlatConfig = () => ({
@@ -55,3 +77,16 @@ export const rules = {
   'enforce-boundaries': enforceBoundaries
 }
 export const configs = plugin.configs
+
+// Export config helpers for custom presets
+export { createConfig, createConfigFromFile }
+
+// Export bundled presets for advanced usage
+export {
+  hexagonalPreset,
+  layeredPreset,
+  cleanPreset,
+  modularPreset,
+  nextjsPreset,
+  nestjsPreset
+} from './presets/index.js'

@@ -21,6 +21,50 @@ Instead of manually defining boundaries and rules, you can use a preset and get 
 }
 ```
 
+## Understanding Package Dependencies
+
+Stricture has a clear package architecture:
+
+```mermaid
+%%{init: {'theme':'base'}}%%
+graph LR
+    User[Your Project]
+    Plugin[@stricture/eslint-plugin]
+    Preset[@stricture/hexagonal]
+    Core[@stricture/core]
+
+    User -->|installs| Plugin
+    User -->|installs| Preset
+    Plugin -->|depends on| Core
+    Preset -->|depends on| Core
+
+    style User fill:#e3f2fd
+    style Plugin fill:#fff3e0
+    style Preset fill:#f3e5f5
+    style Core fill:#e8f5e9
+```
+
+### Installation
+
+Install the plugin:
+```bash
+npm install -D @stricture/eslint-plugin
+```
+
+Then use any preset in your config:
+```js
+import stricture from '@stricture/eslint-plugin'
+
+// Hexagonal architecture
+export default [stricture.configs.hexagonal()]
+
+// Next.js patterns
+export default [stricture.configs.nextjs()]
+
+// Custom config
+export default [stricture.configs.recommended()]
+```
+
 ## Why Use Presets?
 
 ### Zero Configuration
@@ -129,14 +173,14 @@ NestJS best practices with controller/service/repository layers.
 
 ## Comparison Table
 
-| Preset | Best For | Complexity | Learning Curve | Key Benefit |
-|--------|----------|------------|----------------|-------------|
-| **Hexagonal** | Complex domains, DDD | Medium-High | Medium | Domain isolation |
-| **Layered** | Traditional apps | Low-Medium | Low | Familiar pattern |
-| **Clean** | Enterprise apps | Medium-High | Medium | Strict dependencies |
-| **Modular** | Large teams | Medium | Low-Medium | Module encapsulation |
-| **Next.js** | React SSR apps | Low | Low | Framework-specific |
-| **NestJS** | API backends | Low-Medium | Low | Framework-specific |
+| Preset | Best For | Complexity | Learning Curve | Key Benefit | Required Packages |
+|--------|----------|------------|----------------|-------------|-------------------|
+| **Hexagonal** | Complex domains, DDD | Medium-High | Medium | Domain isolation | `@stricture/eslint-plugin @stricture/hexagonal` |
+| **Layered** | Traditional apps | Low-Medium | Low | Familiar pattern | `@stricture/eslint-plugin @stricture/layered` |
+| **Clean** | Enterprise apps | Medium-High | Medium | Strict dependencies | `@stricture/eslint-plugin @stricture/clean` |
+| **Modular** | Large teams | Medium | Low-Medium | Module encapsulation | `@stricture/eslint-plugin @stricture/modular` |
+| **Next.js** | React SSR apps | Low | Low | Framework-specific | `@stricture/eslint-plugin @stricture/nextjs` |
+| **NestJS** | API backends | Low-Medium | Low | Framework-specific | `@stricture/eslint-plugin @stricture/nestjs` |
 
 ## How to Choose?
 
@@ -178,14 +222,14 @@ NestJS best practices with controller/service/repository layers.
 
 ## Installation
 
-Install any preset as a dev dependency:
+Install the ESLint plugin:
 
 ```bash
-npm install --save-dev @stricture/hexagonal
+npm install --save-dev @stricture/eslint-plugin
 # or
-pnpm add -D @stricture/layered
+pnpm add -D @stricture/eslint-plugin
 # or
-yarn add -D @stricture/clean
+yarn add -D @stricture/eslint-plugin
 ```
 
 ## Usage

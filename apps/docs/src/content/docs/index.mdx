@@ -1,13 +1,13 @@
 ---
 title: Welcome to Stricture
-description: Architecture boundary enforcement for TypeScript projects
+description: Architecture boundary enforcement for JavaScript and TypeScript projects
 ---
 
 import { Card, CardGrid } from '@astrojs/starlight/components';
 
 # Welcome to Stricture
 
-**Stricture** is an ESLint plugin that enforces architectural boundaries in TypeScript projects. It helps teams maintain clean architecture patterns as codebases scale.
+**Stricture** is an ESLint plugin that enforces architectural boundaries in JavaScript and TypeScript projects. It helps teams maintain clean architecture patterns as codebases scale.
 
 ## Why Stricture?
 
@@ -31,29 +31,24 @@ import { Card, CardGrid } from '@astrojs/starlight/components';
 Install Stricture in your project:
 
 ```bash
-npm install --save-dev @stricture/core @stricture/eslint-plugin @stricture/hexagonal
-```
-
-Create `.stricture/config.json`:
-
-```json
-{
-  "preset": "@stricture/hexagonal"
-}
+npm install --save-dev @stricture/eslint-plugin
 ```
 
 Add to your ESLint config:
 
-```js
-module.exports = {
-  plugins: ['@stricture'],
-  rules: {
-    '@stricture/enforce-boundaries': 'error'
-  }
-};
-```
+```js title="eslint.config.js"
+import stricture from '@stricture/eslint-plugin'
 
-That's it! Stricture will now enforce hexagonal architecture boundaries in your codebase.
+export default [
+  {
+    // Your existing ESLint config
+    files: ['**/*.ts', '**/*.tsx'],
+    plugins: { /* your other plugins */ },
+    rules: { /* your other rules */ }
+  },
+  stricture.configs.hexagonal()  // Add Stricture
+]
+```
 
 ## How It Works
 

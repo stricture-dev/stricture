@@ -39,9 +39,149 @@ export default {
       rules: {
         '@stricture/enforce-boundaries': 'error'
       }
+    },
+    hexagonal: {
+      plugins: ['@stricture'],
+      rules: {
+        '@stricture/enforce-boundaries': 'error'
+      }
+    },
+    layered: {
+      plugins: ['@stricture'],
+      rules: {
+        '@stricture/enforce-boundaries': 'error'
+      }
+    },
+    clean: {
+      plugins: ['@stricture'],
+      rules: {
+        '@stricture/enforce-boundaries': 'error'
+      }
+    },
+    modular: {
+      plugins: ['@stricture'],
+      rules: {
+        '@stricture/enforce-boundaries': 'error'
+      }
+    },
+    nextjs: {
+      plugins: ['@stricture'],
+      rules: {
+        '@stricture/enforce-boundaries': 'error'
+      }
+    },
+    nestjs: {
+      plugins: ['@stricture'],
+      rules: {
+        '@stricture/enforce-boundaries': 'error'
+      }
     }
   }
 }
+```
+
+### Preset Configs
+
+The plugin exports shareable ESLint configs for each Stricture preset. These configs enable users to quickly set up ESLint with the `enforce-boundaries` rule without manually configuring the plugin.
+
+**Available Configs:**
+
+- `recommended` - Basic setup with enforce-boundaries rule enabled
+- `hexagonal` - For projects using `@stricture/hexagonal` preset
+- `layered` - For projects using `@stricture/layered` preset
+- `clean` - For projects using `@stricture/clean` preset
+- `modular` - For projects using `@stricture/modular` preset
+- `nextjs` - For projects using `@stricture/nextjs` preset
+- `nestjs` - For projects using `@stricture/nestjs` preset
+
+**Usage (Legacy ESLint Config):**
+
+```javascript
+// .eslintrc.js
+module.exports = {
+  extends: ['plugin:@stricture/hexagonal']
+}
+```
+
+**Usage (Flat ESLint Config):**
+
+```javascript
+// eslint.config.js
+import stricture from '@stricture/eslint-plugin'
+
+export default [
+  stricture.configs.hexagonal
+]
+```
+
+**What configs provide:**
+
+Each config is functionally identical - they all enable the `@stricture/enforce-boundaries` rule with `'error'` severity. The different config names serve as semantic indicators:
+
+1. **Documentation clarity** - Makes it clear which preset the project is using
+2. **Future extensibility** - Allows preset-specific linting rules to be added later
+3. **Convention over configuration** - Users can extend the config matching their chosen preset
+
+The actual architectural rules (boundaries, allowed imports, etc.) are defined in `.stricture/config.json`, not in the ESLint configs.
+
+### Inline Configuration
+
+**Breaking Change from Pre-Release**: Configs are now factory functions that enable inline configuration, eliminating the need for `.stricture/config.json` in simple cases.
+
+**Function Signature:**
+
+```typescript
+type ConfigFactory = (overrides?: Partial<StrictureConfig>) => ESLintConfig
+
+// Available configs
+stricture.configs.recommended(overrides?)
+stricture.configs.hexagonal(overrides?)
+stricture.configs.layered(overrides?)
+stricture.configs.clean(overrides?)
+stricture.configs.modular(overrides?)
+stricture.configs.nextjs(overrides?)
+stricture.configs.nestjs(overrides?)
+```
+
+**How It Works:**
+
+1. Preset configs (`hexagonal`, `layered`, etc.) automatically load their corresponding preset package from `node_modules`
+2. The loaded preset config is merged with any overrides provided
+3. The merged config is passed to the `enforce-boundaries` rule via `inlineConfig` option
+4. If no inline config is provided, the rule falls back to reading `.stricture/config.json`
+
+**Configuration Priority:**
+
+1. **Inline config** (passed to function) - highest priority
+2. **File config** (`.stricture/config.json`) - fallback
+3. **Error** if neither exists
+
+**Examples:**
+
+Zero-config with preset:
+```javascript
+export default [stricture.configs.hexagonal()]
+```
+
+With overrides:
+```javascript
+export default [
+  stricture.configs.hexagonal({
+    ignorePatterns: ['**/*.test.ts'],
+    rules: [{
+      id: 'custom-rule',
+      from: { tag: 'domain' },
+      to: { tag: 'infrastructure' },
+      allowed: false
+    }]
+  })
+]
+```
+
+File-based (backward compatible):
+```javascript
+export default [stricture.configs.recommended()]
+// Reads .stricture/config.json
 ```
 
 ### Rule: `enforce-boundaries`
@@ -50,10 +190,11 @@ export default {
 
 ```typescript
 interface RuleOptions {
-  configPath?: string           // Path to .stricture/config.json (default: '.stricture/config.json')
-  baseUrl?: string              // Base URL for path resolution (default: './')
-  checkDynamicImports?: boolean // Check import() expressions (default: true)
-  reportUnusedRules?: boolean   // Warn if rules never match (default: false)
+  configPath?: string            // Path to .stricture/config.json (default: '.stricture/config.json')
+  inlineConfig?: StrictureConfig // Inline configuration (NEW - takes priority over file)
+  baseUrl?: string               // Base URL for path resolution (default: './')
+  checkDynamicImports?: boolean  // Check import() expressions (default: true)
+  reportUnusedRules?: boolean    // Warn about unused rules (default: false)
 }
 ```
 

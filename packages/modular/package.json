@@ -34,6 +34,9 @@
   "dependencies": {
     "@stricture/core": "workspace:*"
   },
+  "peerDependencies": {
+    "@stricture/eslint-plugin": "^0.1.0"
+  },
   "devDependencies": {
     "@stricture/typescript-config": "workspace:*",
     "@stricture/eslint-config": "workspace:*",

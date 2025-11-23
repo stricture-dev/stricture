@@ -5,7 +5,7 @@ description: Get Stricture running in your project in under 5 minutes
 
 import { Tabs, TabItem } from '@astrojs/starlight/components';
 
-Get Stricture enforcing architecture boundaries in your TypeScript project in under 5 minutes.
+Get Stricture enforcing architecture boundaries in your project in under 5 minutes.
 
 ## Goal
 
@@ -15,46 +15,74 @@ By the end of this guide, you'll have:
 - ✅ ESLint reporting architecture violations
 - ✅ Your first architectural boundary enforced
 
-## Step 1: Install Packages
+## Step 1: Install Package
 
-Install Stricture core, ESLint plugin, and the hexagonal preset:
+Install the ESLint plugin:
 
-<Tabs>
-  <TabItem label="npm">
-    ```bash
-    npm install --save-dev @stricture/core @stricture/eslint-plugin @stricture/hexagonal
-    ```
-  </TabItem>
-  <TabItem label="pnpm">
-    ```bash
-    pnpm add -D @stricture/core @stricture/eslint-plugin @stricture/hexagonal
-    ```
-  </TabItem>
-  <TabItem label="yarn">
-    ```bash
-    yarn add -D @stricture/core @stricture/eslint-plugin @stricture/hexagonal
-    ```
-  </TabItem>
-</Tabs>
+```bash
+npm install -D @stricture/eslint-plugin
+# or
+pnpm add -D @stricture/eslint-plugin
+# or
+yarn add -D @stricture/eslint-plugin
+```
 
 :::tip[Different Architecture?]
-Using a different pattern? Install a different preset:
-- Layered: `@stricture/layered`
-- Clean Architecture: `@stricture/clean`
-- Next.js: `@stricture/nextjs`
+Use a different config for other architectures:
+- Layered: `stricture.configs.layered()`
+- Clean Architecture: `stricture.configs.clean()`
+- Next.js: `stricture.configs.nextjs()`
 
 See all [available presets](/presets/).
 :::
 
-## Step 2: Create Configuration
+## Step 2: Configure Stricture
 
-Create `.stricture/config.json` in your project root:
+You have two options:
+
+### Option A: Inline Configuration (Recommended)
+
+Configure everything in your ESLint config:
+
+<Tabs>
+  <TabItem label="Flat Config (ESLint 9+)">
+    ```js title="eslint.config.js"
+    import stricture from '@stricture/eslint-plugin'
+
+    export default [
+      {
+        // Your existing ESLint config
+        files: ['**/*.ts', '**/*.tsx'],
+        plugins: { /* your other plugins */ },
+        rules: { /* your other rules */ }
+      },
+      stricture.configs.hexagonal()  // Add Stricture
+    ]
+    ```
+  </TabItem>
+  <TabItem label="Legacy Config">
+    ```js title=".eslintrc.js"
+    const stricture = require('@stricture/eslint-plugin')
+
+    module.exports = {
+      extends: ['plugin:@stricture/recommended'],
+      rules: {
+        '@stricture/enforce-boundaries': ['error', {
+          inlineConfig: stricture.hexagonalPreset
+        }]
+      }
+    }
+    ```
+  </TabItem>
+</Tabs>
+
+### Option B: Separate Config File
+
+Create `.stricture/config.json`:
 
 ```bash
 mkdir -p .stricture
 ```
-
-Add this minimal configuration:
 
 ```json title=".stricture/config.json"
 {
@@ -62,7 +90,26 @@ Add this minimal configuration:
 }
 ```
 
-That's it! The preset provides complete boundary and rule definitions.
+Then configure ESLint:
+
+```js title="eslint.config.js"
+import stricture from '@stricture/eslint-plugin'
+
+export default [
+  {
+    // Your existing ESLint config
+    files: ['**/*.ts', '**/*.tsx'],
+    plugins: { /* your other plugins */ },
+    rules: { /* your other rules */ }
+  },
+  stricture.configs.recommended()  // Reads .stricture/config.json
+]
+```
+
+### Which Option Should You Use?
+
+- **Option A (Inline)**: Simple setups, using a preset with minimal customization
+- **Option B (File)**: Complex configs with many custom boundaries/rules
 
 :::note[What does this preset do?]
 The hexagonal preset enforces:
@@ -74,53 +121,7 @@ The hexagonal preset enforces:
 Learn more in [Core Concepts](/getting-started/concepts/).
 :::
 
-## Step 3: Add ESLint Rule
-
-Add Stricture to your ESLint configuration:
-
-<Tabs>
-  <TabItem label="Flat Config (ESLint 9+)">
-    ```js title="eslint.config.js" ins={2,6-13}
-    // eslint.config.js
-    import stricture from '@stricture/eslint-plugin';
-
-    export default [
-      // ... your existing config
-      {
-        plugins: {
-          '@stricture': stricture
-        },
-        rules: {
-          '@stricture/enforce-boundaries': 'error'
-        }
-      }
-    ];
-    ```
-  </TabItem>
-  <TabItem label="Legacy Config (.eslintrc.js)">
-    ```js title=".eslintrc.js" ins={3,5-7}
-    // .eslintrc.js
-    module.exports = {
-      plugins: ['@stricture'],
-      rules: {
-        '@stricture/enforce-boundaries': 'error'
-      }
-    };
-    ```
-  </TabItem>
-  <TabItem label="Legacy Config (.eslintrc.json)">
-    ```json title=".eslintrc.json" ins={3,5-7}
-    {
-      "plugins": ["@stricture"],
-      "rules": {
-        "@stricture/enforce-boundaries": "error"
-      }
-    }
-    ```
-  </TabItem>
-</Tabs>
-
-## Step 4: See It In Action
+## Step 3: See It In Action
 
 Create a sample directory structure:
 
@@ -292,6 +293,25 @@ In 5 minutes, you've:
 4. ✅ **Saw a violation** caught automatically
 5. ✅ **Fixed the architecture** using ports and adapters
 
+## Even Easier: Use the CLI
+
+Instead of manual setup, you can use the interactive CLI to set everything up automatically:
+
+```bash
+npx stricture init
+```
+
+The CLI will:
+- ✅ Detect your project framework (Next.js, NestJS, standard TypeScript, etc.)
+- ✅ Recommend appropriate presets based on your project structure
+- ✅ Create `.stricture/config.json` automatically
+- ✅ Update your ESLint configuration
+- ✅ Install required dependencies
+
+This is the fastest way to get started, especially for framework-specific projects like Next.js.
+
+[View full CLI documentation →](/api/cli/)
+
 ## Understanding the Flow
 
 Here's what just happened:
@@ -405,7 +425,7 @@ Yes! Combine presets for monorepos:
 
 ### Does this work with JavaScript?
 
-Stricture works best with TypeScript, but you can use it with JavaScript projects that have type checking via JSDoc or TypeScript `checkJs` mode.
+Yes! Stricture works with both JavaScript and TypeScript. It enforces boundaries by analyzing import statements and file paths, not type information.
 
 ### How do I ignore certain files?
 
@@ -424,21 +444,24 @@ Use `ignorePatterns` in your config:
 
 ### Can I use this with existing code?
 
-Yes! Start with `severity: "warn"` to see violations without breaking builds:
+Yes! Set the ESLint rule to `"warn"` instead of `"error"` to see violations without breaking builds:
 
-```json title=".stricture/config.json"
-{
-  "preset": "@stricture/hexagonal",
-  "rules": [
-    {
-      "id": "domain-isolation",
-      "severity": "warn"
+```js title="eslint.config.js"
+import stricture from '@stricture/eslint-plugin'
+
+export default [
+  {
+    plugins: { '@stricture': stricture },
+    rules: {
+      '@stricture/enforce-boundaries': ['warn', {
+        inlineConfig: stricture.hexagonalPreset
+      }]
     }
-  ]
-}
+  }
+]
 ```
 
-Then fix violations incrementally and switch to `"error"`.
+Once violations are fixed, change it to `'error'` to prevent new violations.
 
 ## Get Help
 

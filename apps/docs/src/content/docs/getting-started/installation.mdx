@@ -6,231 +6,81 @@ description: Install Stricture and set up architecture enforcement in your TypeS
 import { Tabs, TabItem } from '@astrojs/starlight/components';
 import { Card, CardGrid } from '@astrojs/starlight/components';
 
-Get Stricture running in your TypeScript project in minutes.
+Get Stricture running in your project in minutes.
 
 ## Prerequisites
 
 Before installing Stricture, ensure your project has:
 
 - **Node.js** 18.x or later
-- **TypeScript** 4.5 or later
-- **ESLint** 8.x or 9.x (flat config supported)
-- A TypeScript project with `tsconfig.json`
+- **ESLint** 8.x or 9.x (flat config recommended)
 
-:::note
-Stricture works with both ESLint legacy config (`.eslintrc.*`) and the new flat config (`eslint.config.js`).
-:::
+**Optional** (recommended for better path resolution):
+- **TypeScript** 4.5 or later with `tsconfig.json`
 
-## Installation
+## Choose Your Architecture
 
-Install Stricture with your preferred package manager:
+Stricture supports two workflows:
 
-<Tabs>
-  <TabItem label="npm">
-    ```bash
-    npm install --save-dev @stricture/core @stricture/eslint-plugin
-    ```
-  </TabItem>
-  <TabItem label="pnpm">
-    ```bash
-    pnpm add -D @stricture/core @stricture/eslint-plugin
-    ```
-  </TabItem>
-  <TabItem label="yarn">
-    ```bash
-    yarn add -D @stricture/core @stricture/eslint-plugin
-    ```
-  </TabItem>
-</Tabs>
+<CardGrid>
+  <Card title="🎯 Use a Preset" icon="star">
+    **Recommended for most projects**
 
-This installs the core validation engine and the ESLint plugin.
+    Get started with proven architecture patterns:
+    - Hexagonal (Ports & Adapters)
+    - Layered (N-tier)
+    - Clean Architecture
+    - Next.js / NestJS specific
 
-## Installing with a Preset
+    [Browse all presets →](/presets/)
+  </Card>
+  <Card title="🔧 Custom Architecture" icon="setting">
+    **For unique patterns**
 
-Most projects should start with an architecture preset. Install the preset that matches your architecture:
+    Define your own boundaries and rules for:
+    - Company-specific patterns
+    - Domain-specific constraints
+    - Reusable internal presets
 
-### Hexagonal (Ports & Adapters)
+    [Create custom presets →](/guides/custom-presets/)
+  </Card>
+</CardGrid>
 
-<Tabs>
-  <TabItem label="npm">
-    ```bash
-    npm install --save-dev @stricture/hexagonal
-    ```
-  </TabItem>
-  <TabItem label="pnpm">
-    ```bash
-    pnpm add -D @stricture/hexagonal
-    ```
-  </TabItem>
-  <TabItem label="yarn">
-    ```bash
-    yarn add -D @stricture/hexagonal
-    ```
-  </TabItem>
-</Tabs>
+---
 
-### Layered Architecture
+## Quick Setup (Recommended)
 
-<Tabs>
-  <TabItem label="npm">
-    ```bash
-    npm install --save-dev @stricture/layered
-    ```
-  </TabItem>
-  <TabItem label="pnpm">
-    ```bash
-    pnpm add -D @stricture/layered
-    ```
-  </TabItem>
-  <TabItem label="yarn">
-    ```bash
-    yarn add -D @stricture/layered
-    ```
-  </TabItem>
-</Tabs>
+The fastest way to get started:
 
-### Clean Architecture
-
-<Tabs>
-  <TabItem label="npm">
-    ```bash
-    npm install --save-dev @stricture/clean
-    ```
-  </TabItem>
-  <TabItem label="pnpm">
-    ```bash
-    pnpm add -D @stricture/clean
-    ```
-  </TabItem>
-  <TabItem label="yarn">
-    ```bash
-    yarn add -D @stricture/clean
-    ```
-  </TabItem>
-</Tabs>
-
-### Next.js
-
-<Tabs>
-  <TabItem label="npm">
-    ```bash
-    npm install --save-dev @stricture/nextjs
-    ```
-  </TabItem>
-  <TabItem label="pnpm">
-    ```bash
-    pnpm add -D @stricture/nextjs
-    ```
-  </TabItem>
-  <TabItem label="yarn">
-    ```bash
-    yarn add -D @stricture/nextjs
-    ```
-  </TabItem>
-</Tabs>
-
-:::tip[Browse All Presets]
-See the [Presets](/presets/) page for all available architecture presets.
-:::
-
-## Configure ESLint
-
-Add Stricture to your ESLint configuration:
-
-<Tabs>
-  <TabItem label="Flat Config (ESLint 9+)">
-    ```js
-    // eslint.config.js
-    import stricture from '@stricture/eslint-plugin';
-
-    export default [
-      {
-        plugins: {
-          '@stricture': stricture
-        },
-        rules: {
-          '@stricture/enforce-boundaries': 'error'
-        }
-      }
-    ];
-    ```
-  </TabItem>
-  <TabItem label="Legacy Config (.eslintrc.js)">
-    ```js
-    // .eslintrc.js
-    module.exports = {
-      plugins: ['@stricture'],
-      rules: {
-        '@stricture/enforce-boundaries': 'error'
-      }
-    };
-    ```
-  </TabItem>
-  <TabItem label="Legacy Config (.eslintrc.json)">
-    ```json
-    {
-      "plugins": ["@stricture"],
-      "rules": {
-        "@stricture/enforce-boundaries": "error"
-      }
-    }
-    ```
-  </TabItem>
-</Tabs>
-
-## Create Configuration
-
-Create a `.stricture/config.json` file in your project root:
+### Step 1: Install Package
 
 ```bash
-mkdir -p .stricture
+npm install -D @stricture/eslint-plugin
 ```
 
-For a preset-based setup:
+### Step 2: Configure ESLint
 
-```json title=".stricture/config.json"
-{
-  "preset": "@stricture/hexagonal"
-}
+Add Stricture to your existing ESLint config:
+
+```js title="eslint.config.js"
+import stricture from '@stricture/eslint-plugin'
+
+export default [
+  {
+    // Your existing ESLint config
+    files: ['**/*.ts', '**/*.tsx'],
+    plugins: { /* your other plugins */ },
+    rules: { /* your other rules */ }
+  },
+  stricture.configs.hexagonal()  // Add Stricture
+]
 ```
 
-Or for a custom configuration:
-
-```json title=".stricture/config.json"
-{
-  "boundaries": [
-    {
-      "name": "domain",
-      "pattern": "src/domain/**",
-      "mode": "file",
-      "tags": ["domain"]
-    },
-    {
-      "name": "infrastructure",
-      "pattern": "src/infrastructure/**",
-      "mode": "file",
-      "tags": ["infrastructure"]
-    }
-  ],
-  "rules": [
-    {
-      "id": "domain-isolation",
-      "name": "Domain Isolation",
-      "severity": "error",
-      "from": { "tag": "domain" },
-      "to": { "tag": "infrastructure" },
-      "allowed": false,
-      "message": "Domain cannot depend on infrastructure"
-    }
-  ]
-}
-```
-
-:::note[Configuration Location]
-The `.stricture/config.json` file must be in your project root (where `package.json` is located).
+:::tip[Different ESLint Config Format?]
+Using `.eslintrc.js` or need advanced configuration? See the [ESLint Setup Guide](/guides/eslint-setup/).
 :::
 
-## Verify Installation
+### Step 3: Verify Installation
 
 Run ESLint to verify Stricture is working:
 
@@ -247,31 +97,84 @@ src/domain/user.ts
              @stricture/enforce-boundaries
 ```
 
-✅ Stricture is now enforcing your architecture!
+✅ **Stricture is now enforcing your architecture!**
 
-## TypeScript Path Aliases (Optional)
+---
 
-If your project uses TypeScript path aliases (like `@/domain`), Stricture will automatically resolve them using your `tsconfig.json`:
+## Alternative: CLI Setup
 
-```json title="tsconfig.json"
+Let Stricture set everything up automatically:
+
+```bash
+npx stricture init
+```
+
+The CLI will:
+- ✅ Detect your project framework (Next.js, NestJS, etc.)
+- ✅ Recommend appropriate presets
+- ✅ Configure ESLint automatically
+- ✅ Install required dependencies
+
+[View full CLI documentation →](/api/cli/)
+
+---
+
+## Customizing Your Configuration
+
+Need to add ignore patterns or custom rules? Pass options to the config:
+
+```js title="eslint.config.js"
+import stricture from '@stricture/eslint-plugin'
+
+export default [
+  stricture.configs.hexagonal({
+    ignorePatterns: ['**/*.test.ts', 'src/legacy/**'],
+    rules: [
+      {
+        id: 'no-legacy-imports',
+        from: { pattern: 'src/**' },
+        to: { pattern: 'src/legacy/**' },
+        allowed: false,
+        message: 'No new code should depend on legacy modules'
+      }
+    ]
+  })
+]
+```
+
+For complex configurations with many custom rules, you can use a separate config file:
+
+```js title="eslint.config.js"
+import stricture from '@stricture/eslint-plugin'
+
+export default [
+  {
+    // Your existing ESLint config
+    files: ['**/*.ts', '**/*.tsx'],
+    plugins: { /* your other plugins */ },
+    rules: { /* your other rules */ }
+  },
+  stricture.configs.recommended()  // Reads .stricture/config.json
+]
+```
+
+```json title=".stricture/config.json"
 {
-  "compilerOptions": {
-    "baseUrl": ".",
-    "paths": {
-      "@/domain/*": ["src/domain/*"],
-      "@/infrastructure/*": ["src/infrastructure/*"]
-    }
-  }
+  "preset": "@stricture/hexagonal",
+  "boundaries": [ /* many boundaries */ ],
+  "rules": [ /* many rules */ ]
 }
 ```
 
-No additional configuration needed - Stricture reads your `tsconfig.json` automatically.
+Learn more in the [Configuration Files Guide](/configuration/config-file/).
+
+---
 
 ## IDE Integration
 
 ### VS Code
 
-ESLint violations appear inline in VS Code with the [ESLint extension](https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint):
+ESLint violations appear inline with the [ESLint extension](https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint):
 
 1. Install the ESLint extension
 2. Restart VS Code
@@ -285,91 +188,91 @@ ESLint integration is built-in:
 2. Enable **Automatic ESLint configuration**
 3. Violations appear inline
 
+---
+
+## TypeScript Path Aliases (Optional)
+
+If your project uses TypeScript path aliases, Stricture automatically resolves them using your `tsconfig.json`:
+
+```json title="tsconfig.json"
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/domain/*": ["src/domain/*"],
+      "@/infrastructure/*": ["src/infrastructure/*"]
+    }
+  }
+}
+```
+
+No additional configuration needed.
+
+---
+
 ## Monorepo Setup
 
-For monorepos, you can have per-package configurations:
+For monorepos, configure Stricture per-package:
 
 ```
 my-monorepo/
 ├── packages/
 │   ├── api/
-│   │   ├── .stricture/
-│   │   │   └── config.json          # API-specific rules
+│   │   ├── eslint.config.js     # stricture.configs.hexagonal()
 │   │   └── package.json
 │   ├── web/
-│   │   ├── .stricture/
-│   │   │   └── config.json          # Web-specific rules
+│   │   ├── eslint.config.js     # stricture.configs.nextjs()
 │   │   └── package.json
 │   └── shared/
 │       └── package.json
 └── package.json
 ```
 
-Each package can have its own preset:
+Each package can use a different preset. See the [Monorepos Guide](/guides/monorepos/) for details.
 
-```json title="packages/api/.stricture/config.json"
-{
-  "preset": "@stricture/hexagonal"
-}
-```
-
-```json title="packages/web/.stricture/config.json"
-{
-  "preset": "@stricture/nextjs"
-}
-```
+---
 
 ## Troubleshooting
 
 ### ESLint not finding violations
 
-**Problem**: ESLint runs but doesn't report Stricture violations.
-
 **Solution**:
-1. Verify `.stricture/config.json` exists in project root
-2. Check ESLint config has `@stricture/enforce-boundaries` rule enabled
-3. Run `npx eslint --debug .` to see what's happening
+1. Check ESLint config has `stricture.configs.xxx()`
+2. Verify `@stricture/eslint-plugin` is installed
+3. Run `npx eslint --debug .` to see detailed output
 
 ### TypeScript paths not resolving
-
-**Problem**: Stricture doesn't recognize TypeScript path aliases.
 
 **Solution**:
 1. Ensure `tsconfig.json` is in your project root
 2. Verify `baseUrl` and `paths` are configured correctly
 3. Restart your IDE/ESLint server
 
-### No config file found
+For more troubleshooting help, see the [Troubleshooting Guide](/guides/troubleshooting/).
 
-**Problem**: Error: `No Stricture config found at .stricture/config.json`
-
-**Solution**:
-1. Create `.stricture/config.json` in project root (where `package.json` is)
-2. Ensure the file is valid JSON
-3. Check file permissions
-
-### Preset not found
-
-**Problem**: Error: `Preset '@stricture/hexagonal' not found`
-
-**Solution**:
-1. Install the preset package: `npm install -D @stricture/hexagonal`
-2. Verify `package.json` lists the preset in `devDependencies`
-3. Run `npm install` again
+---
 
 ## Next Steps
 
 <CardGrid>
-  <Card title="Quick Start" icon="star">
-    Create your first working setup in 5 minutes.
-    <a href="/getting-started/quick-start/">Get started →</a>
+  <Card title="Quick Start Tutorial" icon="rocket">
+    Build a working example in 5 minutes.
+
+    [Get started →](/getting-started/quick-start/)
   </Card>
   <Card title="Core Concepts" icon="open-book">
-    Learn about boundaries, rules, and how Stricture works.
-    <a href="/getting-started/concepts/">Learn concepts →</a>
+    Learn how boundaries and rules work.
+
+    [Learn concepts →](/getting-started/concepts/)
   </Card>
-  <Card title="Explore Presets" icon="puzzle">
-    Find the right architecture for your project.
-    <a href="/presets/">Browse presets →</a>
+  <Card title="ESLint Setup" icon="setting">
+    Advanced ESLint configuration options.
+
+    [Configure ESLint →](/guides/eslint-setup/)
+  </Card>
+  <Card title="Browse Presets" icon="puzzle">
+    Explore all architecture patterns.
+
+    [View presets →](/presets/)
   </Card>
 </CardGrid>

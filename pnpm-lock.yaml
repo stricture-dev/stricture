@@ -507,6 +507,9 @@ importers:
       '@stricture/core':
         specifier: workspace:*
         version: link:../core
+      '@stricture/eslint-plugin':
+        specifier: ^0.1.0
+        version: link:../eslint-plugin
     devDependencies:
       '@stricture/eslint-config':
         specifier: workspace:*
@@ -646,6 +649,9 @@ importers:
       '@stricture/core':
         specifier: workspace:*
         version: link:../core
+      '@stricture/eslint-plugin':
+        specifier: ^0.1.0
+        version: link:../eslint-plugin
     devDependencies:
       '@stricture/eslint-config':
         specifier: workspace:*
@@ -671,6 +677,9 @@ importers:
       '@stricture/core':
         specifier: workspace:*
         version: link:../core
+      '@stricture/eslint-plugin':
+        specifier: ^0.1.0
+        version: link:../eslint-plugin
     devDependencies:
       '@stricture/eslint-config':
         specifier: workspace:*
@@ -696,6 +705,9 @@ importers:
       '@stricture/core':
         specifier: workspace:*
         version: link:../core
+      '@stricture/eslint-plugin':
+        specifier: ^0.1.0
+        version: link:../eslint-plugin
     devDependencies:
       '@stricture/eslint-config':
         specifier: workspace:*
@@ -721,6 +733,9 @@ importers:
       '@stricture/core':
         specifier: workspace:*
         version: link:../core
+      '@stricture/eslint-plugin':
+        specifier: ^0.1.0
+        version: link:../eslint-plugin
     devDependencies:
       '@stricture/eslint-config':
         specifier: workspace:*
@@ -746,6 +761,9 @@ importers:
       '@stricture/core':
         specifier: workspace:*
         version: link:../core
+      '@stricture/eslint-plugin':
+        specifier: ^0.1.0
+        version: link:../eslint-plugin
     devDependencies:
       '@stricture/eslint-config':
         specifier: workspace:*

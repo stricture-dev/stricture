@@ -27,7 +27,7 @@ graph TB
 ## Installation
 
 ```bash
-npm install -D @stricture/hexagonal @stricture/eslint-plugin
+npm install -D @stricture/eslint-plugin
 ```
 
 Or use the CLI:

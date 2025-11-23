@@ -18,6 +18,7 @@ import path from 'path'
  */
 interface RuleOptions {
   configPath?: string
+  inlineConfig?: StrictureConfig
   baseUrl?: string
   checkDynamicImports?: boolean
   reportUnusedRules?: boolean
@@ -49,6 +50,7 @@ const enforceBoundariesRule: Rule.RuleModule = {
         type: 'object',
         properties: {
           configPath: { type: 'string' },
+          inlineConfig: { type: 'object' },
           baseUrl: { type: 'string' },
           checkDynamicImports: { type: 'boolean' },
           reportUnusedRules: { type: 'boolean' }
@@ -65,24 +67,35 @@ const enforceBoundariesRule: Rule.RuleModule = {
   create(context: Rule.RuleContext): Rule.RuleListener {
     // Get options
     const options: RuleOptions = context.options[0] ?? {}
-    const configPath = options.configPath ?? '.stricture/config.json'
     const checkDynamicImports = options.checkDynamicImports !== false // default true
 
     // Load configuration
+    // PRIORITY 1: Inline config (from config factory)
+    // PRIORITY 2: File-based config
     let config: StrictureConfig
-    try {
-      config = loadConfig(configPath)
-    } catch (err) {
-      // Report config loading error on the first node
-      return {
-        Program(node: Node) {
-          context.report({
-            node,
-            messageId: 'configLoadError',
-            data: {
-              error: err instanceof Error ? err.message : String(err)
-            }
-          })
+    if (options.inlineConfig) {
+      config = options.inlineConfig
+    } else {
+      // Try loading from file
+      const configPath = options.configPath ?? '.stricture/config.json'
+      try {
+        config = loadConfig(configPath)
+      } catch (err) {
+        // Report config loading error on the first node
+        return {
+          Program(node: Node) {
+            context.report({
+              node,
+              messageId: 'configLoadError',
+              data: {
+                error:
+                  'No Stricture configuration found. ' +
+                  'Either use stricture.configs.hexagonal() in ESLint config ' +
+                  'or create .stricture/config.json\n\n' +
+                  `Original error: ${err instanceof Error ? err.message : String(err)}`
+              }
+            })
+          }
         }
       }
     }

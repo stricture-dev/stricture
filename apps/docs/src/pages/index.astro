@@ -6,7 +6,7 @@ import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
 <StarlightPage frontmatter={{ title: 'Stricture' }}>
   <div class="hero">
     <h1 class="hero-title">
-      Architecture Boundaries for <span class="text-accent">TypeScript</span>
+      Architecture Boundaries for <span class="text-accent">JavaScript & TypeScript</span>
     </h1>
     <p class="hero-tagline">
       Enforce clean architecture patterns with ESLint. Keep your codebase maintainable as it scales.
@@ -43,12 +43,14 @@ import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
 
   <section class="quick-example">
     <h2>Quick Example</h2>
-    <p>Enforce hexagonal architecture in 3 lines:</p>
-    <pre><code class="language-json">{`{
-  "preset": "@stricture/hexagonal"
-}`}</code></pre>
+    <p>Add hexagonal architecture enforcement to your ESLint config:</p>
+    <pre><code class="language-javascript">{`import stricture from '@stricture/eslint-plugin'
+
+export default [
+  stricture.configs.hexagonal()
+]`}</code></pre>
     <p class="example-note">
-      Save this in <code>.stricture/config.json</code> and Stricture will prevent:
+      That's it! Stricture will now prevent:
     </p>
     <ul>
       <li>Domain importing from infrastructure</li>

@@ -398,7 +398,6 @@ packages:
     "lint:stricture": "pnpm -r exec eslint . --rule '@stricture/enforce-boundaries: error'"
   },
   "devDependencies": {
-    "@stricture/core": "^0.1.0",
     "@stricture/eslint-plugin": "^0.1.0"
   }
 }
@@ -408,10 +407,7 @@ Install dependencies:
 
 ```bash
 # Install in all packages
-pnpm install -D -w @stricture/core @stricture/eslint-plugin
-
-# Install preset in specific package
-pnpm --filter @my-company/api add -D @stricture/hexagonal
+pnpm install -D -w @stricture/eslint-plugin
 ```
 
 Run linting:
@@ -730,16 +726,14 @@ mkdir -p packages/{api,web,shared,stricture-config}/src
 ### Step 3: Install Stricture (Root)
 
 ```bash
-pnpm add -D -w @stricture/core @stricture/eslint-plugin
-pnpm add -D -w @stricture/hexagonal @stricture/nextjs @stricture/layered
+pnpm add -D -w @stricture/eslint-plugin
 ```
 
 ### Step 4: Create Internal Presets
 
 ```typescript title="packages/stricture-config/src/index.ts"
 import type { ArchPreset } from '@stricture/core'
-import { hexagonalPreset } from '@stricture/hexagonal'
-import { nextjsPreset } from '@stricture/nextjs'
+import { hexagonalPreset, nextjsPreset } from '@stricture/eslint-plugin'
 
 // Customize hexagonal for our APIs
 export const apiPreset: ArchPreset = {
@@ -781,8 +775,7 @@ export const webPreset: ArchPreset = {
   },
   "dependencies": {
     "@stricture/core": "workspace:*",
-    "@stricture/hexagonal": "workspace:*",
-    "@stricture/nextjs": "workspace:*"
+    "@stricture/eslint-plugin": "workspace:*"
   }
 }
 ```
