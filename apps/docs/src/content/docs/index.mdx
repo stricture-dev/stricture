@@ -40,12 +40,15 @@ Add to your ESLint config:
 import stricture from '@stricture/eslint-plugin'
 
 export default [
-  { /* your existing ESLint config */ },
-  stricture.configs.hexagonal()  // Add architecture enforcement
+  {
+    // Your existing ESLint config
+    files: ['**/*.ts', '**/*.tsx'],
+    plugins: { /* your other plugins */ },
+    rules: { /* your other rules */ }
+  },
+  stricture.configs.hexagonal()  // Add Stricture
 ]
 ```
-
-Stricture works alongside your existing ESLint rules and plugins.
 
 ## How It Works
 
