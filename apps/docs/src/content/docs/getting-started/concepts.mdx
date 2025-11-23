@@ -204,11 +204,15 @@ Multiple tags provide flexibility. You can write general rules using broad tags 
 - `id` - Unique identifier (kebab-case)
 - `name` - Human-readable name
 - `description` - What the rule enforces
-- `severity` - `"error"`, `"warn"`, or `"off"`
+- `severity` - `"error"`, `"warn"`, or `"off"` (adds message prefix; use `"off"` to skip this rule)
 - `from` - Source boundary pattern or tag
 - `to` - Target boundary pattern or tag
 - `allowed` - `true` allows import, `false` denies
 - `message` - Custom error message (optional)
+
+:::note
+Rule `severity` only adds a `[WARNING]` prefix to messages or disables individual rules with `"off"`. To control ESLint error vs warning reporting, set the ESLint rule level to `'warn'` or `'error'` in your ESLint config.
+:::
 
 ### Pattern-Based Rules
 

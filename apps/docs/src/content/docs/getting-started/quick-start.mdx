@@ -444,21 +444,24 @@ Use `ignorePatterns` in your config:
 
 ### Can I use this with existing code?
 
-Yes! Start with `severity: "warn"` to see violations without breaking builds:
+Yes! Set the ESLint rule to `"warn"` instead of `"error"` to see violations without breaking builds:
 
-```json title=".stricture/config.json"
-{
-  "preset": "@stricture/hexagonal",
-  "rules": [
-    {
-      "id": "domain-isolation",
-      "severity": "warn"
+```js title="eslint.config.js"
+import stricture from '@stricture/eslint-plugin'
+
+export default [
+  {
+    plugins: { '@stricture': stricture },
+    rules: {
+      '@stricture/enforce-boundaries': ['warn', {
+        inlineConfig: stricture.hexagonalPreset
+      }]
     }
-  ]
-}
+  }
+]
 ```
 
-Then fix violations incrementally and switch to `"error"`.
+Once violations are fixed, change it to `'error'` to prevent new violations.
 
 ## Get Help
 
