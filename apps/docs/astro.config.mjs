@@ -14,8 +14,8 @@ export default defineConfig({
       title: 'Stricture',
       description: 'Architecture boundaries for TypeScript projects',
       logo: {
-        light: './src/assets/logo-light.svg',
-        dark: './src/assets/logo-dark.svg',
+        light: './src/assets/logo-stricture-mini.svg',
+        dark: './src/assets/logo-stricture-mini.svg',
       },
       social: {
         github: 'https://github.com/stricture-dev/stricture',
