@@ -279,6 +279,153 @@ export default [
 Start with a preset as-is. Only customize when you have specific needs that differ from the preset's assumptions.
 :::
 
+## Adapting Presets to Existing Folder Structures
+
+Already have hexagonal, layered, or clean architecture but with different folder names? No problem! You can use the preset's rules while adapting boundaries to match your existing structure.
+
+### The Problem
+
+Presets expect specific folder structures:
+
+| Preset | Expected Structure | Your Structure (Example) |
+|--------|-------------------|-------------------------|
+| **Hexagonal** | `src/core/domain/`<br/>`src/adapters/driving/` | `src/domain/`<br/>`src/infrastructure/http/` |
+| **Layered** | `src/presentation/`<br/>`src/business/` | `src/controllers/`<br/>`src/services/` |
+| **Clean** | `src/entities/`<br/>`src/use-cases/` | `src/domain/`<br/>`src/application/` |
+
+### The Solution
+
+Override the preset's `boundaries` to match your folders. The preset's **rules stay the same** - they reference boundary tags, not folder patterns.
+
+### Example: Hexagonal with Custom Folders
+
+**Your existing structure:**
+```
+src/
+├── domain/              # Instead of src/core/domain/
+├── ports/               # Instead of src/core/ports/
+├── application/         # Instead of src/core/application/
+└── infrastructure/
+    ├── http/            # Instead of src/adapters/driving/
+    └── database/        # Instead of src/adapters/driven/
+```
+
+**Configuration:**
+```json title=".stricture/config.json"
+{
+  "preset": "@stricture/hexagonal",
+  "boundaries": [
+    {
+      "name": "domain",
+      "pattern": "src/domain/**",
+      "mode": "file",
+      "tags": ["domain", "core"]
+    },
+    {
+      "name": "ports",
+      "pattern": "src/ports/**",
+      "mode": "file",
+      "tags": ["ports", "core"]
+    },
+    {
+      "name": "application",
+      "pattern": "src/application/**",
+      "mode": "file",
+      "tags": ["application", "core"]
+    },
+    {
+      "name": "http-adapters",
+      "pattern": "src/infrastructure/http/**",
+      "mode": "file",
+      "tags": ["driving", "adapters"]
+    },
+    {
+      "name": "database-adapters",
+      "pattern": "src/infrastructure/database/**",
+      "mode": "file",
+      "tags": ["driven", "adapters"]
+    }
+  ]
+}
+```
+
+**What happens:**
+- ✅ Your boundaries replace the preset's boundary patterns
+- ✅ The preset's rules still work (they match on tags: `domain`, `ports`, `driving`, `driven`)
+- ✅ You get hexagonal architecture enforcement with your existing folders
+
+### Example: Layered with Different Names
+
+**Your existing structure:**
+```
+src/
+├── controllers/         # Instead of src/presentation/
+├── services/            # Instead of src/business/
+├── repositories/        # Instead of src/data/
+└── config/              # Instead of src/infrastructure/
+```
+
+**Configuration:**
+```json title=".stricture/config.json"
+{
+  "preset": "@stricture/layered",
+  "boundaries": [
+    {
+      "name": "controllers",
+      "pattern": "src/controllers/**",
+      "mode": "file",
+      "tags": ["presentation"]
+    },
+    {
+      "name": "services",
+      "pattern": "src/services/**",
+      "mode": "file",
+      "tags": ["business"]
+    },
+    {
+      "name": "repositories",
+      "pattern": "src/repositories/**",
+      "mode": "file",
+      "tags": ["data"]
+    },
+    {
+      "name": "config",
+      "pattern": "src/config/**",
+      "mode": "file",
+      "tags": ["infrastructure"]
+    }
+  ]
+}
+```
+
+### Key Points
+
+**Important:** Match the preset's **tags**, not its folder patterns.
+
+- Each preset's rules use specific tags (e.g., `domain`, `ports`, `driving`, `driven`)
+- When you override boundaries, use the **same tags** the preset expects
+- Check the preset's documentation to see which tags it uses
+- Your boundary `name` can be anything - it's the `tags` that matter
+
+### Finding Preset Tags
+
+To see which tags a preset uses:
+
+1. Check the preset's documentation page (e.g., [Hexagonal Preset](/presets/hexagonal))
+2. Look at the "Boundaries" section in each preset's docs
+3. Or inspect the preset source code in `@stricture/eslint-plugin`
+
+### When to Use This Approach
+
+Use boundary overrides when:
+- ✅ You follow the architecture pattern (hexagonal, layered, etc.)
+- ✅ Your folder structure is different from the preset's expectations
+- ✅ You want to keep the preset's rules without rewriting them
+
+Don't use this if:
+- ❌ Your architecture is fundamentally different → Create a custom preset instead
+- ❌ You only need minor additions → Just add boundaries/rules without replacing all boundaries
+
 ## Composing Multiple Presets
 
 ### Extending Presets
