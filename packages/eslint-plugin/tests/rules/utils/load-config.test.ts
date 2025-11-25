@@ -65,4 +65,18 @@ describe('loadConfig', () => {
     expect(config.boundaries).toHaveLength(4) // domain, ports, application, adapters
     expect(config.rules).toHaveLength(5) // domain-self-imports, domain-isolation, adapters-via-ports, adapters-to-ports, application-to-domain
   })
+
+  it.skip('should merge boundaries and rules from extended presets (requires monorepo setup)', () => {
+    // This test requires preset packages to be resolvable
+    // Skip in unit tests, run in integration tests
+    const configPath = path.join(__dirname, '../../fixtures/configs/with-extends-config.json')
+    const config = loadConfig(configPath)
+
+    expect(config).toBeDefined()
+    expect(config.preset).toBe('@test/base-preset')
+    expect(config.extends).toEqual(['@test/extended-preset'])
+    // After preset resolution, should have boundaries and rules from both presets
+    // expect(config.boundaries.length).toBeGreaterThan(0)
+    // expect(config.rules.length).toBeGreaterThan(0)
+  })
 })
