@@ -279,11 +279,34 @@ export default [
 Start with a preset as-is. Only customize when you have specific needs that differ from the preset's assumptions.
 :::
 
-## Multiple Presets
+## Composing Multiple Presets
 
-You cannot use multiple presets simultaneously. Each preset defines a complete architectural pattern.
+### Extending Presets
 
-If you need multiple patterns in a monorepo, configure each package separately:
+You can compose multiple presets using the `extends` field. This is useful for:
+- Adding organizational standards to architecture presets
+- Combining framework-specific rules with architectural patterns
+- Layering security policies and code standards
+
+```json title=".stricture/config.json"
+{
+  "preset": "@stricture/hexagonal",
+  "extends": [
+    "@company/code-standards",
+    "@company/security-policies"
+  ]
+}
+```
+
+**Merge order:** Base preset → Extended presets (left to right) → Your custom rules
+
+:::tip[Composing Presets]
+Use `extends` to layer additional presets on top of your base architecture preset. See the [Configuration Guide](/configuration/presets#multiple-presets-extends) for complete details on preset composition.
+:::
+
+### Monorepo: Different Presets per Package
+
+For monorepos where different packages need different architectures, configure each package separately:
 
 ```js title="packages/api/eslint.config.js"
 export default [stricture.configs.hexagonal()]
@@ -292,6 +315,8 @@ export default [stricture.configs.hexagonal()]
 ```js title="packages/web/eslint.config.js"
 export default [stricture.configs.nextjs()]
 ```
+
+See the [Monorepo Setup Guide](/guides/monorepos) for more details.
 
 ## Creating Custom Presets
 
