@@ -19,11 +19,16 @@ Stricture helps you maintain clean architecture by automatically enforcing impor
 ## Quick Start
 
 ```bash
-# Install for Next.js with Hexagonal architecture
-npm install -D @stricture/nextjs @stricture/hexagonal
+# Install the ESLint plugin (includes all presets)
+npm install -D @stricture/eslint-plugin
 
-# Initialize configuration
-npx stricture init
+# Add to your ESLint config
+# eslint.config.js
+import stricture from '@stricture/eslint-plugin'
+
+export default [
+  stricture.configs.hexagonal()  // Choose your architecture
+]
 
 # Your ESLint will now enforce architectural boundaries!
 ```
@@ -42,56 +47,57 @@ import { UserPort } from '../core/ports/user-port'  // Adapters depend on ports
 
 ## Architecture Presets
 
-| Preset | Description | Best For |
+All presets are bundled with `@stricture/eslint-plugin`:
+
+| Config | Description | Best For |
 |--------|-------------|----------|
-| **@stricture/hexagonal** | Ports & Adapters architecture | Domain-driven applications |
-| **@stricture/clean** | Uncle Bob's Clean Architecture | Enterprise applications |
-| **@stricture/layered** | Traditional 3-tier architecture | Standard web applications |
-| **@stricture/modular** | Feature-based modules | Large monolithic apps |
+| `stricture.configs.hexagonal()` | Ports & Adapters architecture | Domain-driven applications |
+| `stricture.configs.clean()` | Uncle Bob's Clean Architecture | Enterprise applications |
+| `stricture.configs.layered()` | Traditional 3-tier architecture | Standard web applications |
+| `stricture.configs.modular()` | Feature-based modules | Large monolithic apps |
 
 ## Framework Integration
 
-| Framework | Package | Features |
-|-----------|---------|----------|
-| **Next.js** | @stricture/nextjs | Server/Client component boundaries, App Router support |
-| **NestJS** | @stricture/nestjs | Module encapsulation, DI boundaries |
+Framework-specific presets included:
+
+| Framework | Config | Features |
+|-----------|--------|----------|
+| **Next.js** | `stricture.configs.nextjs()` | Server/Client component boundaries, App Router support |
+| **NestJS** | `stricture.configs.nestjs()` | Module encapsulation, DI boundaries |
 
 ## Packages
 
 This is a monorepo containing:
 
-### Core Packages
+### Published Packages (For Users)
 
-- **[@stricture/core](./packages/core)** - Core types and utilities
-- **[@stricture/eslint-plugin](./packages/eslint-plugin)** - ESLint plugin for boundary enforcement
-- **[@stricture/cli](./packages/cli)** - Interactive CLI tool
+- **[@stricture/eslint-plugin](./packages/eslint-plugin)** - ESLint plugin with all bundled presets
+- **[@stricture/core](./packages/core)** - Core types and utilities (auto-installed)
+- **[@stricture/cli](./packages/cli)** - Interactive CLI tool (optional)
 
-### Architecture Presets
+### Preset Packages (Bundled in eslint-plugin)
 
+All architecture presets are included in `@stricture/eslint-plugin`:
 - **[@stricture/hexagonal](./packages/hexagonal)** - Hexagonal/Ports & Adapters
 - **[@stricture/clean](./packages/clean)** - Clean Architecture
 - **[@stricture/layered](./packages/layered)** - Layered Architecture
 - **[@stricture/modular](./packages/modular)** - Modular Architecture
-
-### Framework Integrations
-
 - **[@stricture/nextjs](./packages/nextjs)** - Next.js preset
 - **[@stricture/nestjs](./packages/nestjs)** - NestJS preset
 
-### Apps
+> **Note:** Preset packages can also be installed separately for advanced use cases with file-based configuration.
+
+### Apps & Examples
 
 - **[docs](./apps/docs)** - Documentation website (stricture.dev)
-
-### Examples
-
 - **[nextjs-hexagonal](./examples/nextjs-hexagonal)** - E-commerce app with hexagonal architecture
 - **[nestjs-layered](./examples/nestjs-layered)** - API with layered architecture
 - **[react-modular](./examples/react-modular)** - Dashboard with feature modules
 
 ## How It Works
 
-1. **Choose a preset** - Select an architecture that fits your needs
-2. **Configure boundaries** - Define layers, modules, or domains in `.stricture/config.json`
+1. **Install** - Add `@stricture/eslint-plugin` to your project
+2. **Choose a preset** - Use a bundled config like `stricture.configs.hexagonal()`
 3. **Write code** - Stricture's ESLint plugin validates imports in real-time
 4. **Get feedback** - Clear error messages show what's wrong and how to fix it
 
@@ -117,48 +123,58 @@ See the [External Dependencies guide](https://stricture.dev/docs/external-depend
 
 ## Configuration Example
 
+### Inline Config (Recommended)
+
+```js
+// eslint.config.js
+import stricture from '@stricture/eslint-plugin'
+
+export default [
+  // Use a preset
+  stricture.configs.hexagonal(),
+
+  // Or customize inline
+  stricture.configs.hexagonal({
+    rules: [
+      {
+        id: 'no-legacy-imports',
+        from: { pattern: 'src/**' },
+        to: { pattern: 'src/legacy/**' },
+        allowed: false,
+        message: 'No new code should depend on legacy modules'
+      }
+    ]
+  })
+]
+```
+
+### File-Based Config (Alternative)
+
+For complex configurations, use `.stricture/config.json`:
+
 ```json
 {
   "preset": "@stricture/hexagonal",
   "boundaries": [
     {
-      "name": "domain",
-      "pattern": "src/core/domain/**",
-      "mode": "file"
-    },
-    {
-      "name": "ports",
-      "pattern": "src/core/ports/**",
-      "mode": "file"
-    },
-    {
-      "name": "adapters",
-      "pattern": "src/adapters/**",
-      "mode": "file"
+      "name": "shared",
+      "pattern": "src/shared/**",
+      "mode": "file",
+      "tags": ["shared"]
     }
   ],
   "rules": [
     {
-      "id": "domain-isolation",
-      "name": "Domain Isolation",
-      "severity": "error",
-      "from": { "tag": "domain" },
-      "to": { "tag": "*" },
-      "allowed": false,
-      "message": "Domain layer must remain pure - no external dependencies"
-    },
-    {
-      "id": "adapters-via-ports",
-      "name": "Adapters Through Ports",
-      "severity": "error",
-      "from": { "tag": "adapters" },
-      "to": { "tag": "domain" },
-      "allowed": false,
-      "message": "Adapters should depend on ports, not domain directly"
+      "id": "allow-shared",
+      "from": { "tag": "*" },
+      "to": { "tag": "shared" },
+      "allowed": true
     }
   ]
 }
 ```
+
+Then use `stricture.configs.recommended()` to load the file.
 
 ## Documentation
 
