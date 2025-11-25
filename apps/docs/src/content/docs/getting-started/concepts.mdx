@@ -28,54 +28,88 @@ graph LR
 
 ## Package Architecture
 
-Stricture is split into focused packages:
+Stricture has a simple, focused package structure:
 
-### Core Packages
+### Published Packages
+
+**`@stricture/eslint-plugin`** - Main package (install this)
+- ESLint integration layer
+- **All official presets bundled inside**
+- Depends on `@stricture/core`
+- **This is the only package you need**
 
 **`@stricture/core`** - Validation engine
 - Pure TypeScript library
 - Contains all validation logic
-- Used by all other packages
+- Auto-installed as a dependency
 - **You don't install this directly**
 
-**`@stricture/eslint-plugin`** - ESLint integration
-- Thin wrapper around core
-- Provides ESLint rule
-- **Required for all setups**
-
-### Preset Packages
-
-Architecture-specific presets:
-- `@stricture/hexagonal` - Ports & Adapters
-- `@stricture/layered` - N-tier architecture
-- `@stricture/clean` - Clean Architecture
-- `@stricture/modular` - Feature modules
-- `@stricture/nextjs` - Next.js patterns
-- `@stricture/nestjs` - NestJS patterns
-
-**Each preset includes:**
-- Boundary definitions
-- Architecture rules
-- Documentation
-- Depends on `@stricture/core` (automatically installed)
-
-### Optional Packages
-
-**`@stricture/cli`** - Command-line tools
-- Interactive setup
+**`@stricture/cli`** - Command-line tools (optional)
+- Interactive setup wizard
 - Validation commands
-- Scaffolding
+- Scaffolding helpers
 - Not required, but helpful
 
-### Typical Installation
+### How Presets Work
 
-Install the ESLint plugin, which bundles all official presets:
+All official architecture presets are **bundled in `@stricture/eslint-plugin`**:
 
-```bash
-npm install -D @stricture/eslint-plugin
+- `stricture.configs.hexagonal()` - Ports & Adapters
+- `stricture.configs.layered()` - N-tier architecture
+- `stricture.configs.clean()` - Clean Architecture
+- `stricture.configs.modular()` - Feature modules
+- `stricture.configs.nextjs()` - Next.js patterns
+- `stricture.configs.nestjs()` - NestJS patterns
+
+Each preset provides:
+- Pre-configured boundaries
+- Architecture rules
+- Best practices
+- Full documentation
+
+### Two Usage Patterns
+
+**Pattern 1: Inline Config (Recommended)**
+
+Use bundled presets directly in ESLint config:
+
+```js title="eslint.config.js"
+import stricture from '@stricture/eslint-plugin'
+
+export default [
+  stricture.configs.hexagonal()  // Preset is bundled
+]
 ```
 
-The core package and all architecture presets are included automatically.
+- ✅ Simple installation: `npm install -D @stricture/eslint-plugin`
+- ✅ No separate preset packages needed
+- ✅ Easy to customize inline
+- ✅ Works with all bundled presets
+
+**Pattern 2: File-Based Config (Advanced)**
+
+Use `.stricture/config.json` for complex configurations:
+
+```json title=".stricture/config.json"
+{
+  "preset": "@stricture/hexagonal",
+  "boundaries": [ /* custom boundaries */ ],
+  "rules": [ /* many custom rules */ ]
+}
+```
+
+```js title="eslint.config.js"
+import stricture from '@stricture/eslint-plugin'
+
+export default [
+  stricture.configs.recommended()  // Reads .stricture/config.json
+]
+```
+
+- ✅ Separates config from ESLint setup
+- ✅ Good for very large configurations
+- ℹ️ Preset packages can be installed separately if needed
+- ℹ️ Or use bundled presets via preset name
 
 ## Boundaries
 

@@ -13,46 +13,44 @@ Presets are pre-packaged architectural configurations that include:
 - **Enforcement rules** - Dependency constraints between layers
 - **Best practices** - Battle-tested patterns used in production
 
-Instead of manually defining boundaries and rules, you can use a preset and get started immediately:
+Instead of manually defining boundaries and rules, use a preset and get started immediately:
 
-```json
-{
-  "preset": "@stricture/hexagonal"
-}
+```js title="eslint.config.js"
+import stricture from '@stricture/eslint-plugin'
+
+export default [
+  stricture.configs.hexagonal()  // That's it!
+]
 ```
 
-## Understanding Package Dependencies
+## Installation
 
-Stricture has a clear package architecture:
+All presets are bundled in `@stricture/eslint-plugin`. Install once, use any preset:
+
+```bash
+npm install -D @stricture/eslint-plugin
+```
 
 ```mermaid
 %%{init: {'theme':'base'}}%%
 graph LR
     User[Your Project]
-    Plugin[@stricture/eslint-plugin]
-    Preset[@stricture/hexagonal]
+    Plugin[@stricture/eslint-plugin<br/>includes all presets]
     Core[@stricture/core]
 
     User -->|installs| Plugin
-    User -->|installs| Preset
     Plugin -->|depends on| Core
-    Preset -->|depends on| Core
 
     style User fill:#e3f2fd
     style Plugin fill:#fff3e0
-    style Preset fill:#f3e5f5
     style Core fill:#e8f5e9
 ```
 
-### Installation
+## Usage
 
-Install the plugin:
-```bash
-npm install -D @stricture/eslint-plugin
-```
+Use any bundled preset in your ESLint config:
 
-Then use any preset in your config:
-```js
+```js title="eslint.config.js"
 import stricture from '@stricture/eslint-plugin'
 
 // Hexagonal architecture
@@ -61,9 +59,11 @@ export default [stricture.configs.hexagonal()]
 // Next.js patterns
 export default [stricture.configs.nextjs()]
 
-// Custom config
-export default [stricture.configs.recommended()]
+// Layered architecture
+export default [stricture.configs.layered()]
 ```
+
+No additional packages needed!
 
 ## Why Use Presets?
 
@@ -89,7 +89,7 @@ Presets serve as reference implementations, helping teams learn architectural pa
 
 ### Hexagonal Architecture
 
-**Package:** `@stricture/hexagonal`
+**Config:** `stricture.configs.hexagonal()`
 
 Domain-centric architecture with clear separation between business logic and adapters.
 
@@ -103,7 +103,7 @@ Domain-centric architecture with clear separation between business logic and ada
 
 ### Layered Architecture
 
-**Package:** `@stricture/layered`
+**Config:** `stricture.configs.layered()`
 
 Traditional N-tier architecture with presentation, application, domain, and infrastructure layers.
 
@@ -117,7 +117,7 @@ Traditional N-tier architecture with presentation, application, domain, and infr
 
 ### Clean Architecture
 
-**Package:** `@stricture/clean`
+**Config:** `stricture.configs.clean()`
 
 Uncle Bob's Clean Architecture with concentric dependency circles.
 
@@ -131,7 +131,7 @@ Uncle Bob's Clean Architecture with concentric dependency circles.
 
 ### Modular Architecture
 
-**Package:** `@stricture/modular`
+**Config:** `stricture.configs.modular()`
 
 Feature-based modules with public API boundaries and encapsulation.
 
@@ -145,7 +145,7 @@ Feature-based modules with public API boundaries and encapsulation.
 
 ### Next.js Patterns
 
-**Package:** `@stricture/nextjs`
+**Config:** `stricture.configs.nextjs()`
 
 Next.js App Router patterns with server/client boundaries.
 
@@ -159,7 +159,7 @@ Next.js App Router patterns with server/client boundaries.
 
 ### NestJS Patterns
 
-**Package:** `@stricture/nestjs`
+**Config:** `stricture.configs.nestjs()`
 
 NestJS best practices with controller/service/repository layers.
 
@@ -173,14 +173,14 @@ NestJS best practices with controller/service/repository layers.
 
 ## Comparison Table
 
-| Preset | Best For | Complexity | Learning Curve | Key Benefit | Required Packages |
-|--------|----------|------------|----------------|-------------|-------------------|
-| **Hexagonal** | Complex domains, DDD | Medium-High | Medium | Domain isolation | `@stricture/eslint-plugin @stricture/hexagonal` |
-| **Layered** | Traditional apps | Low-Medium | Low | Familiar pattern | `@stricture/eslint-plugin @stricture/layered` |
-| **Clean** | Enterprise apps | Medium-High | Medium | Strict dependencies | `@stricture/eslint-plugin @stricture/clean` |
-| **Modular** | Large teams | Medium | Low-Medium | Module encapsulation | `@stricture/eslint-plugin @stricture/modular` |
-| **Next.js** | React SSR apps | Low | Low | Framework-specific | `@stricture/eslint-plugin @stricture/nextjs` |
-| **NestJS** | API backends | Low-Medium | Low | Framework-specific | `@stricture/eslint-plugin @stricture/nestjs` |
+| Preset | Config | Best For | Complexity | Learning Curve | Key Benefit |
+|--------|--------|----------|------------|----------------|-------------|
+| **Hexagonal** | `configs.hexagonal()` | Complex domains, DDD | Medium-High | Medium | Domain isolation |
+| **Layered** | `configs.layered()` | Traditional apps | Low-Medium | Low | Familiar pattern |
+| **Clean** | `configs.clean()` | Enterprise apps | Medium-High | Medium | Strict dependencies |
+| **Modular** | `configs.modular()` | Large teams | Medium | Low-Medium | Module encapsulation |
+| **Next.js** | `configs.nextjs()` | React SSR apps | Low | Low | Framework-specific |
+| **NestJS** | `configs.nestjs()` | API backends | Low-Medium | Low | Framework-specific |
 
 ## How to Choose?
 
@@ -220,35 +220,34 @@ NestJS best practices with controller/service/repository layers.
 - Dependency injection patterns
 - TypeScript decorators
 
-## Installation
-
-Install the ESLint plugin:
-
-```bash
-npm install --save-dev @stricture/eslint-plugin
-# or
-pnpm add -D @stricture/eslint-plugin
-# or
-yarn add -D @stricture/eslint-plugin
-```
-
-## Usage
-
-Create `.stricture/config.json` and reference the preset:
-
-```json
-{
-  "preset": "@stricture/hexagonal"
-}
-```
-
-That's it! The preset defines all boundaries and rules for you.
-
 ## Customization
 
-You can extend or override preset configurations:
+### Inline Customization (Recommended)
 
-```json
+Add custom rules directly in your ESLint config:
+
+```js title="eslint.config.js"
+import stricture from '@stricture/eslint-plugin'
+
+export default [
+  stricture.configs.hexagonal({
+    rules: [
+      {
+        id: 'all-to-shared',
+        from: { tag: '*' },
+        to: { pattern: 'src/shared/**' },
+        allowed: true
+      }
+    ]
+  })
+]
+```
+
+### File-Based Customization (Alternative)
+
+For complex configurations, use `.stricture/config.json`:
+
+```json title=".stricture/config.json"
 {
   "preset": "@stricture/hexagonal",
   "boundaries": [
@@ -270,6 +269,12 @@ You can extend or override preset configurations:
 }
 ```
 
+```js title="eslint.config.js"
+export default [
+  stricture.configs.recommended()  // Loads .stricture/config.json
+]
+```
+
 :::tip[Start Simple]
 Start with a preset as-is. Only customize when you have specific needs that differ from the preset's assumptions.
 :::
@@ -278,7 +283,15 @@ Start with a preset as-is. Only customize when you have specific needs that diff
 
 You cannot use multiple presets simultaneously. Each preset defines a complete architectural pattern.
 
-If you need multiple patterns in a monorepo, use separate `.stricture/config.json` files in each package.
+If you need multiple patterns in a monorepo, configure each package separately:
+
+```js title="packages/api/eslint.config.js"
+export default [stricture.configs.hexagonal()]
+```
+
+```js title="packages/web/eslint.config.js"
+export default [stricture.configs.nextjs()]
+```
 
 ## Creating Custom Presets
 
