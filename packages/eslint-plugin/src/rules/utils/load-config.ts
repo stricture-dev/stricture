@@ -73,6 +73,14 @@ export function loadConfig(configPath: string): StrictureConfig {
       const presets = new Map<string, ArchPreset>()
       presets.set(rawConfig.preset, preset)
 
+      // Load extended presets if specified
+      if (rawConfig.extends) {
+        for (const extendName of rawConfig.extends) {
+          const extendPreset = loadPreset(extendName, configDir)
+          presets.set(extendName, extendPreset)
+        }
+      }
+
       // Resolve config with preset
       resolvedConfig = resolveConfig(rawConfig, presets)
     } else {

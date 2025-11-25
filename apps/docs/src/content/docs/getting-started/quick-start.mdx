@@ -414,7 +414,7 @@ Read the [Core Concepts](/getting-started/concepts/) guide.
 
 ### Can I use multiple presets?
 
-Yes! Combine presets for monorepos:
+Yes! Combine presets to layer multiple architectural patterns or organizational standards:
 
 ```json title=".stricture/config.json"
 {
@@ -422,6 +422,8 @@ Yes! Combine presets for monorepos:
   "extends": ["@stricture/nextjs"]
 }
 ```
+
+Boundaries and rules from all presets are merged together (base preset → extended presets → your custom config).
 
 ### Does this work with JavaScript?
 

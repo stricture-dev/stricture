@@ -1,0 +1,6 @@
+{
+  "preset": "@test/base-preset",
+  "extends": ["@test/extended-preset"],
+  "boundaries": [],
+  "rules": []
+}
