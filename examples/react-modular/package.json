@@ -11,7 +11,7 @@
     "type-check": "echo 'Example not yet implemented - skipping type-check'"
   },
   "dependencies": {
-    "react": "^18.2.0",
+    "react": "^19.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.21.0"
   },
