@@ -49,7 +49,7 @@
     "@stricture/typescript-config": "workspace:*",
     "@types/estree": "^1.0.8",
     "@types/node": "^20",
-    "@typescript-eslint/parser": "^6.19.0",
+    "@typescript-eslint/parser": "^8.47.0",
     "@typescript-eslint/utils": "^6.19.0",
     "eslint": "^8.56.0",
     "tsup": "^8.0.0",

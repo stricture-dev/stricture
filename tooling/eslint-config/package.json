@@ -10,7 +10,7 @@
   ],
   "dependencies": {
     "@typescript-eslint/eslint-plugin": "^6.19.0",
-    "@typescript-eslint/parser": "^6.19.0"
+    "@typescript-eslint/parser": "^8.47.0"
   },
   "peerDependencies": {
     "eslint": "^8.0.0"
