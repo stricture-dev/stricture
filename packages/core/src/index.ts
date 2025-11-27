@@ -35,3 +35,19 @@ export { matchesPattern } from './matching/match-pattern.js'
 export { mergeBoundaries } from './merging/merge-boundaries.js'
 export { mergeRules } from './merging/merge-rules.js'
 export { resolveConfig } from './merging/resolve-config.js'
+
+// Translation functions (for eslint-plugin-boundaries integration)
+export { translateConfig, generateTranslationReport } from './translation/translate-config.js'
+export { translateBoundaries, createTagToBoundaryMap } from './translation/translate-boundaries.js'
+export { translateRules } from './translation/translate-rules.js'
+export type {
+  BoundariesElementDescriptor,
+  BoundariesElementsSelector,
+  BoundariesElementTypesRule,
+  BoundariesElementTypesOptions,
+  BoundariesExternalRule,
+  BoundariesExternalOptions,
+  BoundariesSettings,
+  BoundariesESLintConfig,
+  TranslationContext
+} from './translation/boundaries-types.js'
