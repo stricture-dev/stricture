@@ -3,6 +3,8 @@ title: Hexagonal Architecture Preset
 description: Enforce hexagonal architecture (ports and adapters) pattern with domain isolation
 ---
 
+import HexagonalDiagram from '../../../components/HexagonalDiagram.tsx';
+
 The Hexagonal Architecture preset enforces the ports and adapters pattern, ensuring your domain logic remains pure and isolated from infrastructure concerns.
 
 ## What is Hexagonal Architecture?
@@ -26,74 +28,11 @@ Use the Hexagonal preset when you have:
 - **Swappable infrastructure** (e.g., switching databases)
 - **Long-term maintainability** as a priority
 
-## Architecture Diagram
+## Interactive Architecture Diagram
 
-```mermaid
-%%{init: {'theme':'base', 'themeVariables': {
-  'primaryColor':'#b3d9ff',
-  'primaryBorderColor':'#1976d2',
-  'secondaryColor':'#b3ffcc',
-  'secondaryBorderColor':'#2e7d32',
-  'tertiaryColor':'#ffffb3',
-  'tertiaryBorderColor':'#f57c00'
-}}}%%
-graph TB
-    subgraph DrivingAdapters["📁 Driving Adapters<br/><i>Entry Points</i>"]
-        CLI["CLI Handler"]
-        HTTP["HTTP Controller"]
-        GraphQL["GraphQL Resolver"]
-    end
+Explore the hexagonal architecture at different levels of detail. Click the buttons to switch between views:
 
-    subgraph Application["📁 Application<br/><i>Use Cases</i>"]
-        UseCase1["CreateUser"]
-        UseCase2["GetUser"]
-    end
-
-    subgraph Domain["📁 Domain<br/><i>Pure Business Logic</i>"]
-        Entity["User Entity"]
-        ValueObj["Email (Value Object)"]
-    end
-
-    subgraph Ports["📁 Ports<br/><i>Interfaces</i>"]
-        IUserRepo["IUserRepository"]
-        IEmailSvc["IEmailService"]
-    end
-
-    subgraph DrivenAdapters["📁 Driven Adapters<br/><i>Implementations</i>"]
-        PostgresRepo["PostgresRepository"]
-        SendGridEmail["SendGridAdapter"]
-    end
-
-    %% Allowed dependencies (green arrows)
-    CLI --> UseCase1
-    HTTP --> UseCase1
-    GraphQL --> UseCase2
-    CLI --> Ports
-    HTTP --> Ports
-
-    UseCase1 --> Domain
-    UseCase2 --> Domain
-    UseCase1 --> Ports
-    UseCase2 --> Ports
-
-    Ports --> Domain
-
-    PostgresRepo --> Ports
-    SendGridEmail --> Ports
-    PostgresRepo --> Domain
-    SendGridEmail --> Domain
-
-    Entity --> Entity
-    Entity --> ValueObj
-
-    style DrivingAdapters fill:#ffe6cc,stroke:#d79b00,stroke-width:2px
-    style Application fill:#b3d9ff,stroke:#1976d2,stroke-width:2px
-    style Domain fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px
-    style Ports fill:#e1bee7,stroke:#8e24aa,stroke-width:2px
-    style DrivenAdapters fill:#ffccbc,stroke:#e64a19,stroke-width:2px
-
-    linkStyle default stroke:#22c55e,stroke-width:2px
-```
+<HexagonalDiagram client:load />
 
 ## Directory Structure
 
