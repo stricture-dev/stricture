@@ -3,6 +3,8 @@ title: Clean Architecture Preset
 description: Enforce Uncle Bob's Clean Architecture with concentric dependency circles pointing inward
 ---
 
+import CleanDiagram from '../../../components/CleanDiagram.tsx';
+
 The Clean Architecture preset enforces Uncle Bob's Clean Architecture pattern, ensuring all dependencies point inward toward the entities at the center.
 
 ## What is Clean Architecture?
@@ -26,60 +28,11 @@ Use the Clean Architecture preset when you have:
 - **Complex business rules** that must be isolated
 - **Teams experienced** with Clean Architecture principles
 
-## Architecture Diagram
+## Interactive Architecture Diagram
 
-```mermaid
-%%{init: {'theme':'base', 'themeVariables': {
-  'primaryColor':'#b3d9ff',
-  'primaryBorderColor':'#1976d2',
-  'secondaryColor':'#b3ffcc',
-  'secondaryBorderColor':'#2e7d32',
-  'tertiaryColor':'#ffffb3',
-  'tertiaryBorderColor':'#f57c00'
-}}}%%
-graph TB
-    subgraph Frameworks["📁 Frameworks & Drivers<br/><i>Layer 3 - Outermost Circle</i>"]
-        Web["Web Framework"]
-        DB["Database"]
-        External["External APIs"]
-    end
+Explore the clean architecture's concentric circles at different levels of detail:
 
-    subgraph InterfaceAdapters["📁 Interface Adapters<br/><i>Layer 2 - Controllers & Gateways</i>"]
-        Controllers["Controllers"]
-        Presenters["Presenters"]
-        Gateways["Gateways"]
-    end
-
-    subgraph UseCases["📁 Use Cases<br/><i>Layer 1 - Application Business Rules</i>"]
-        Interactors["Use Case Interactors"]
-        InputPorts["Input Ports"]
-        OutputPorts["Output Ports"]
-    end
-
-    subgraph Entities["📁 Entities<br/><i>Layer 0 - Enterprise Business Rules</i>"]
-        EntitiesCore["Entities"]
-        ValueObjects["Value Objects"]
-    end
-
-    %% Allowed dependencies (green arrows point inward)
-    Web --> Controllers
-    DB --> Gateways
-    External --> Gateways
-
-    Controllers --> Interactors
-    Presenters --> Interactors
-    Gateways --> Interactors
-
-    Interactors --> EntitiesCore
-    Interactors --> ValueObjects
-
-    style Frameworks fill:#ffccbc,stroke:#e64a19,stroke-width:2px
-    style InterfaceAdapters fill:#fff9c4,stroke:#f57c00,stroke-width:2px
-    style UseCases fill:#b3e5fc,stroke:#1976d2,stroke-width:2px
-    style Entities fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px
-
-    linkStyle default stroke:#22c55e,stroke-width:2px
-```
+<CleanDiagram client:load />
 
 ## Directory Structure
 

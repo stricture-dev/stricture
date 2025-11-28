@@ -3,6 +3,8 @@ title: Layered Architecture Preset
 description: Enforce traditional N-tier architecture with presentation, application, domain, and infrastructure layers
 ---
 
+import LayeredDiagram from '../../../components/LayeredDiagram.tsx';
+
 The Layered Architecture preset enforces the traditional N-tier pattern where dependencies flow from top to bottom through well-defined layers.
 
 ## What is Layered Architecture?
@@ -26,64 +28,11 @@ Use the Layered preset when you have:
 - **Team experience** with N-tier architecture
 - **Need for simplicity** over strict domain isolation
 
-## Architecture Diagram
+## Interactive Architecture Diagram
 
-```mermaid
-%%{init: {'theme':'base', 'themeVariables': {
-  'primaryColor':'#b3d9ff',
-  'primaryBorderColor':'#1976d2',
-  'secondaryColor':'#b3ffcc',
-  'secondaryBorderColor':'#2e7d32',
-  'tertiaryColor':'#ffffb3',
-  'tertiaryBorderColor':'#f57c00'
-}}}%%
-graph TB
-    subgraph Presentation["📁 Presentation Layer<br/><i>Layer 0 - UI & Controllers</i>"]
-        Controllers["Controllers"]
-        Views["Views"]
-        CLI["CLI"]
-    end
+Explore the layered architecture at different levels of detail:
 
-    subgraph Application["📁 Application Layer<br/><i>Layer 1 - Services & Use Cases</i>"]
-        Services["Application Services"]
-        UseCases["Use Cases"]
-    end
-
-    subgraph Domain["📁 Domain Layer<br/><i>Layer 2 - Business Logic</i>"]
-        Entities["Entities"]
-        DomainServices["Domain Services"]
-    end
-
-    subgraph Infrastructure["📁 Infrastructure Layer<br/><i>Layer 3 - Data & External Systems</i>"]
-        Repositories["Repositories"]
-        Database["Database Access"]
-        External["External APIs"]
-    end
-
-    %% Allowed dependencies (green arrows)
-    Controllers --> Services
-    Views --> Services
-    CLI --> Services
-    Controllers --> Domain
-    Views --> Domain
-    CLI --> Domain
-    Controllers --> Repositories
-    Views --> Repositories
-
-    Services --> Domain
-    Services --> Repositories
-
-    Domain --> Repositories
-
-    Repositories --> Domain
-
-    style Presentation fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
-    style Application fill:#f3e5f5,stroke:#8e24aa,stroke-width:2px
-    style Domain fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
-    style Infrastructure fill:#fff3e0,stroke:#f57c00,stroke-width:2px
-
-    linkStyle default stroke:#22c55e,stroke-width:2px
-```
+<LayeredDiagram client:load />
 
 ## Directory Structure
 
